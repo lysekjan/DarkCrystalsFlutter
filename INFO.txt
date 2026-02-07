@@ -1,0 +1,11 @@
+﻿Hrdinové a jejich útoky:
+- Aerin: projektil; módy: normal (casting 5s, sending 2s, cooldown 10s, damage 5, velikost projektilu 1x), rychlý (casting 5s, sending 2s, cooldown 3s, damage 1, projektil 0.5x), silný (casting 5s, sending 2s, cooldown 20s, damage 20, projektil 4x)
+- Veyra: projektil; módy: rychlá střelba (casting 0.5s, sending 1s, cooldown 2s, damage 1), třaskavá střela (casting 1s, sending 1s, cooldown 10s, AoE radius 60, damage 3, vizuální výbuch)
+- Thalor: módy: projektil (casting 5s, sending 2s, cooldown 10s, damage 5), meč (casting 1s, sending 1s, cooldown 2s, damage 5 všem v radiusu 140, vizuální švih mečem; aktivuje se jen pokud je nepřítel v dosahu)
+- Myris: projektil; casting 5s, sending 2s, cooldown 10s, damage 5
+- Kaelen: projektil; casting 5s, sending 2s, cooldown 10s, damage 5
+- Solenne: paprsek během "sending"; DPS 2; míří na nejbližšího nepřítele; casting 5s, sending 2s, cooldown 10s
+- Ravik: projektil; casting 5s, sending 2s, cooldown 10s, damage 5
+- Brann: projektil; casting 5s, sending 2s, cooldown 10s, damage 5
+- Nyxra: projektil; casting 5s, sending 2s, cooldown 10s, damage 5
+- Eldrin: projektil; casting 5s, sending 2s, cooldown 10s, damage 5

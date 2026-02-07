@@ -1,0 +1,31 @@
+﻿Budeme komunikovat vždy v češtině.
+
+Průběžné poznámky k fungování hry:
+- (zatím prázdné)
+- HP ukazatel je v samostatné horní liště nad mapou (nepřekrývá herní plochu).
+- Herní mapa zvětšena na 800x320.
+- Mapa zvětšena na 1600x640 a přidáno posouvání (pan) přes InteractiveViewer, pokud se nevejde na displej.
+- Povolen zoom mapy v rozsahu 0.5x–2.0x.
+- Přidán druhý hrdina (slot 2), střílí stejně jako první. Nepřátelé zvětšeni 4x a nad nimi HP bar.
+- Přidána obrazovka výběru hrdinů s 10 barevnými kartami, 5 sloty a tlačítkem Boj. Výběr ovlivňuje barvy a rozložení hrdinů ve hře.
+- Útok hrdinů má 3 fáze: spell casting (5s, bez útoku), spell sending (2s, vystřelí na začátku), cooldown (10s, bez útoku, ikona šedá). Karty hrdinů mají 3 malé odpočítávací bary.
+- Ve hře se u každého hrdiny zobrazují 3 malé bary pro fáze casting/sending/cooldown.
+- Na obrazovce výběru lze každého hrdinu vybrat jen jednou; vybraní jsou zašedlí.
+- Hrdinové mají unikátní fantasy jména a jsou zobrazená na kartičkách výběru.
+- Ve hře jsou karty/pozice hrdinů širší (heroAreaWidth 150) a zobrazují jméno hrdiny.
+- Herní karty hrdinů jsou nižší a zarovnané na střed slotu.
+- Zmenšená výška herních pozic: heroLaneHeight=80, sloty jsou vertikálně vycentrované.
+- Zásah nepřítele: krátké bliknutí bíle + plovoucí červené číslo ztráty HP.
+- Přidáno menu tlačítko vpravo nahoře ve hře s dialogem: návrat do hlavního menu a zavření.
+- Karty hrdinů ve výběru mírně zvětšeny.
+- Karty hrdinů ve výběru zvětšeny na dvojnásobek (144x144).
+- Hrdina Aelrin přejmenován na Aerin.
+- Veyra: cooldown 5s, damage 2.5 (poloviční).
+- Solenne používá paprsek během fáze sending: DPS 2, zraňuje všechny nepřátele v dráze.
+- Přidán rozbalovací panel rychlosti vpravo dole se zobrazením rychlosti a tlačítky 2x/4x/8x.
+- Přidáno tlačítko rychlosti 1x.
+- Přidán módový přepínač pro Aerin: normal/fast/strong, s animovanými kruhovými tlačítky a rozdílným cooldown/damage a velikostí projektilu.
+- Aplikace je uzamčena na landscape orientaci.
+- Vykreslení karty Aerin nyní vynucuje rebuild přes key, aby se ikona módu aktualizovala.
+- Instrukce: kdykoli se změní schopnosti nebo jméno hrdiny, aktualizovat INFO.txt.
+- Thalor má přepínač stylu: projektil nebo meč (AoE v radiusu 90, casting 1s, sending 1s, cooldown 2s).
