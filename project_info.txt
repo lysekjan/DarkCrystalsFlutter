@@ -1,0 +1,161 @@
+PROJECT INFO: Dark Crystals (Flutter)
+
+Shrnuti projektu
+- Jednoducha arkadova/tower-defense minihra ve Flutteru s vlastnim hernim loopem a vykreslovanim pres CustomPainter.
+- Aplikace je uzamcena na landscape orientaci.
+- Flow: Intro obrazovka -> vyber hrdinu -> herni scena.
+- Herni logika a UI jsou soustredeny v jedinem souboru `lib/main.dart`.
+
+Jak to funguje (gameplay)
+- Mapa ma logicke rozmery 1600 x 640.
+- Na leve strane je hero area (sirka 150) se 5 sloty (lane height 80).
+- Hrac vybere 1-5 hrdinu; ti stoji na lane a automaticky utoci podle cyklu: casting -> sending -> cooldown.
+- Nepratele spawnuji nahodne po lanech na pravem okraji mapy a pohybuji se doleva.
+- Pokud nepritel dojde k hradbe (x <= heroAreaWidth + 4), zacne utocit do zdi.
+- Zed ma HP 300. Nepritel udeluje wallDps = 5 damage za sekundu. Konec hry pri HP <= 0.
+- Rychlost hry lze prepnut v panelu na 1x/2x/4x/8x.
+
+Herni konstanty (GameView)
+- mapWidth = 1600, mapHeight = 640
+- heroAreaWidth = 150
+- heroSlots = 5, heroLaneHeight = 80
+- wallHpMax = 300
+- enemyHpMax = 20
+- enemySize = 40
+- enemySpeed = 16 (units/s)
+- projectileSpeed = 160 (units/s)
+- spellCastingDuration = 5s
+- spellSendingDuration = 2s
+- spellCooldownDuration = 10s
+- wallDps = 5 (damage/s)
+- hitFlashDuration = 0.12s
+- projectileRadius = 2
+- explosionDuration = 0.35s
+- swordRadius = 140
+- Spawn nepratel: nahodny delay 1-10s, prvni spawn po 4s.
+
+Struktura projektu
+- `lib/main.dart`: kompletni herni logika, UI obrazovky, herni smycka, vykreslovani, efekty a definice hrdinu.
+- `pubspec.yaml`: Flutter konfigurace a dependencies.
+- `INFO.txt`: puvodni design/hodnoty utoku hrdinu (Czech notes).
+- `README.md`: defaultni Flutter README.
+- `android/`, `web/`, `test/`, `build/`, `.dart_tool/`, `.idea/`, `.git/`.
+- Root obsahuje PNG soubory (napr. `hero_*.png`, `nanobanana_0.png`), ale v kodu nejsou referencovane a nejsou definovane v assets v `pubspec.yaml`.
+
+Zavislosti
+- Flutter SDK
+- `cupertino_icons`
+- `flame` (v kodu aktualne nepouzito)
+
+Obrazovky a UI
+- IntroScreen: gradientni pozadi, nadpis "Dark Crystals", tlacitko Play.
+- HeroSelectScreen:
+  - Horni horizontalni seznam 10 hrdinu.
+  - 5 slotu pro vyber (tap = pridat; tap na slot = odstranit).
+  - Tlacitko "Boj" spusti hru.
+- GameView:
+  - Herni plocha kreslena CustomPainterem.
+  - Panel rychlosti vpravo dole.
+  - Menu tlacitko vpravo nahore (dialog s navratem do hlavniho menu).
+
+Poznamka k textum
+- Nektere stringy v dialogu menu jsou v kodu viditelne jako rozbite znaky (napr. "Co chceš udělat?"). Pravdepodobne jde o problem s kodovanim souboru pri zobrazeni v konzoli; v samotne aplikaci by se mely zobrazit normalne, pokud je soubor ulozen v UTF-8.
+
+Hrdinove (definice)
+- Default pro _HeroDef: cooldown 10s, damage 5, attackType projectile.
+- Veyra: cooldown 5s, damage 2.5.
+- Solenne: attackType beam, beamDps 2.0.
+- Seznam hrdinu v UI: Aerin, Veyra, Thalor, Myris, Kaelen, Solenne, Ravik, Brann, Nyxra, Eldrin.
+
+Herni cyklus hrdinu
+- Kazdy hrdina bezi cyklus: casting -> sending -> cooldown.
+- V sending fazi se vystreli projektil nebo spusti specialni utok (beam, AoE, lightning, sword).
+- U beam hrdinu (Solenne normal) se beam aplikuje kazdy tick na nejblizsiho nepritele (line beam s DPS).
+
+Modi a statistiky hrdinu
+- Aerin (_HeroMode: normal/fast/strong)
+  - Casting: normal 5s, fast 5s (implicit), strong 5s (implicit)
+  - Sending: normal 2s, fast 2s (implicit), strong 2s (implicit)
+  - Cooldown: normal 10s, fast 3s, strong 20s
+  - Damage: normal 5, fast 1, strong 20
+  - Projektil radius: normal 2, fast 1, strong 8
+  - Strong projektil ma "fire" VFX a explozivni efekt na zasah
+- Veyra (_VeyraMode: rapid/explosive/arcane)
+  - Casting: 0.5s / 1s / 1.5s
+  - Sending: 1s / 1s / 1s
+  - Cooldown: 2s / 10s / 7s
+  - Damage: 1 / 3 / 4
+  - Explosive ma AoE radius 60
+  - Arcane vypada jako standardni projektil (bez AoE)
+- Thalor (_ThalorMode: projectile/sword/energy)
+  - Casting: projectile 5s, sword 1s, energy 2s
+  - Sending: projectile 2s, sword 1s, energy 2s
+  - Cooldown: projectile 10s, sword 2s, energy 12s
+  - Damage: projectile 5, sword 5 (AoE v radius 140), energy 2
+  - Sword se aktivuje jen pokud je nepritel v dosahu (jinak se vraci do castingu)
+  - Energy zatim nema implementovanou specialni logiku (jen placeholder v kodu)
+- Nyxra (_NyxraMode: normal/lightning/voidchain)
+  - Casting: normal 5s, lightning 3s, voidchain 5s (implicit)
+  - Sending: normal 2s, lightning 2s, voidchain 2.5s
+  - Cooldown: normal 10s, lightning 10s, voidchain 14s
+  - Damage: normal 5
+  - Lightning: chain 3 cile s dmg 10/8/5 + lightning VFX
+  - Voidchain: chain 4 cile s dmg 8/6/4/2 + lightning VFX
+- Myris (_MyrisMode: normal/ice/freeze)
+  - Casting: 5s / 2s / 1s
+  - Sending: 2s / 1s / 0.5s
+  - Cooldown: 10s / 8s / 12s
+  - Damage: normal 5, ice 3, freeze 8
+  - Ice: projektil s AoE 50
+  - Freeze: AoE around hero radius 200
+- Kaelen (_KaelenMode: normal/vine/spore)
+  - Casting: 5s / 1s / 2s
+  - Sending: 2s / 0.5s / 1s
+  - Cooldown: 10s / 6s / 15s
+  - Damage: normal 5, vine 6 (AoE 100 kolem hrdiny), spore 2
+  - Spore: projektil s AoE 70
+- Solenne (_SolenneMode: normal/sunburst/radiant)
+  - Casting: 5s / 1s / 2s
+  - Sending: 2s / 0.5s / 1s
+  - Cooldown: 10s / 14s / 10s
+  - Damage: normal 5, sunburst 12 (AoE 40), radiant 4 (AoE 90)
+  - Normal: beam attack, DPS 2, miri na nejblizsiho nepritele
+- Ravik (_RavikMode: normal/voidburst/soul)
+  - Casting: 5s / 2s / 2.5s
+  - Sending: 2s / 1s / 1.5s
+  - Cooldown: 10s / 12s / 15s
+  - Damage: normal 5, voidburst 6 (projektil AoE 60), soul 5
+  - Soul drain: chain 3 cile s dmg 5/4/3 + lightning VFX
+- Brann (_BrannMode: normal/earthquake/boulder)
+  - Casting: 5s / 1s / 3s
+  - Sending: 2s / 0.5s / 1s
+  - Cooldown: 10s / 11s / 18s
+  - Damage: normal 5, earthquake 3 (AoE 80), boulder 18
+  - Boulder: projektil s radius 10 (5x default)
+- Eldrin (_EldrinMode: normal/cosmic/nova)
+  - Casting: 5s / 2s / 1s
+  - Sending: 2s / 1s / 0.5s
+  - Cooldown: 10s / 8s / 16s
+  - Damage: normal 5, cosmic 2, nova 10 (AoE 100)
+  - Cosmic nema implementovanou specialni logiku (placeholder)
+
+Efekty a vykreslovani (CustomPainter)
+- Vykresluje pozadi, hero area, sloty, karty hrdinu, phase bary (casting/sending/cooldown), zed a HP bar.
+- Nepratele jsou kresleni stylizovane ("hungry" tvar), s HP barem nad hlavou.
+- Projektily jsou kruhy, Aerin strong ma fireball efekt.
+- AoE efekty: kruhove exploze, fire explozivni VFX, lightning segmenty pro chain utoky.
+- Floating damage texty nad neprateli.
+
+Logika nepratelu
+- HP = 20, velikost 40
+- Pohyb konstantni rychlosti 16 units/s
+- Pri zasahu se kratce blika (hitFlashDuration)
+- Po smrti jsou odstraneni
+
+Poznamky k obsahu
+- `INFO.txt` obsahuje puvodni designove hodnoty utoku hrdinu (napr. Aerin/Veyra/Thalor), ktere nejsou 1:1 se soucasnym kodem.
+- V kodu je Flame dependency, ale herni logika pouziva cisty Flutter + CustomPainter.
+
+Spusteni
+- Standardni Flutter aplikace (napr. `flutter run`).
+- Aplikace vyzaduje landscape orientaci.
