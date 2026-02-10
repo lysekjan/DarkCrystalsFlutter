@@ -1,11 +1,11 @@
-ï»¿HrdinovÃ© a jejich Ãºtoky:
-- Aerin: projektil; mÃ³dy: normal (casting 5s, sending 2s, cooldown 10s, damage 5, velikost projektilu 1x), rychlÃ½ (casting 5s, sending 2s, cooldown 3s, damage 1, projektil 0.5x), silnÃ½ (casting 5s, sending 2s, cooldown 20s, damage 20, projektil 4x)
-- Veyra: projektil; mÃ³dy: rychlÃ¡ stÅ™elba (casting 0.5s, sending 1s, cooldown 2s, damage 1), tÅ™askavÃ¡ stÅ™ela (casting 1s, sending 1s, cooldown 10s, AoE radius 60, damage 3, vizuÃ¡lnÃ­ vÃ½buch)
-- Thalor: mÃ³dy: projektil (casting 5s, sending 2s, cooldown 10s, damage 5), meÄ (casting 1s, sending 1s, cooldown 2s, damage 5 vÅ¡em v radiusu 140, vizuÃ¡lnÃ­ Å¡vih meÄem; aktivuje se jen pokud je nepÅ™Ã­tel v dosahu)
-- Myris: projektil; casting 5s, sending 2s, cooldown 10s, damage 5
-- Kaelen: projektil; casting 5s, sending 2s, cooldown 10s, damage 5
-- Solenne: paprsek bÄ›hem "sending"; DPS 2; mÃ­Å™Ã­ na nejbliÅ¾Å¡Ã­ho nepÅ™Ã­tele; casting 5s, sending 2s, cooldown 10s
-- Ravik: projektil; casting 5s, sending 2s, cooldown 10s, damage 5
-- Brann: projektil; casting 5s, sending 2s, cooldown 10s, damage 5
-- Nyxra: projektil; casting 5s, sending 2s, cooldown 10s, damage 5
-- Eldrin: projektil; casting 5s, sending 2s, cooldown 10s, damage 5
+Hrdinové a jejich útoky (fáze casting zrušena; útoky mají jen sending + cooldown):
+- Aerin: projektil; módy: normal (sending 2s, cooldown 10s, damage 5, velikost projektilu 1x), rychlı (sending 2s, cooldown 3s, damage 1, projektil 0.5x), silnı (sending 2s, cooldown 20s, damage 20, projektil 4x)
+- Veyra: projektil; módy: rychlá støelba (sending 1s, cooldown 2s, damage 1), tøaskavá støela (sending 1s, cooldown 10s, AoE radius 60, damage 3, vizuální vıbuch), blesk (sending 1s, cooldown 2s, damage 30 na 1 cíl)
+- Thalor: módy: projektil (sending 2s, cooldown 10s, damage 5), meè (sending 1s, cooldown 2s, damage 5 všem v radiusu 140, vizuální švih meèem; aktivuje se jen pokud je nepøítel v dosahu)
+- Myris: projektil; sending 2s, cooldown 10s, damage 5
+- Kaelen: projektil; sending 2s, cooldown 10s, damage 5
+- Solenne: paprsek bìhem "sending"; DPS 2; míøí na nejblišího nepøítele; sending 2s, cooldown 10s
+- Ravik: projektil; sending 2s, cooldown 10s, damage 5
+- Brann: projektil; sending 2s, cooldown 10s, damage 5
+- Nyxra: projektil; sending 2s, cooldown 10s, damage 5
+- Eldrin: projektil; sending 2s, cooldown 10s, damage 5
