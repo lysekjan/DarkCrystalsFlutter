@@ -3,7 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter/scheduler.dart';
 import 'dart:math';
 import 'dart:ui' as ui;
-
+import 'rpg_system.dart';
+import 'hero_upgrade_screen.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([
@@ -56,15 +57,31 @@ class IntroScreen extends StatelessWidget {
                   ),
             ),
             const SizedBox(height: 24),
-            FilledButton(
-              onPressed: () {
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const HeroSelectScreen(),
-                  ),
-                );
-              },
-              child: const Text('Play'),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                FilledButton(
+                  onPressed: () {
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const HeroSelectScreen(),
+                      ),
+                    );
+                  },
+                  child: const Text('Play'),
+                ),
+                const SizedBox(width: 16),
+                OutlinedButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const HeroUpgradeScreen(),
+                      ),
+                    );
+                  },
+                  child: const Text('Hrdinové'),
+                ),
+              ],
             ),
           ],
         ),
@@ -76,7 +93,7 @@ class IntroScreen extends StatelessWidget {
 class GameHomeScreen extends StatelessWidget {
   const GameHomeScreen({super.key, required this.heroes});
 
-  final List<_HeroDef> heroes;
+  final List<HeroDef> heroes;
 
   @override
   Widget build(BuildContext context) {
@@ -90,7 +107,7 @@ class GameHomeScreen extends StatelessWidget {
 class GameView extends StatefulWidget {
   const GameView({super.key, required this.heroes});
 
-  final List<_HeroDef> heroes;
+  final List<HeroDef> heroes;
 
   @override
   State<GameView> createState() => _GameViewState();
@@ -167,6 +184,11 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   final List<_DamageText> _damageTexts = [];
   final List<_ExplosionEffect> _explosions = [];
   final List<_LightningEffect> _lightnings = [];
+
+  // RPG bonus helper methods
+  // RPG system variables
+  int _coinsEarned = 0;
+  final Map<String, int> _xpEarned = {}; // heroName -> xp amount
 
   @override
   void initState() {
@@ -332,6 +354,15 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
         _wallHp -= wallDps * dt;
       }
     }
+    // Check for dead enemies and award coins/XP
+    final deadEnemies = _enemies.where((e) => e.hp <= 0).toList();
+    for (final enemy in deadEnemies) {
+      _coinsEarned++;
+      // Award XP to all used heroes
+      for (final hero in widget.heroes) {
+        _xpEarned[hero.name] = (_xpEarned[hero.name] ?? 0) + 1;
+      }
+    }
     _enemies.removeWhere((e) => e.hp <= 0);
   }
 
@@ -456,7 +487,29 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     });
   }
 
-  void _resetGame() {
+  Future<void> _saveProgress() async {
+    // Save earned coins and XP to RPG system
+    if (_coinsEarned > 0 || _xpEarned.isNotEmpty) {
+      final progress = await RpgSystem.getProgress();
+      progress.addCoins(_coinsEarned);
+
+      // Award XP to heroes
+      for (final entry in _xpEarned.entries) {
+        await RpgSystem.addHeroXp(entry.key, entry.value);
+      }
+
+      // Auto-save
+      await RpgSystem.saveProgress();
+
+      // Reset tracking
+      _coinsEarned = 0;
+      _xpEarned.clear();
+    }
+  }
+
+  Future<void> _resetGame() async {
+    await _saveProgress();
+
     _timeUntilNextSpawn = 4;
     _wallHp = wallHpMax;
     _gameOver = false;
@@ -493,7 +546,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
               child: const Text('Restart'),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
+                await _saveProgress();
                 Navigator.of(dialogContext).pop();
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute<void>(
@@ -505,7 +559,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
               child: const Text('Návrat do výběru hrdinů'),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
+                await _saveProgress();
                 Navigator.of(dialogContext).pop();
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute<void>(
@@ -1835,8 +1890,15 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
         _ravikMenuOpen ||
         _brannMenuOpen ||
         _eldrinMenuOpen;
-    return Stack(
-      children: [
+    return PopScope(
+      canPop: true,
+      onPopInvoked: (didPop) async {
+        if (didPop) {
+          await _saveProgress();
+        }
+      },
+      child: Stack(
+        children: [
         Column(
           children: [
             _HpBar(wallHp: _wallHp),
@@ -2659,6 +2721,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
           ),
         ),
       ],
+      ),
     );
   }
 }
@@ -2676,7 +2739,7 @@ class _HeroCard extends StatelessWidget {
     required this.time,
   });
 
-  final _HeroDef hero;
+  final HeroDef hero;
   final double width;
   final double height;
   final bool isCooldown;
@@ -2869,7 +2932,7 @@ class _GamePainter extends CustomPainter {
   final List<_LightningEffect> lightnings;
   final int heroSlots;
   final double heroAreaWidth;
-  final List<_HeroDef> heroes;
+  final List<HeroDef> heroes;
   final List<int> heroSlotIndices;
   final List<_HeroState> heroStates;
   final _HeroMode aerinMode;
@@ -3547,8 +3610,8 @@ class _HeroState {
   _Enemy? beamTarget;
 }
 
-class _HeroDef {
-  const _HeroDef(
+class HeroDef {
+  const HeroDef(
     this.name,
     this.color, {
     this.imageAsset = '',
@@ -4050,25 +4113,41 @@ class HeroSelectScreen extends StatefulWidget {
 class _HeroSelectScreenState extends State<HeroSelectScreen> {
   static const int slotCount = 5;
 
-  final List<_HeroDef> _heroes = const [
-    _HeroDef('Aerin', Color(0xFFE57373), imageAsset: 'assets/heroes/hero_aerin.png'),
-    _HeroDef('Veyra', Color(0xFFBA68C8), imageAsset: 'assets/heroes/hero_veyra.png', cooldownDuration: 5, damage: 2.5),
-    _HeroDef('Thalor', Color(0xFF64B5F6), imageAsset: 'assets/heroes/hero_thalor.png'),
-    _HeroDef('Myris', Color(0xFF4DB6AC), imageAsset: 'assets/heroes/hero_myris.png'),
-    _HeroDef('Kaelen', Color(0xFF81C784), imageAsset: 'assets/heroes/hero_kaelen.png'),
-    _HeroDef('Solenne', Color(0xFFFFD54F), imageAsset: 'assets/heroes/hero_solenne.png', attackType: _AttackType.beam, beamDps: 2.0),
-    _HeroDef('Ravik', Color(0xFFFF8A65), imageAsset: 'assets/heroes/hero_ravik.png'),
-    _HeroDef('Brann', Color(0xFFA1887F), imageAsset: 'assets/heroes/hero_brann.png'),
-    _HeroDef('Nyxra', Color(0xFF90A4AE), imageAsset: 'assets/heroes/hero_nyxra.png'),
-    _HeroDef('Eldrin', Color(0xFF9575CD), imageAsset: 'assets/heroes/hero_eldrin.png'),
+  final List<HeroDef> _heroes = const [
+    HeroDef('Aerin', Color(0xFFE57373), imageAsset: 'assets/heroes/hero_aerin.png'),
+    HeroDef('Veyra', Color(0xFFBA68C8), imageAsset: 'assets/heroes/hero_veyra.png', cooldownDuration: 5, damage: 2.5),
+    HeroDef('Thalor', Color(0xFF64B5F6), imageAsset: 'assets/heroes/hero_thalor.png'),
+    HeroDef('Myris', Color(0xFF4DB6AC), imageAsset: 'assets/heroes/hero_myris.png'),
+    HeroDef('Kaelen', Color(0xFF81C784), imageAsset: 'assets/heroes/hero_kaelen.png'),
+    HeroDef('Solenne', Color(0xFFFFD54F), imageAsset: 'assets/heroes/hero_solenne.png', attackType: _AttackType.beam, beamDps: 2.0),
+    HeroDef('Ravik', Color(0xFFFF8A65), imageAsset: 'assets/heroes/hero_ravik.png'),
+    HeroDef('Brann', Color(0xFFA1887F), imageAsset: 'assets/heroes/hero_brann.png'),
+    HeroDef('Nyxra', Color(0xFF90A4AE), imageAsset: 'assets/heroes/hero_nyxra.png'),
+    HeroDef('Eldrin', Color(0xFF9575CD), imageAsset: 'assets/heroes/hero_eldrin.png'),
   ];
 
-  late final List<_HeroDef?> _slots = List<_HeroDef?>.filled(slotCount, null);
+  late final List<HeroDef?> _slots = List<HeroDef?>.filled(slotCount, null);
+  PlayerProgress? _progress;
 
   @override
   void initState() {
     super.initState();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    _loadProgress();
+  }
+
+  Future<void> _loadProgress() async {
+    final progress = await RpgSystem.getProgress();
+    if (mounted) {
+      setState(() {
+        _progress = progress;
+      });
+    }
+  }
+
+  bool _isHeroUnlocked(String heroName) {
+    final heroData = _progress?.heroes[heroName];
+    return heroData?.unlocked ?? false;
   }
 
   @override
@@ -4077,7 +4156,7 @@ class _HeroSelectScreenState extends State<HeroSelectScreen> {
     super.dispose();
   }
 
-  void _assignHero(_HeroDef hero) {
+  void _assignHero(HeroDef hero) {
     if (_slots.contains(hero)) {
       return;
     }
@@ -4097,7 +4176,7 @@ class _HeroSelectScreenState extends State<HeroSelectScreen> {
   }
 
   void _startGame() {
-    final selected = _slots.whereType<_HeroDef>().toList();
+    final selected = _slots.whereType<HeroDef>().toList();
     if (selected.isEmpty) {
       return;
     }
@@ -4126,59 +4205,77 @@ class _HeroSelectScreenState extends State<HeroSelectScreen> {
               itemBuilder: (context, index) {
                 final hero = _heroes[index];
                 final isSelected = _slots.contains(hero);
+                final isUnlocked = _isHeroUnlocked(hero.name);
                 return GestureDetector(
-                  onTap: isSelected ? null : () => _assignHero(hero),
+                  onTap: !isUnlocked ? null : (isSelected ? null : () => _assignHero(hero)),
                   child: Container(
                     width: 144,
                     height: 144,
                     decoration: BoxDecoration(
-                      color: (isSelected ? Colors.grey : hero.color).withOpacity(0.85),
+                      color: !isUnlocked
+                          ? Colors.grey.shade800
+                          : (isSelected ? Colors.grey : hero.color).withOpacity(0.85),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.white24),
+                      border: Border.all(color: isUnlocked ? Colors.white24 : Colors.grey.shade700),
                     ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    child: Stack(
                       children: [
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: hero.imageAsset.isNotEmpty
-                                ? ClipRRect(
-                                    borderRadius: BorderRadius.circular(6),
-                                    child: Image.asset(
-                                      hero.imageAsset,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return const Icon(
-                                          Icons.person,
-                                          color: Colors.white54,
-                                          size: 40,
-                                        );
-                                      },
-                                    ),
-                                  )
-                                : const Icon(
-                                    Icons.person,
-                                    color: Colors.white54,
-                                    size: 40,
-                                  ),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 4.0),
-                          child: Text(
-                            hero.name,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              height: 1.0,
-                              fontWeight: FontWeight.w500,
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: hero.imageAsset.isNotEmpty
+                                    ? ClipRRect(
+                                        borderRadius: BorderRadius.circular(6),
+                                        child: Image.asset(
+                                          hero.imageAsset,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) {
+                                            return const Icon(
+                                              Icons.person,
+                                              color: Colors.white54,
+                                              size: 40,
+                                            );
+                                          },
+                                        ),
+                                      )
+                                    : const Icon(
+                                        Icons.person,
+                                        color: Colors.white54,
+                                        size: 40,
+                                      ),
+                              ),
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 4.0),
+                              child: Text(
+                                hero.name,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: !isUnlocked ? Colors.grey.shade500 : Colors.white,
+                                  fontSize: 12,
+                                  height: 1.0,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
+                        if (!isUnlocked)
+                          Positioned.fill(
+                            child: Container(
+                              color: Colors.black.withOpacity(0.5),
+                              child: const Icon(
+                                Icons.lock,
+                                color: Colors.white70,
+                                size: 40,
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -4240,12 +4337,24 @@ class _HeroSelectScreenState extends State<HeroSelectScreen> {
                     }),
                   ),
                   const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      onPressed: hasSelection ? _startGame : null,
-                      child: const Text('Boj'),
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                          child: const Text('Zpět'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: hasSelection ? _startGame : null,
+                          child: const Text('Boj'),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
