@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'dart:math';
 import 'dart:ui' as ui;
 import 'rpg_system.dart';
 import 'hero_upgrade_screen.dart';
-void main() {
+import 'sound_manager.dart';
+import 'skill_trees.dart';
+import 'localization.dart';
+import 'language_manager.dart';
+import 'language_switcher.dart';
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await LanguageManager.init();
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.landscapeLeft,
     DeviceOrientation.landscapeRight,
@@ -14,8 +21,29 @@ void main() {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    LanguageManager.languageNotifier.addListener(_onLanguageChanged);
+  }
+
+  @override
+  void dispose() {
+    LanguageManager.languageNotifier.removeListener(_onLanguageChanged);
+    super.dispose();
+  }
+
+  void _onLanguageChanged() {
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,6 +53,16 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
         useMaterial3: true,
       ),
+      locale: LanguageManager.toLocale(LanguageManager.currentLanguage),
+      localizationsDelegates: [
+        AppLocalizationsDelegate(),
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLanguage.values
+          .map((lang) => LanguageManager.toLocale(lang))
+          .toList(),
       home: const IntroScreen(),
     );
   }
@@ -35,6 +73,7 @@ class IntroScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       body: Container(
         width: double.infinity,
@@ -49,39 +88,54 @@ class IntroScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              'Dark Crystals',
-              style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
+            // Language switcher at top right
+            Align(
+              alignment: Alignment.topRight,
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: const LanguageSwitcher(),
+              ),
             ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                FilledButton(
-                  onPressed: () {
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const HeroSelectScreen(),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    loc.appName,
+                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      FilledButton(
+                        onPressed: () {
+                          Navigator.of(context).pushReplacement(
+                            MaterialPageRoute<void>(
+                              builder: (_) => const HeroSelectScreen(),
+                            ),
+                          );
+                        },
+                        child: Text(loc.playButton),
                       ),
-                    );
-                  },
-                  child: const Text('Play'),
-                ),
-                const SizedBox(width: 16),
-                OutlinedButton(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const HeroUpgradeScreen(),
+                      const SizedBox(width: 16),
+                      OutlinedButton(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => const HeroUpgradeScreen(),
+                            ),
+                          );
+                        },
+                        child: Text(loc.heroesButton),
                       ),
-                    );
-                  },
-                  child: const Text('Hrdinové'),
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -137,17 +191,25 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
 
   final Random _rng = Random();
   late final Ticker _ticker;
+  DateTime _gameStartTime = DateTime.now();
   double _lastTime = 0;
   double _wallHp = wallHpMax;
   double _timeUntilNextSpawn = 0;
+  // Wave and statistics tracking
+  int _currentWave = 1;
+  int _enemiesKilled = 0;
+  int _enemiesInWave = 0;
+  int _enemiesSpawnedInWave = 0;
+  int _totalWaves = 10;
   late final List<_HeroState> _heroStates;
   late final List<int> _heroSlotIndices;
   bool _gameOver = false;
   bool _gameOverDialogShown = false;
   double _gameSpeed = 2;
   bool _speedPanelOpen = false;
-  bool _autoMode = true;
+  bool _autoMode = false;
   int? _readyHeroIndex;
+  final _interactiveViewerKey = GlobalKey();
   _HeroMode _aerinMode = _HeroMode.normal;
   bool _aerinMenuOpen = false;
   late final AnimationController _aerinMenuController;
@@ -184,11 +246,20 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   final List<_DamageText> _damageTexts = [];
   final List<_ExplosionEffect> _explosions = [];
   final List<_LightningEffect> _lightnings = [];
+  Offset? _targetIndicator; // Shows manual target position
+  bool _preventAutoReselect = false; // Prevent auto-selecting another hero after manual fire
+  DateTime _lastManualFireTime = DateTime.now(); // Track last manual fire to prevent rapid-fire
+  bool _isHoldingTouch = false; // Track if user is holding finger on screen
+  Offset? _holdPosition; // Position where user is holding finger
 
   // RPG bonus helper methods
   // RPG system variables
   int _coinsEarned = 0;
   final Map<String, int> _xpEarned = {}; // heroName -> xp amount
+
+  // Hero bonuses from RPG system
+  final Map<String, double> _damageBonuses = {}; // heroName -> damage bonus
+  final Map<String, double> _cooldownReductions = {}; // heroName -> cooldown reduction (seconds)
 
   @override
   void initState() {
@@ -208,6 +279,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       vsync: this,
       duration: const Duration(milliseconds: 180),
     );
+    // Load RPG bonuses
+    _loadHeroBonuses();
     _veyraMenuController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 180),
@@ -264,7 +337,40 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  double _nextSpawnDelay() => 1 + _rng.nextDouble() * 9;
+  Future<void> _loadHeroBonuses() async {
+    final skillTrees = _getSkillTrees();
+    for (final hero in widget.heroes) {
+      final skillTree = skillTrees[hero.name];
+      if (skillTree != null) {
+        final damageBonus = await RpgSystem.getTotalDamageBonus(hero.name, skillTree);
+        final cooldownReduction = await RpgSystem.getTotalCooldownReduction(hero.name, skillTree);
+        if (mounted) {
+          setState(() {
+            _damageBonuses[hero.name] = damageBonus;
+            _cooldownReductions[hero.name] = cooldownReduction;
+          });
+        }
+      }
+    }
+  }
+
+  Map<String, SkillTree> _getSkillTrees() {
+    return {
+      'Aerin': SkillTrees.getTree('Aerin'),
+      'Veyra': SkillTrees.getTree('Veyra'),
+      'Thalor': SkillTrees.getTree('Thalor'),
+      'Myris': SkillTrees.getTree('Myris'),
+      'Kaelen': SkillTrees.getTree('Kaelen'),
+      'Solenne': SkillTrees.getTree('Solenne'),
+      'Ravik': SkillTrees.getTree('Ravik'),
+      'Brann': SkillTrees.getTree('Brann'),
+      'Nyxra': SkillTrees.getTree('Nyxra'),
+      'Eldrin': SkillTrees.getTree('Eldrin'),
+    };
+  }
+
+  double _nextSpawnDelay() => max(0.5, (1.0 - (_currentWave * 0.05)) + _rng.nextDouble() * 8);
+  int _enemiesForWave(int wave) => 5 + wave * 2; // More enemies in later waves
 
   List<int> _resolveHeroSlots(int count) {
     switch (count) {
@@ -294,6 +400,15 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     return top + heroLaneHeight * (slotIndex + 0.5);
   }
 
+  Duration get _gameDuration => DateTime.now().difference(_gameStartTime);
+  String get _gameDurationText {
+    final duration = _gameDuration;
+    final minutes = duration.inMinutes;
+    final seconds = duration.inSeconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+
   void _onTick(Duration elapsed) {
     final t = elapsed.inMicroseconds;
     final seconds = t / 1e6;
@@ -314,6 +429,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     if (_wallHp <= 0) {
       _wallHp = 0;
       _gameOver = true;
+      SoundManager().playGameOver();
     }
 
     setState(() {});
@@ -330,17 +446,28 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
 
   void _updateSpawning(double dt) {
     _timeUntilNextSpawn -= dt;
-    if (_timeUntilNextSpawn <= 0) {
+    if (_timeUntilNextSpawn <= 0 && _enemiesSpawnedInWave < _enemiesForWave(_currentWave)) {
       final lane = _rng.nextInt(heroSlots);
       final y = _laneCenterY(lane);
+      // Increase enemy HP with each wave
+      final hpMultiplier = 1.0 + (_currentWave - 1) * 0.1;
       _enemies.add(
         _Enemy(
           position: Offset(mapWidth, y),
-          hp: enemyHpMax,
+          hp: enemyHpMax * hpMultiplier,
           seed: _rng.nextDouble() * 1000,
         ),
       );
+      _enemiesSpawnedInWave++;
       _timeUntilNextSpawn = _nextSpawnDelay();
+    }
+
+    // Check if wave is complete (all enemies spawned and killed)
+    if (_enemiesSpawnedInWave >= _enemiesForWave(_currentWave) && _enemies.isEmpty) {
+      _currentWave++;
+      _enemiesSpawnedInWave = 0;
+      _enemiesInWave = 0;
+      SoundManager().playWaveComplete();
     }
   }
 
@@ -358,10 +485,13 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     final deadEnemies = _enemies.where((e) => e.hp <= 0).toList();
     for (final enemy in deadEnemies) {
       _coinsEarned++;
+      _enemiesKilled++;
       // Award XP to all used heroes
       for (final hero in widget.heroes) {
         _xpEarned[hero.name] = (_xpEarned[hero.name] ?? 0) + 1;
       }
+      // Play death sound
+      SoundManager().playDeath();
     }
     _enemies.removeWhere((e) => e.hp <= 0);
   }
@@ -415,45 +545,19 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   }
 
   void _updateHero(double dt) {
-    if (_enemies.isEmpty) {
-      return;
-    }
-    for (int i = 0; i < widget.heroes.length; i++) {
-      var remaining = dt;
+    for (int i = 0; i < _heroStates.length; i++) {
       final state = _heroStates[i];
-      while (remaining > 0) {
-        if (!_autoMode && state.phase == _HeroPhase.sending && state.pendingAttack) {
-          break;
-        }
-        if (state.timeRemaining > remaining) {
-          state.timeRemaining -= remaining;
-          remaining = 0;
+      state.timeRemaining -= dt;
+      if (state.timeRemaining <= 0) {
+        if (state.phase == _HeroPhase.sending) {
+          _enterCooldown(i);
         } else {
-          remaining -= state.timeRemaining;
-          state.timeRemaining = 0;
-        }
-
-        if (state.timeRemaining > 0) {
-          continue;
-        }
-
-        if (state.phase == _HeroPhase.cooldown) {
-          if (_isThalor(i) && _thalorMode == _ThalorMode.sword && !_hasEnemyInSwordRange(i)) {
-            remaining = 0;
-          } else {
-            _enterSending(i);
+          _enterSending(i);
+          // In manual mode with touch held, automatically fire when hero becomes ready
+          if (!_autoMode && _isHoldingTouch && _holdPosition != null && _isHeroReady(i)) {
+            _triggerManualPositionAttack(_holdPosition!);
           }
-        } else if (state.phase == _HeroPhase.sending) {
-          _enterCooldown(i);
-        } else {
-          _enterCooldown(i);
         }
-      }
-
-      if (state.phase == _HeroPhase.sending &&
-          !state.pendingAttack &&
-          widget.heroes[i].attackType == _AttackType.beam) {
-        _applyBeamDamage(i, dt);
       }
     }
     _refreshReadyHeroSelection();
@@ -534,7 +638,35 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       barrierDismissible: false,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('game over'),
+          title: const Text('Game Over'),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Statistics
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF101816),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFF1F2C29)),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildStatRow(Icons.waves, Colors.blue, 'Wave Reached', _currentWave.toString()),
+                      const SizedBox(height: 8),
+                      _buildStatRow(Icons.favorite, Colors.redAccent, 'Enemies Killed', _enemiesKilled.toString()),
+                      const SizedBox(height: 8),
+                      _buildStatRow(Icons.monetization_on, Colors.amber, 'Coins Earned', _coinsEarned.toString()),
+                      const SizedBox(height: 8),
+                      _buildStatRow(Icons.timer, Colors.lightBlue, 'Game Time', _gameDurationText),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
           actions: [
             TextButton(
               onPressed: () {
@@ -598,6 +730,28 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     _ravikMenuController.reverse();
     _brannMenuController.reverse();
     _eldrinMenuController.reverse();
+  }
+
+  Widget _buildStatRow(IconData icon, Color color, String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Icon(icon, color: color, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: const TextStyle(color: Colors.white70, fontSize: 13),
+            ),
+          ],
+        ),
+        Text(
+          value,
+          style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700),
+        ),
+      ],
+    );
   }
 
   void _setHeroMode(int heroIndex, dynamic mode) {
@@ -720,8 +874,13 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       ..pendingAttack = !_autoMode
       ..beamTarget = null
       ..timeRemaining = _effectiveSending(heroIndex);
+    // Clear the prevent flag when hero completes cooldown naturally (not after manual fire)
+    _preventAutoReselect = false;
     if (_autoMode) {
       _performAttack(heroIndex);
+    } else if (_isHoldingTouch && _holdPosition != null) {
+      // Auto-fire when holding and not in auto mode
+      _triggerManualPositionAttack(_holdPosition!);
     }
   }
 
@@ -866,9 +1025,18 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     if (_autoMode) {
       return;
     }
+
+    // In manual mode with a ready hero, shoot at tapped position
+    if (_readyHeroIndex != null) {
+      _triggerManualPositionAttack(position);
+      return;
+    }
+
     if (_enemies.isEmpty) {
       return;
     }
+
+    // Fallback: find nearest enemy if no hero ready
     _Enemy? hit;
     double bestDist = double.infinity;
     for (final enemy in _enemies) {
@@ -884,6 +1052,75 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     _triggerManualAttack(hit);
   }
 
+  void _triggerManualPositionAttack(Offset screenPosition) {
+    final heroIndex = _readyHeroIndex;
+    if (heroIndex == null) {
+      return;
+    }
+
+    // Prevent rapid-fire tapping (minimum 200ms between shots)
+    final now = DateTime.now();
+    final timeSinceLastFire = now.difference(_lastManualFireTime).inMilliseconds;
+    if (timeSinceLastFire < 200) {
+      return; // Ignore taps that are too close together
+    }
+
+    // Update last fire time
+    _lastManualFireTime = now;
+
+    // Prevent auto-reselecting another hero after this fire
+    setState(() {
+      _preventAutoReselect = true;
+    });
+
+    // Show target indicator
+    setState(() {
+      _targetIndicator = screenPosition;
+    });
+    // Hide indicator after a short delay
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        setState(() {
+          _targetIndicator = null;
+        });
+      }
+    });
+
+    // Convert screen position to map position
+    final heroPos = _heroPosition(_heroSlotIndices[heroIndex]);
+    final mapPosition = _screenToMapPosition(screenPosition);
+
+    // Fire projectile at map position
+    final dir = (mapPosition - heroPos);
+    final len = max(dir.distance, 0.001);
+    final velocity = Offset(dir.dx / len * projectileSpeed, dir.dy / len * projectileSpeed);
+    final damage = _effectiveDamage(heroIndex);
+    final radius = _effectiveProjectileRadius(heroIndex);
+    final aoeRadius = _effectiveAoeRadius(heroIndex);
+    final isAerinStrong = _isAerin(heroIndex) && _aerinMode == _HeroMode.strong;
+
+    _projectiles.add(
+      _Projectile(
+        position: heroPos,
+        velocity: velocity,
+        damage: damage,
+        radius: radius,
+        aoeRadius: aoeRadius,
+        isAerinStrong: isAerinStrong,
+        seed: _rng.nextDouble() * 1000,
+      ),
+    );
+
+    // Move hero directly to cooldown (skip _performAttack to avoid double-firing)
+    _enterCooldown(heroIndex);
+  }
+
+  Offset _screenToMapPosition(Offset screenPosition) {
+    // For now, assume direct mapping (1:1)
+    // TODO: Implement proper transformation from InteractiveViewer
+    return screenPosition;
+  }
+
   bool _isHeroReady(int heroIndex) {
     final state = _heroStates[heroIndex];
     if (_autoMode) {
@@ -894,6 +1131,11 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
 
   void _refreshReadyHeroSelection() {
     if (_readyHeroIndex != null && _isHeroReady(_readyHeroIndex!)) {
+      return;
+    }
+    // Don't auto-select if we just fired manually (wait for user to select another hero)
+    if (_preventAutoReselect) {
+      _readyHeroIndex = null;
       return;
     }
     _readyHeroIndex = null;
@@ -1168,7 +1410,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
         case _HeroMode.fast:
           return _scaleCooldown(3);
         case _HeroMode.strong:
-          return _scaleCooldown(20);
+          return _scaleCooldown(1);
         case _HeroMode.normal:
           return _scaleCooldown(widget.heroes[heroIndex].cooldownDuration);
       }
@@ -1249,99 +1491,126 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
           return _scaleCooldown(16);
       }
     }
-    return _scaleCooldown(widget.heroes[heroIndex].cooldownDuration);
+
+    // Apply cooldown reduction from RPG system
+    final baseCooldown = _scaleCooldown(widget.heroes[heroIndex].cooldownDuration);
+    final heroName = widget.heroes[heroIndex].name;
+    final reduction = _cooldownReductions[heroName] ?? 0;
+    return max(0.5, baseCooldown - reduction);
   }
 
   double _scaleCooldown(double value) => value * cooldownScale;
 
   double _effectiveDamage(int heroIndex) {
+    double baseDamage;
     if (_isAerin(heroIndex)) {
       switch (_aerinMode) {
         case _HeroMode.fast:
-          return 1;
+          baseDamage = 1;
+          break;
         case _HeroMode.strong:
-          return 20;
+          baseDamage = 20;
+          break;
         case _HeroMode.normal:
-          return widget.heroes[heroIndex].damage;
+          baseDamage = widget.heroes[heroIndex].damage;
+          break;
       }
-    }
-    if (_isVeyra(heroIndex)) {
+    } else if (_isVeyra(heroIndex)) {
       switch (_veyraMode) {
         case _VeyraMode.rapid:
-          return 1;
+          baseDamage = 1;
+          break;
         case _VeyraMode.explosive:
-          return 3;
+          baseDamage = 3;
+          break;
         case _VeyraMode.lightning:
-          return 30;
+          baseDamage = 30;
+          break;
       }
-    }
-    if (_isThalor(heroIndex) && _thalorMode == _ThalorMode.sword) {
-      return 5;
-    }
-    if (_isThalor(heroIndex) && _thalorMode == _ThalorMode.energy) {
-      return 2;
-    }
-    if (_isMyris(heroIndex)) {
+    } else if (_isThalor(heroIndex) && _thalorMode == _ThalorMode.sword) {
+      baseDamage = 5;
+    } else if (_isThalor(heroIndex) && _thalorMode == _ThalorMode.energy) {
+      baseDamage = 2;
+    } else if (_isMyris(heroIndex)) {
       switch (_myrisMode) {
         case _MyrisMode.normal:
-          return widget.heroes[heroIndex].damage;
+          baseDamage = widget.heroes[heroIndex].damage;
+          break;
         case _MyrisMode.ice:
-          return 3;
+          baseDamage = 3;
+          break;
         case _MyrisMode.freeze:
-          return 8;
+          baseDamage = 8;
+          break;
       }
-    }
-    if (_isKaelen(heroIndex)) {
+    } else if (_isKaelen(heroIndex)) {
       switch (_kaelenMode) {
         case _KaelenMode.normal:
-          return widget.heroes[heroIndex].damage;
+          baseDamage = widget.heroes[heroIndex].damage;
+          break;
         case _KaelenMode.vine:
-          return 6;
+          baseDamage = 6;
+          break;
         case _KaelenMode.spore:
-          return 2;
+          baseDamage = 2;
+          break;
       }
-    }
-    if (_isSolenne(heroIndex)) {
+    } else if (_isSolenne(heroIndex)) {
       switch (_solenneMode) {
         case _SolenneMode.normal:
-          return widget.heroes[heroIndex].damage;
+          baseDamage = widget.heroes[heroIndex].damage;
+          break;
         case _SolenneMode.sunburst:
-          return 12;
+          baseDamage = 12;
+          break;
         case _SolenneMode.radiant:
-          return 4;
+          baseDamage = 4;
+          break;
       }
-    }
-    if (_isRavik(heroIndex)) {
+    } else if (_isRavik(heroIndex)) {
       switch (_ravikMode) {
         case _RavikMode.normal:
-          return widget.heroes[heroIndex].damage;
+          baseDamage = widget.heroes[heroIndex].damage;
+          break;
         case _RavikMode.voidburst:
-          return 6;
+          baseDamage = 6;
+          break;
         case _RavikMode.soul:
-          return 5;
+          baseDamage = 5;
+          break;
       }
-    }
-    if (_isBrann(heroIndex)) {
+    } else if (_isBrann(heroIndex)) {
       switch (_brannMode) {
         case _BrannMode.normal:
-          return widget.heroes[heroIndex].damage;
+          baseDamage = widget.heroes[heroIndex].damage;
+          break;
         case _BrannMode.earthquake:
-          return 3;
+          baseDamage = 3;
+          break;
         case _BrannMode.boulder:
-          return 18;
+          baseDamage = 18;
+          break;
       }
-    }
-    if (_isEldrin(heroIndex)) {
+    } else if (_isEldrin(heroIndex)) {
       switch (_eldrinMode) {
         case _EldrinMode.normal:
-          return widget.heroes[heroIndex].damage;
+          baseDamage = widget.heroes[heroIndex].damage;
+          break;
         case _EldrinMode.cosmic:
-          return 2;
+          baseDamage = 2;
+          break;
         case _EldrinMode.nova:
-          return 10;
+          baseDamage = 10;
+          break;
       }
+    } else {
+      baseDamage = widget.heroes[heroIndex].damage;
     }
-    return widget.heroes[heroIndex].damage;
+
+    // Add RPG bonus from skill upgrades
+    final heroName = widget.heroes[heroIndex].name;
+    final bonusMultiplier = _damageBonuses[heroName] ?? 0;
+    return baseDamage * (1 + bonusMultiplier);
   }
 
   double _effectiveProjectileRadius(int heroIndex) {
@@ -1901,18 +2170,32 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
         children: [
         Column(
           children: [
-            _HpBar(wallHp: _wallHp),
-            Expanded(
-              child: ClipRect(
-                child: InteractiveViewer(
+            _HpBar(
+              wallHp: _wallHp,
+              currentWave: _currentWave,
+              enemiesKilled: _enemiesKilled,
+              coinsEarned: _coinsEarned,
+              gameDurationText: _gameDurationText,
+              enemiesInWave: _enemiesSpawnedInWave,
+              totalEnemiesInWave: _enemiesForWave(_currentWave),
+            ),
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final screenHeight = constraints.maxHeight;
+                final fitToHeightScale = screenHeight / mapHeight;
+
+                return InteractiveViewer(
+                  key: _interactiveViewerKey,
                   constrained: false,
                   boundaryMargin: const EdgeInsets.only(right: 80, bottom: 80),
-                  minScale: 0.5,
+                  minScale: fitToHeightScale,
                   maxScale: 2.0,
+                  alignment: Alignment.topLeft,
                   child: SizedBox(
-                    width: mapWidth,
-                    height: mapHeight,
-                    child: Stack(
+                      width: mapWidth,
+                      height: mapHeight,
+                      child: Stack(
                       children: [
                         CustomPaint(
                           key: ValueKey<_HeroMode>(_aerinMode),
@@ -1934,12 +2217,51 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                             heroCooldowns: heroCooldowns,
                             heroSendings: heroSendings,
                             time: _lastTime,
+                            targetIndicator: _targetIndicator,
                           ),
                         ),
                         Positioned.fill(
-                          child: GestureDetector(
-                            behavior: HitTestBehavior.translucent,
-                            onTapDown: (details) => _handleEnemyTap(details.localPosition),
+                          child: Listener(
+                            onPointerDown: (event) {
+                              _handleEnemyTap(event.localPosition);
+                              if (!_autoMode) {
+                                setState(() {
+                                  _isHoldingTouch = true;
+                                  _holdPosition = event.localPosition;
+                                });
+                                if (_readyHeroIndex != null && _isHeroReady(_readyHeroIndex!)) {
+                                  _triggerManualPositionAttack(event.localPosition);
+                                }
+                              }
+                            },
+                            onPointerMove: (event) {
+                              if (!_autoMode && _isHoldingTouch) {
+                                setState(() {
+                                  _holdPosition = event.localPosition;
+                                });
+                                if (_readyHeroIndex != null && _isHeroReady(_readyHeroIndex!)) {
+                                  _triggerManualPositionAttack(event.localPosition);
+                                }
+                              }
+                            },
+                            onPointerUp: (event) {
+                              if (!_autoMode) {
+                                setState(() {
+                                  _isHoldingTouch = false;
+                                  _holdPosition = null;
+                                });
+                              }
+                            },
+                            onPointerCancel: (event) {
+                              if (!_autoMode) {
+                                setState(() {
+                                  _isHoldingTouch = false;
+                                  _holdPosition = null;
+                                });
+                              }
+                            },
+                            behavior: HitTestBehavior.opaque,
+                            child: Container(),
                           ),
                         ),
                         if (isAnyModeMenuOpen)
@@ -1963,6 +2285,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                                 if (_isHeroReady(i)) {
                                   setState(() {
                                     _readyHeroIndex = i;
+                                    _preventAutoReselect = false; // Allow auto-select when manually selecting a hero
                                   });
                                 }
                               },
@@ -2672,8 +2995,9 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                       ],
                     ),
                   ),
-                ),
-              ),
+                );
+            },
+            ),
             ),
           ],
         ),
@@ -2922,6 +3246,7 @@ class _GamePainter extends CustomPainter {
     required this.heroCooldowns,
     required this.heroSendings,
     required this.time,
+    this.targetIndicator,
   });
 
   final double wallHp;
@@ -2940,6 +3265,7 @@ class _GamePainter extends CustomPainter {
   final List<double> heroCooldowns;
   final List<double> heroSendings;
   final double time;
+  final Offset? targetIndicator;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -3540,6 +3866,37 @@ class _GamePainter extends CustomPainter {
     )..layout(maxWidth: cardWidth - 26);
     final offset = Offset(rect.left + 8, heroPos.dy - textPainter.height / 2);
     textPainter.paint(canvas, offset);
+
+    // Draw target indicator for manual mode
+    if (targetIndicator != null) {
+      final targetPaint = Paint()
+        ..color = const Color(0xFF6FE2C1).withOpacity(0.6)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2;
+      final targetFillPaint = Paint()
+        ..color = const Color(0xFF6FE2C1).withOpacity(0.2)
+        ..style = PaintingStyle.fill;
+
+      // Draw target circle with crosshair
+      final targetSize = 20.0;
+      canvas.drawCircle(targetIndicator!, targetSize, targetFillPaint);
+      canvas.drawCircle(targetIndicator!, targetSize, targetPaint);
+
+      // Crosshair lines
+      final crosshairPaint = Paint()
+        ..color = const Color(0xFF6FE2C1).withOpacity(0.8)
+        ..strokeWidth = 2;
+      canvas.drawLine(
+        Offset(targetIndicator!.dx - targetSize - 5, targetIndicator!.dy),
+        Offset(targetIndicator!.dx + targetSize + 5, targetIndicator!.dy),
+        crosshairPaint,
+      );
+      canvas.drawLine(
+        Offset(targetIndicator!.dx, targetIndicator!.dy - targetSize - 5),
+        Offset(targetIndicator!.dx, targetIndicator!.dy + targetSize + 5),
+        crosshairPaint,
+      );
+    }
   }
 
   IconData _aerinModeIcon(_HeroMode mode) {
@@ -3560,25 +3917,104 @@ class _GamePainter extends CustomPainter {
 }
 
 class _HpBar extends StatelessWidget {
-  const _HpBar({required this.wallHp});
+  const _HpBar({
+    required this.wallHp,
+    required this.currentWave,
+    required this.enemiesKilled,
+    required this.coinsEarned,
+    required this.gameDurationText,
+    required this.enemiesInWave,
+    required this.totalEnemiesInWave,
+  });
 
   final double wallHp;
+  final int currentWave;
+  final int enemiesKilled;
+  final int coinsEarned;
+  final String gameDurationText;
+  final int enemiesInWave;
+  final int totalEnemiesInWave;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: const BoxDecoration(
         color: Color(0xFF101816),
         border: Border(
           bottom: BorderSide(color: Color(0xFF1F2C29), width: 1),
         ),
       ),
-      child: Text(
-        'Wall HP: ${wallHp.toStringAsFixed(0)}',
-        style: const TextStyle(color: Colors.white, fontSize: 12),
+      child: Row(
+        children: [
+          // Wall HP
+          Expanded(
+            flex: 3,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Wall HP',
+                  style: TextStyle(color: Colors.white60, fontSize: 10),
+                ),
+                Text(
+                  wallHp.toStringAsFixed(0),
+                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          // Wave info
+          Expanded(
+            flex: 2,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Wave',
+                  style: TextStyle(color: Colors.white60, fontSize: 10),
+                ),
+                Text(
+ 'Wave $currentWave',
+                  style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          // Stats row
+          Expanded(
+            flex: 5,
+            child: Wrap(
+              spacing: 12,
+              runSpacing: 4,
+              children: [
+                _buildStatItem(Icons.favorite, Colors.redAccent, enemiesKilled),
+                _buildStatItem(Icons.monetization_on, Colors.amber, coinsEarned),
+                _buildStatItem(Icons.timer, Colors.blueAccent, gameDurationText, isText: true),
+              ],
+            ),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildStatItem(IconData icon, Color color, dynamic value, {bool isText = false}) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: color, size: 14),
+        const SizedBox(width: 4),
+        Text(
+          isText ? value.toString() : value.toString(),
+          style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+        ),
+      ],
     );
   }
 }

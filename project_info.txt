@@ -1,6 +1,8 @@
 PROJECT INFO: Dark Crystals (Flutter)
 
-Shrnuti projektu
+=== VERZE: 2025-02-14 ===
+
+Struktura projektu
 - Jednoducha arkadova/tower-defense minihra ve Flutteru s vlastnim hernim loopem a vykreslovanim pres CustomPainter.
 - Aplikace je uzamcena na landscape orientaci a hlavni hra i vyber hrdinu bezi ve fullscreenu (immersive).
 - Flow: Intro obrazovka -> vyber hrdinu -> herni scena.
@@ -15,7 +17,46 @@ Jak to funguje (gameplay)
 - Zed ma HP 300. Nepritel udeluje wallDps = 5 damage za sekundu. Konec hry pri HP <= 0.
 - Rychlost hry lze prepnut v panelu na 1x/2x/4x/8x, default je 2x.
 
-Herni konstanty (GameView)
+=== WAVE SYSTÉM (NOVÉ) ===
+- Hra je rozdelena do vln (waves)
+- Kazda vlna ma urcity pocet nepratelu: 5 + (vlna × 2)
+- S kazdou vlnou se zvyzuje obtiznost:
+  - Pocet nepratelu ve vlna se zvyzuje
+  - Nepritelove HP se zvysuje o 10% kazdou vlnu (multiplikator: 1.0 + (wave-1) × 0.1)
+  - Spawn delay se zkracuje (min 0.5s)
+- Po zniceni vsech nepratelu ve vlna se automaticky prechazi na dalsi vlnu
+- Pocet vln je nastaven na 10 (lze zmenit v _totalWaves)
+
+=== RPG SYSTÉM ===
+- Soubory: `lib/rpg_system.dart`, `lib/skill_trees.dart`, `lib/hero_upgrade_screen.dart`
+- Trvale ulozene v SharedPreferences (JSON format)
+- Mece (coins) se ziskavaji pri ziceni nepratelu
+- XP se ziskava pri ziceni nepratelu (rozdeleno mezi vsechny pouzite hrdiny)
+- Hrdinove urovne (level) se zvyzuji pri dosazeni urciteho XP (100 × level)
+
+Vylepšeni (Upgrades):
+- Damage Bonus: +10% damage za level (multiplikator)
+- Cooldown Reduction: -5% cooldown za level (v sekundach)
+- Attack Speed Bonus: +10% attack speed za level
+- Range Bonus: +10% range za level
+- Max level kazdeho upgrade: 10
+
+Skill stromy (Skill Trees):
+- Kazdy hrdina ma vlastni skill strom s unikatnimi dovednostmi
+- Skill nodes maji: damageBonus, cooldownReduction, aoeRadiusBonus, projectileSpeedBonus
+- Skill vyzadujou urcity hero level pro odemceni
+- Nektere dovednosti maji prerequisite nodes (musi byt odemceny drive)
+
+=== JAZYKOVÝ SYSTÉM (NOVÉ) ===
+- Soubory: `lib/localization.dart`, `lib/language_manager.dart`, `lib/language_switcher.dart`
+- Podpora pro 8 jazyků: čeština (cs), slovenština (sk), maďarština (hu), angličtina (en), němčina (de), francouzština (fr), španělština (es), portugalština (pt)
+- LanguageManager spravuje aktuální jazyk a notifikuje změny přes ValueNotifier
+- LanguageSwitcher je widget pro výběr jazyka v UI
+- MyApp je StatefulWidget, který naslouchá na změny jazyka a překreslí celou aplikaci
+- Veškeré UI texty jsou lokalizovány přes AppLocalizations
+- Přepnutí jazyka automaticky překreslí celou aplikaci s novým locale
+
+=== HERNÍ KONSTANTY (GameView) ===
 - mapWidth = 1600, mapHeight = 640
 - heroAreaWidth = 150
 - heroSlots = 5, heroLaneHeight = mapHeight / heroSlots
@@ -35,123 +76,162 @@ Herni konstanty (GameView)
 - enemyTapRadius = 18 (tolerantnejsi tap na nepritele)
 - Spawn nepratel: nahodny delay 1-10s, prvni spawn po 4s.
 
-Struktura projektu
+=== STRUKTURA PROJEKTU ===
 - `lib/main.dart`: kompletni herni logika, UI obrazovky, herni smycka, vykreslovani, efekty a definice hrdinu.
+- `lib/localization.dart`: lokalizacni system s preklady pro 8 jazyku.
+- `lib/language_manager.dart`: sprava jazyku a ValueNotifier pro reaktivni aktualizace.
+- `lib/language_switcher.dart`: widget pro vyber jazyka v UI.
+- `lib/rpg_system.dart`: RPG system, ukladani/nacitani postupu, vylepsovani hrdinu
+- `lib/skill_trees.dart`: Definice skill stromu pro vsechny hrdiny
+- `lib/hero_upgrade_screen.dart`: UI pro vyber a vylepsovani hrdinu
+- `lib/sound_manager.dart`: Zvukovy system (tone generator a haptic feedback)
 - `pubspec.yaml`: Flutter konfigurace a dependencies.
-- `INFO.txt`: designove hodnoty utoku hrdinu (Czech notes).
 - `README.md`: defaultni Flutter README.
+- `project_info.txt`: tento soubor - dokumentace projektu.
 - `android/`, `web/`, `test/`, `build/`, `.dart_tool/`, `.idea/`, `.git/`.
 - Root obsahuje PNG soubory (napr. `hero_*.png`, `nanobanana_0.png`), ale v kodu nejsou referencovane a nejsou definovane v assets v `pubspec.yaml`.
 
-Zavislosti
+=== ZÁVISLOSTI ===
 - Flutter SDK
+- `shared_preferences` - pro ukladani RPG postupu
+- `flutter_localizations` - pro Material lokalizace a přepínání jazyků
 - `cupertino_icons`
 - `flame` (v kodu aktualne nepouzito)
 
-Obrazovky a UI
-- IntroScreen: gradientni pozadi, nadpis "Dark Crystals", tlacitko Play.
-- HeroSelectScreen:
-  - Fullscreen (immersive), zarovnane k hornimu/levemu okraji.
-  - Horni horizontalni seznam 10 hrdinu.
-  - Sloty pro vyber jsou vpravo dole (zarovnane k pravemu/spodnimu okraji).
-  - Tlacitko "Boj" spusti hru.
-- GameView:
-  - Fullscreen (immersive) s cerne pozadi, bez systemoveho panelu.
-  - Herni plocha kreslena CustomPainterem.
-  - InteractiveViewer je zarovnany k levemu a hornimu okraji (neumi se odtahnout vlevo/nahoru); je povoleny posun doprava/dolu a zoom.
-  - Panel rychlosti vpravo dole.
-  - Prepinac "Automode" vedle panelu rychlosti.
-  - Menu tlacitko vpravo nahore (dialog s navratem do hlavniho menu).
-  - Game Over: modalni dialog s tlacitky Restart / Navrat do vyberu / Navrat do hlavniho menu.
+=== ZVUKOVÝ SYSTÉM (NOVÉ) ===
+- Soubor: `lib/sound_manager.dart`
+- Tone generator pro zvukove efekty (hit, death, wave complete, game over, atd.)
+- Haptic feedback pro lepsi herni zazitek
+- Zvuky se prehravaji pri:
+  - Smrt nepritele (death)
+  - Kompletni vlna (wave complete)
+  - Konec hry (game over)
 
-Herni cyklus hrdinu
-- Hrdinove maji pouze dve faze: sending -> cooldown (casting zrusen).
+=== UI OBRAZOVKY A WIDGETY ===
+IntroScreen:
+- Gradientni pozadi, nadpis "Dark Crystals", tlacitko Play.
+- Tlacitko "Hrdinové" pro pristup k upgrade systemu.
+- Jazykový přepínač v pravém horním rohu pro výběr jazyka.
+- Všechny texty jsou lokalizovány přes AppLocalizations.
+
+HeroSelectScreen:
+- Fullscreen (immersive), zarovnane k hornimu/levemu okraji.
+- Horni horizontalni seznam 10 hrdinu.
+- Sloty pro vyber jsou vpravo dole (zarovnane k pravemu/spodnimu okraji).
+- Tlacitko "Boj" spusti hru.
+- Tlacitko "Zpět" pro návrat na hlavní menu.
+
+HeroUpgradeScreen:
+- Fullscreen (immersive) s listou vsech hrdinu
+- Kliknuti na hrdinu otevre detail obrazovku
+- Zobrazi level, XP bar, dostupne vylepseni a skill strom
+- Tlacitko "Resetovat" vrati 75% investovanych minci
+- Tlacitko "Hrát" pro návrat na výběr hrdinů
+
+GameView:
+- Fullscreen (immersive) s cerne pozadi, bez systemoveho panelu.
+- Herni plocha kreslena CustomPainterem.
+- InteractiveViewer je zarovnany k levemu a hornimu okraji (neumi se odtahnout vlevo/nahoru); je povoleny posun doprava/dolu a zoom.
+- Panel rychlosti vpravo dole.
+- Prepinac "Automode" vedle panelu rychlosti.
+- Menu tlacitko vpravo nahore (dialog s navratem do hlavniho menu).
+- Game Over: modalni dialog s tlacitky Restart / Navrat do vyberu / Navrat do hlavniho menu.
+- HUD (_HpBar) se statistikami:
+  - Wall HP
+  - Aktualni vlna (Wave X/10)
+  - Zabiti nepratele (ikona srdce)
+  - Ziskane mince (ikona mince)
+  - Delka hry (MM:SS format)
+
+=== HERNÍ CYKLUS HRDINŮ ===
+Hrdinove maji pouze dve faze: sending -> cooldown (casting zruseno).
 - Pri Automode ON hrdinove utoci automaticky.
 - Pri Automode OFF hrdina po dojeti cooldownu prejde do sending a ceka na klik na nepritele.
 - Klik na nepritele spusti utok jednoho pripraveneho hrdiny (dle vybraneho hrdiny / poradi slotu).
-- Vybraneho pripraveneho hrdinu lze rucne prepnout klikem na jeho kartu (jen pokud je pripraveny).
+- Vybraneho pripraveneho hrdiny lze rucne prepnout klikem na jeho kartu (jen pokud je pripraveny).
 - Ready hrdina je zvyraznen pulzujicim zlatym obrysem (vyrazny glow).
 - Karta hrdiny obsahuje cooldown bar (zvetseny).
 
-Logika nepratelu
-- HP = 20, velikost 40
+=== LOGIKA NEPRÁTŮ ===
+- HP = 20 × (1.0 + (wave-1) × 0.1) - vlny zvyzuji HP
+- Velikost 40
 - Pohyb konstantni rychlosti 16 units/s
 - Pri zasahu se kratce blika (hitFlashDuration)
 - Po smrti jsou odstraneni
+- Zisk minci (coins) pri smrti nepritele
+- Pridani XP vsem pouzitym hrdin
 
-Efekty a vykreslovani (CustomPainter)
+=== EFEKTY A VYKRESLOVÁNÍ (CustomPainter) ===
 - Vykresluje pozadi, hero area, sloty, karty hrdinu, phase bary (sending + cooldown), zed a HP bar.
 - Nepratele jsou kresleni stylizovane ("hungry" tvar), s HP barem nad hlavou.
 - Projektily jsou kruhy, Aerin strong ma fireball efekt.
 - AoE efekty: kruhove exploze, fire explozivni VFX, lightning segmenty pro chain utoky.
 - Floating damage texty nad neprateli.
+- NOVÉ: Zvukove efekty se prehravaji pri dulezitych udalostech
 
-Hrdinove (definice)
-- Default pro _HeroDef: cooldown 10s, damage 5, attackType projectile.
-- Veyra: cooldown 5s, damage 2.5.
-- Solenne: attackType beam, beamDps 2.0.
-- Seznam hrdinu v UI: Aerin, Veyra, Thalor, Myris, Kaelen, Solenne, Ravik, Brann, Nyxra, Eldrin.
+=== HRDINOVÉ DEFINICE ===
+Default pro _HeroDef: cooldown 10s, damage 5, attackType projectile.
+Seznam hrdinu v UI: Aerin, Veyra, Thalor, Myris, Kaelen, Solenne, Ravik, Brann, Nyxra, Eldrin.
 
-Modi a statistiky hrdinu (bez castingu)
-- Aerin (_HeroMode: normal/fast/strong)
-  - Sending: normal 2s, fast 2s, strong 2s
-  - Cooldown: normal 10s, fast 3s, strong 20s
-  - Damage: normal 5, fast 1, strong 20
-  - Projektil radius: normal 2, fast 1, strong 8
-  - Strong projektil ma "fire" VFX a explozivni efekt na zasah
-- Veyra (_VeyraMode: rapid/explosive/lightning)
-  - Sending: 1s / 1s / 1s
-  - Cooldown: 2s / 10s / 2s
-  - Damage: 1 / 3 / 30
-  - Explosive ma AoE radius 60
-  - Lightning: blesk do jednoho cile (VFX)
-- Thalor (_ThalorMode: projectile/sword/energy)
-  - Sending: projectile 2s, sword 1s, energy 2s
-  - Cooldown: projectile 10s, sword 2s, energy 12s
-  - Damage: projectile 5, sword 5 (AoE v radius 140), energy 2
-  - Sword se aktivuje jen pokud je nepritel v dosahu (jinak ceka)
-  - Energy zatim nema implementovanou specialni logiku (placeholder v kodu)
-- Nyxra (_NyxraMode: normal/lightning/voidchain)
-  - Sending: normal 2s, lightning 2s, voidchain 2.5s
-  - Cooldown: normal 10s, lightning 10s, voidchain 14s
-  - Damage: normal 5
-  - Lightning: chain 3 cile s dmg 10/8/5 + lightning VFX
-  - Voidchain: chain 4 cile s dmg 8/6/4/2 + lightning VFX
-- Myris (_MyrisMode: normal/ice/freeze)
-  - Sending: 2s / 1s / 0.5s
-  - Cooldown: 10s / 8s / 12s
-  - Damage: normal 5, ice 3, freeze 8
-  - Ice: projektil s AoE 50
-  - Freeze: AoE kolem hrdiny radius 200
-- Kaelen (_KaelenMode: normal/vine/spore)
-  - Sending: 2s / 0.5s / 1s
-  - Cooldown: 10s / 6s / 15s
-  - Damage: normal 5, vine 6 (AoE 100 kolem hrdiny), spore 2
-  - Spore: projektil s AoE 70
-- Solenne (_SolenneMode: normal/sunburst/radiant)
-  - Sending: 2s / 0.5s / 1s
-  - Cooldown: 10s / 14s / 10s
-  - Damage: normal 5, sunburst 12 (AoE 40), radiant 4 (AoE 90)
-  - Normal: beam attack, DPS 2; manualne miri na kliknuty cil, jinak na nejblizsiho
-- Ravik (_RavikMode: normal/voidburst/soul)
-  - Sending: 2s / 1s / 1.5s
-  - Cooldown: 10s / 12s / 15s
-  - Damage: normal 5, voidburst 6 (projektil AoE 60), soul 5
-  - Soul drain: chain 3 cile s dmg 5/4/3 + lightning VFX
-- Brann (_BrannMode: normal/earthquake/boulder)
-  - Sending: 2s / 0.5s / 1s
-  - Cooldown: 10s / 11s / 18s
-  - Damage: normal 5, earthquake 3 (AoE 80), boulder 18
-  - Boulder: projektil s radius 10 (5x default)
-- Eldrin (_EldrinMode: normal/cosmic/nova)
-  - Sending: 2s / 1s / 0.5s
-  - Cooldown: 10s / 8s / 16s
-  - Damage: normal 5, cosmic 2, nova 10 (AoE 100)
-  - Cosmic nema implementovanou specialni logiku (placeholder)
+Veyra: cooldown 5s, damage 2.5.
+Solenne: attackType beam, beamDps 2.0.
 
-Poznamky k textum
+=== MODI A STATISTIKY HRDINŮ ===
+NOVÉ: Vylepšeni se NYNÍ APLIKUJÍ ve hře!
+
+=== APLIKACE RPG BONUSŮ ===
+NOVÉ: Vylepšeni se správně aplikují ve hře!
+
+Při startu hry se načítají bonusy z RPG systému:
+- Damage bonusy ze skill tree (součet všech bonusů)
+- Cooldown redukce ze skill tree (součet všech redukcí)
+- Výpočet efektivního damage:
+  - Základní damage podle módu
+  - + Skill bonusy (multiplikátor: 1 + bonus)
+  - Např.: baseDamage 5 + bonus 0.3 → 5 × 1.3 = 6.5 damage
+- Výpočet efektivního cooldownu:
+  - Základní cooldown podle módu
+  - - Cooldown redukce ze skill stromů
+  - Minimum 0.5s (nelze krátit pod tuto hodnotu)
+
+=== ZMĚNY STATISTIKY HRY ===
+NOVÉ: Herní statistiky se sledují a zobrazují:
+- Počet zabitých nepřátelů (_enemiesKilled)
+- Získané mince za hru (_coinsEarned)
+- Délka hry (_gameDuration) ve formátu MM:SS
+- Aktuální vlna (_currentWave)
+- Počet nepřátelů ve vlně / celkem ve vlně
+
+=== GAME OVER DIALOG ===
+NOVÉ: Rozšířený o kompletní statistiky:
+- Dosažená vlna (Wave Reached)
+- Celkem zabito nepřátel
+- Získané mince
+- Celkový čas hry
+
+=== POZNÁMKY K TEXTŮ ===
 - Nektere stringy v dialogu menu jsou v kodu viditelne jako rozbite znaky (napr. "Co chceš udělat?"). Pravdepodobne jde o problem s kodovanim souboru pri zobrazeni v konzoli; v samotne aplikaci by se mely zobrazit normalne, pokud je soubor ulozen v UTF-8.
 
-Spusteni
+=== SPUSTENÍ ===
 - Standardni Flutter aplikace (napr. `flutter run`).
 - Aplikace vyzaduje landscape orientaci.
+
+=== VERZE HISTORIE ===
+2025-02-12:
+- Pridan wave system (10 vln se zvyšující se obtižností)
+- Pridan zvukovy system (SoundManager) s haptic feedback
+- Pridan HUD se statistikami (zabiti, mince, cas, vlna)
+- Pridan Game Over dialog se statistikami
+- Opravena chyba: Vylepšení hrdin nyní správně aplikují damage a cooldown bonusy
+- Integrace RPG systému s herní logikou (načítání bonusů při startu hry)
+- Damage bonus se aplikuje jako multiplikátor (1 + bonus)
+- Cooldown redukce se uplatňuje jako odečtení od základní cooldownu
+2025-02-14:
+- Pridan jazykovy systém s podporou pro 8 jazyků (čeština, slovenština, maďarština, angličtina, němčina, francouzština, španělština, portugalština)
+- Pridan LanguageManager pro správu jazyku a reaktivní aktualizace přes ValueNotifier
+- Pridan LanguageSwitcher widget pro výběr jazyka v UI
+- MyApp změněn ze StatelessWidget na StatefulWidget pro naslouchání změn jazyka
+- Pridané delegáti pro Material lokalizaci (GlobalMaterialLocalizations, GlobalWidgetsLocalizations, GlobalCupertinoLocalizations)
+- Pridané kompletní překlady pro všech 8 jazyků v localization.dart
+- IntroScreen aktualizován pro podporu jazykového přepínače a lokalizovaných textů
+- HeroSelectScreen opraveno - odstraněn problematický SystemUiMode.dispose()

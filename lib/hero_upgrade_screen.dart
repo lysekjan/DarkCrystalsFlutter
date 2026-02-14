@@ -500,27 +500,85 @@ class _HeroDetailScreenState extends State<HeroDetailScreen> {
                 }
 
                 final heroData = snapshot.data!;
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Hero info
-                      _buildHeroInfo(heroData),
+                final canLevelUp = heroData.canLevelUp();
 
-                      const SizedBox(height: 24),
+                return Stack(
+                  children: [
+                    SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Hero info
+                          _buildHeroInfo(heroData),
 
-                      // Stats section
-                      _buildStatsSection(heroData),
+                          const SizedBox(height: 24),
 
-                      const SizedBox(height: 24),
+                          // Stats section
+                          _buildStatsSection(heroData),
 
-                      // Skill tree section
-                      _buildSkillTreeSection(heroData),
+                          const SizedBox(height: 24),
 
-                      const SizedBox(height: 80), // Bottom padding
-                    ],
-                  ),
+                          // Skill tree section
+                          _buildSkillTreeSection(heroData),
+
+                          const SizedBox(height: 80), // Bottom padding
+                        ],
+                      ),
+                    ),
+                    // Level up floating button
+                    if (canLevelUp)
+                      Positioned(
+                        right: 16,
+                        bottom: 16,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [Color(0xFF6FE2C1), Color(0xFF4DB6AC)],
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF6FE2C1).withOpacity(0.5),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () async {
+                                await RpgSystem.addHeroXp(widget.heroName, 0);
+                                await _refreshData();
+                              },
+                              borderRadius: BorderRadius.circular(16),
+                              child: const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.arrow_upward, color: Colors.white, size: 20),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'LEVEL UP',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: 1.2,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 );
               },
             ),
@@ -588,66 +646,118 @@ class _HeroDetailScreenState extends State<HeroDetailScreen> {
   }
 
   Widget _buildHeroInfo(HeroData heroData) {
+    final xpProgress = heroData.xp / heroData.xpForNextLevel;
+    final canLevelUp = heroData.canLevelUp();
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: heroColor.withOpacity(0.15),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            heroColor.withOpacity(0.15),
+            heroColor.withOpacity(0.05),
+          ],
+        ),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: heroColor.withOpacity(0.5)),
+        border: Border.all(color: heroColor.withOpacity(0.4), width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.stars, color: const Color(0xFFFFD54F), size: 24),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Level ${heroData.level}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${heroData.xp} / ${heroData.xpForNextLevel} XP',
-                    style: const TextStyle(
-                      color: Color(0xFF6FE2C1),
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-              const Spacer(),
-              if (heroData.canLevelUp())
-                ElevatedButton(
-                  onPressed: () async {
-                    await RpgSystem.addHeroXp(widget.heroName, 0); // Trigger level up check
-                    await _refreshData();
-                  },
-                  child: const Text('Level Up'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF6FE2C1),
-                    foregroundColor: const Color(0xFF0B4A38),
-                  ),
-                )
-              else
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade800,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Text(
-                    'Potřebuje více XP',
-                    style: TextStyle(color: Color(0xFF9E9E9E)),
-                  ),
+              // Hero level badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: heroColor.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: heroColor.withOpacity(0.5)),
                 ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.stars, color: const Color(0xFFFFD54F), size: 22),
+                    const SizedBox(width: 10),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'LEVEL',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                        Text(
+                          '${heroData.level}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'XP Progress',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    // XP Progress bar
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: LinearProgressIndicator(
+                        value: xpProgress,
+                        backgroundColor: Colors.black.withOpacity(0.3),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          canLevelUp ? const Color(0xFF6FE2C1) : heroColor,
+                        ),
+                        minHeight: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '${heroData.xp} XP',
+                          style: const TextStyle(
+                            color: Color(0xFF6FE2C1),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          '/ ${heroData.xpForNextLevel} XP',
+                          style: TextStyle(
+                            color: Colors.white60,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ],
@@ -668,15 +778,28 @@ class _HeroDetailScreenState extends State<HeroDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Vlastnosti',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: heroColor.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.trending_up, color: heroColor, size: 20),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Vlastnosti',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           ...statUpgrades.map((statUpgrade) {
             final currentLevel = heroData.statsLevels[statUpgrade.type.name] ?? 0;
             final maxLevel = statUpgrade.maxLevel;
@@ -712,15 +835,28 @@ class _HeroDetailScreenState extends State<HeroDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Strom dovedností',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: heroColor.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.auto_awesome, color: heroColor, size: 20),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Strom dovedností',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           // Simple skill tree visualization
           ..._skillTree.nodes.map((node) {
             final currentLevel = heroData.skillLevels[node.id] ?? 0;
@@ -773,16 +909,57 @@ class _StatCard extends StatelessWidget {
   final bool canAfford;
   final VoidCallback onUpgrade;
 
+  IconData get _statIcon {
+    switch (statUpgrade.type) {
+      case StatType.damageBonus:
+        return Icons.local_fire_department;
+      case StatType.cooldownReduction:
+        return Icons.speed;
+      case StatType.attackSpeedBonus:
+        return Icons.flash_on;
+      case StatType.rangeBonus:
+        return Icons.radio_button_checked;
+    }
+  }
+
+  Color get _statIconColor {
+    switch (statUpgrade.type) {
+      case StatType.damageBonus:
+        return const Color(0xFFE57373);
+      case StatType.cooldownReduction:
+        return const Color(0xFF64B5F6);
+      case StatType.attackSpeedBonus:
+        return const Color(0xFFFFD54F);
+      case StatType.rangeBonus:
+        return const Color(0xFF4DB6AC);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: const Color(0xFF1F2C29),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isMaxed ? const Color(0xFF6FE2C1).withOpacity(0.3) : Colors.transparent,
+          width: 1.5,
+        ),
       ),
       child: Row(
         children: [
+          // Stat icon
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: _statIconColor.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(_statIcon, color: _statIconColor, size: 24),
+          ),
+          const SizedBox(width: 12),
           // Stat info
           Expanded(
             child: Column(
@@ -805,38 +982,79 @@ class _StatCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
+                // Progress bar
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: currentLevel / maxLevel,
+                    backgroundColor: Colors.grey.shade800,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      isMaxed ? const Color(0xFF6FE2C1) : _statIconColor,
+                    ),
+                    minHeight: 6,
+                  ),
+                ),
+                const SizedBox(height: 4),
                 Text(
                   'Lv. $currentLevel / $maxLevel',
                   style: const TextStyle(
                     color: Color(0xFF6FE2C1),
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
             ),
           ),
+          const SizedBox(width: 8),
           // Upgrade button
           if (isMaxed)
-            const Icon(Icons.check_circle, color: Color(0xFF6FE2C1), size: 32)
-          else
-            ElevatedButton(
-              onPressed: canAfford ? onUpgrade : null,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.arrow_upward, color: Colors.white, size: 16),
-                  const SizedBox(height: 2),
-                  Text(
-                    '$cost',
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                ],
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF6FE2C1).withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: canAfford ? const Color(0xFF6FE2C1) : Colors.grey.shade700,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                minimumSize: const Size(60, 56),
+              child: const Icon(Icons.check, color: Color(0xFF6FE2C1), size: 24),
+            )
+          else
+            Container(
+              decoration: BoxDecoration(
+                color: canAfford ? const Color(0xFF6FE2C1) : Colors.grey.shade700,
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: canAfford
+                    ? [
+                        BoxShadow(
+                          color: const Color(0xFF6FE2C1).withOpacity(0.4),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: canAfford ? onUpgrade : null,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.arrow_upward, color: Colors.white, size: 16),
+                        Text(
+                          '$cost',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
         ],
@@ -866,80 +1084,208 @@ class _SkillNodeCard extends StatelessWidget {
   final bool canUnlock;
   final VoidCallback onUpgrade;
 
+  IconData get _skillIcon {
+    // Determine icon based on skill name keywords
+    final name = node.name.toLowerCase();
+    if (name.contains('fire') || name.contains('inferno') || name.contains('burn') || name.contains('ignite')) {
+      return Icons.local_fire_department;
+    } else if (name.contains('lightning') || name.contains('storm') || name.contains('shock')) {
+      return Icons.flash_on;
+    } else if (name.contains('ice') || name.contains('freeze') || name.contains('frost')) {
+      return Icons.ac_unit;
+    } else if (name.contains('explosion') || name.contains('blast') || name.contains('nova')) {
+      return Icons.burst_mode;
+    } else if (name.contains('beam') || name.contains('ray') || name.contains('laser')) {
+      return Icons.horizontal_rule;
+    } else if (name.contains('shield') || name.contains('barrier') || name.contains('protect')) {
+      return Icons.shield;
+    } else if (name.contains('heal') || name.contains('restore') || name.contains('regen')) {
+      return Icons.favorite;
+    } else if (name.contains('speed') || name.contains('swift') || name.contains('haste')) {
+      return Icons.speed;
+    } else if (name.contains('range') || name.contains('reach') || name.contains('distance')) {
+      return Icons.radio_button_checked;
+    } else if (name.contains('damage') || name.contains('power') || name.contains('strength')) {
+      return Icons.gps_fixed;
+    } else if (name.contains('mastery') || name.contains('mastery')) {
+      return Icons.star;
+    }
+    return Icons.auto_awesome;
+  }
+
+  Color get _skillIconColor {
+    final name = node.name.toLowerCase();
+    if (name.contains('fire') || name.contains('inferno') || name.contains('burn') || name.contains('ignite')) {
+      return const Color(0xFFE57373);
+    } else if (name.contains('lightning') || name.contains('storm') || name.contains('shock')) {
+      return const Color(0xFF64B5F6);
+    } else if (name.contains('ice') || name.contains('freeze') || name.contains('frost')) {
+      return const Color(0xFF4DB6AC);
+    } else if (name.contains('explosion') || name.contains('blast') || name.contains('nova')) {
+      return const Color(0xFFFF8A65);
+    } else if (name.contains('beam') || name.contains('ray') || name.contains('laser')) {
+      return const Color(0xFFBA68C8);
+    } else if (name.contains('shield') || name.contains('barrier') || name.contains('protect')) {
+      return const Color(0xFF81C784);
+    } else if (name.contains('heal') || name.contains('restore') || name.contains('regen')) {
+      return const Color(0xFFE57373);
+    }
+    return const Color(0xFFFFD54F);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final hasProgress = currentLevel > 0;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: canUnlock ? const Color(0xFF1F2C29) : Colors.grey.shade900,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: canUnlock ? const Color(0xFF1F2C29) : Colors.grey.shade700,
+          color: canUnlock
+              ? (hasProgress ? const Color(0xFF6FE2C1).withOpacity(0.5) : Colors.grey.shade700)
+              : Colors.grey.shade700,
+          width: hasProgress ? 1.5 : 1,
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Text(
-            node.name,
-            style: TextStyle(
-              color: canUnlock ? Colors.white : Colors.grey.shade500,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
+          // Skill icon
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: canUnlock
+                  ? _skillIconColor.withOpacity(hasProgress ? 0.25 : 0.1)
+                  : Colors.grey.shade800,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              _skillIcon,
+              color: canUnlock ? _skillIconColor : Colors.grey.shade500,
+              size: 24,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            node.description,
-            style: TextStyle(
-              color: canUnlock ? Colors.grey.shade400 : Colors.grey.shade600,
-              fontSize: 12,
-            ),
-          ),
-          const SizedBox(height: 8),
-          if (!canUnlock)
-            Text(
-              'Vyžaduje Level ${node.requiredHeroLevel}',
-              style: TextStyle(
-                color: Colors.red,
-                fontSize: 11,
-              ),
-            )
-          else
-            Row(
+          const SizedBox(width: 12),
+          // Skill info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Lv. $currentLevel / $maxLevel',
-                  style: const TextStyle(
-                    color: Color(0xFF6FE2C1),
-                    fontSize: 12,
+                  node.name,
+                  style: TextStyle(
+                    color: canUnlock ? Colors.white : Colors.grey.shade500,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const Spacer(),
-                if (isMaxed)
-                  const Icon(Icons.check_circle, color: Color(0xFF6FE2C1), size: 24)
+                const SizedBox(height: 4),
+                Text(
+                  node.description,
+                  style: TextStyle(
+                    color: canUnlock ? Colors.grey.shade400 : Colors.grey.shade600,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                if (!canUnlock)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: Colors.red.withOpacity(0.5)),
+                    ),
+                    child: Text(
+                      'Level ${node.requiredHeroLevel}',
+                      style: const TextStyle(
+                        color: Colors.red,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  )
                 else
-                  ElevatedButton(
-                    onPressed: canAfford ? onUpgrade : null,
+                  Column(
+                    children: [
+                      // Progress bar
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: currentLevel / maxLevel,
+                          backgroundColor: Colors.grey.shade800,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            isMaxed ? const Color(0xFF6FE2C1) : _skillIconColor,
+                          ),
+                          minHeight: 6,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Lv. $currentLevel / $maxLevel',
+                        style: const TextStyle(
+                          color: Color(0xFF6FE2C1),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Upgrade button
+          if (isMaxed)
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF6FE2C1).withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.check, color: Color(0xFF6FE2C1), size: 24),
+            )
+          else if (canUnlock)
+            Container(
+              decoration: BoxDecoration(
+                color: canAfford ? const Color(0xFF6FE2C1) : Colors.grey.shade700,
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: canAfford
+                    ? [
+                        BoxShadow(
+                          color: const Color(0xFF6FE2C1).withOpacity(0.4),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: canAfford ? onUpgrade : null,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const Icon(Icons.arrow_upward, color: Colors.white, size: 14),
-                        const SizedBox(height: 2),
                         Text(
                           '$cost',
-                          style: const TextStyle(color: Colors.white),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ],
                     ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: canAfford ? const Color(0xFF6FE2C1) : Colors.grey.shade700,
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      minimumSize: const Size(50, 44),
-                    ),
                   ),
-              ],
+                ),
+              ),
             ),
         ],
       ),
