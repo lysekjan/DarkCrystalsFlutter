@@ -240,15 +240,65 @@ class PlayerProgress {
 
 // RPG System Manager - handles save/load and game integration
 class RpgSystem {
-  static const String _saveKey = 'player_progress';
+  static const String _legacySaveKey = 'player_progress';
+  static const String _saveKeyPrefix = 'player_progress_slot_';
+  static const String _activeSlotKey = 'active_save_slot';
+  static const int minSlot = 1;
+  static const int maxSlot = 3;
   static PlayerProgress? _cachedProgress;
+  static int? _cachedActiveSlot;
+
+  static int _normalizeSlot(int slot) {
+    if (slot < minSlot) return minSlot;
+    if (slot > maxSlot) return maxSlot;
+    return slot;
+  }
+
+  static String _saveKeyForSlot(int slot) => '$_saveKeyPrefix$slot';
+
+  static Future<int> getActiveSlot() async {
+    if (_cachedActiveSlot != null) return _cachedActiveSlot!;
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getInt(_activeSlotKey) ?? minSlot;
+    final slot = _normalizeSlot(raw);
+    _cachedActiveSlot = slot;
+    return slot;
+  }
+
+  static Future<void> setActiveSlot(int slot) async {
+    final normalized = _normalizeSlot(slot);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_activeSlotKey, normalized);
+    if (_cachedActiveSlot != normalized) {
+      _cachedProgress = null;
+    }
+    _cachedActiveSlot = normalized;
+  }
+
+  static Future<PlayerProgress> getProgressForSlot(int slot) async {
+    final normalized = _normalizeSlot(slot);
+    final prefs = await SharedPreferences.getInstance();
+    final jsonStr = prefs.getString(_saveKeyForSlot(normalized));
+    if (jsonStr != null && jsonStr.isNotEmpty) {
+      try {
+        final json = jsonDecode(jsonStr) as Map<String, dynamic>;
+        return PlayerProgress.fromJson(json);
+      } catch (_) {}
+    }
+    return PlayerProgress(
+      coins: 0,
+      heroes: _createDefaultHeroData(),
+    );
+  }
 
   // Get or create player progress
   static Future<PlayerProgress> getProgress() async {
     if (_cachedProgress != null) return _cachedProgress!;
 
+    final activeSlot = await getActiveSlot();
     final prefs = await SharedPreferences.getInstance();
-    final jsonStr = prefs.getString(_saveKey);
+    final slotKey = _saveKeyForSlot(activeSlot);
+    final jsonStr = prefs.getString(slotKey);
 
     if (jsonStr != null && jsonStr.isNotEmpty) {
       try {
@@ -257,6 +307,20 @@ class RpgSystem {
         return _cachedProgress!;
       } catch (e) {
         print('Error loading progress: $e');
+      }
+    }
+
+    // One-time migration from legacy single-save key to slot 1.
+    if (activeSlot == minSlot) {
+      final legacyJson = prefs.getString(_legacySaveKey);
+      if (legacyJson != null && legacyJson.isNotEmpty) {
+        try {
+          final json = jsonDecode(legacyJson) as Map<String, dynamic>;
+          _cachedProgress = PlayerProgress.fromJson(json);
+          await prefs.setString(slotKey, legacyJson);
+          await prefs.remove(_legacySaveKey);
+          return _cachedProgress!;
+        } catch (_) {}
       }
     }
 
@@ -272,15 +336,17 @@ class RpgSystem {
   // Save progress to storage
   static Future<void> saveProgress() async {
     if (_cachedProgress == null) return;
+    final activeSlot = await getActiveSlot();
     final prefs = await SharedPreferences.getInstance();
     final jsonStr = jsonEncode(_cachedProgress!.toJson());
-    await prefs.setString(_saveKey, jsonStr);
+    await prefs.setString(_saveKeyForSlot(activeSlot), jsonStr);
   }
 
   // Reset all progress
   static Future<void> resetProgress() async {
+    final activeSlot = await getActiveSlot();
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_saveKey);
+    await prefs.remove(_saveKeyForSlot(activeSlot));
     _cachedProgress = null;
   }
 
