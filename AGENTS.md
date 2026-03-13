@@ -156,6 +156,7 @@ Detailed balance values are documented in `INFO.txt` and `project_info.txt`.
 - 2026-03-13: The Flutter debug banner in the top-right corner was disabled in `MaterialApp`.
 - 2026-03-13: Added a simple fixed defense tower in the upper-left area left of the wall; it auto-fires every 5 seconds at the nearest enemy within hero-range distance and deals 10 projectile damage per hit.
 - 2026-03-13: `Restart` now fully resets the run to its initial state: wave/stat counters, game timer, hero positions, hero behavior/mode settings, zoom, selection state, and game speed all return to startup defaults.
+- 2026-03-13: The gameplay map background now uses `assets/backgrounds/grass.png` stretched over the whole map area, with the old flat-color fill kept only as a fallback.
 
 ## Legacy Historical Notes
 

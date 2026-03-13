@@ -62,6 +62,7 @@ Obrazovky a UI
 - GameView:
   - Fullscreen (immersive) s cerne pozadi, bez systemoveho panelu.
   - Herni plocha kreslena CustomPainterem.
+  - Cela herni plocha mapy pouziva jako pozadi obrazek `assets/backgrounds/grass.png`.
   - InteractiveViewer je zarovnany k levemu a hornimu okraji (neumi se odtahnout vlevo/nahoru); je povoleny posun doprava/dolu a zoom.
   - Zoom tlacitka `+` a `-` jsou primo v horni HUD liste vlevo od menu tlacitka, samostatna druha zoom lista uz neni.
   - Panel rychlosti vpravo dole.
@@ -275,3 +276,5 @@ Spusteni
 - Pridana jednoducha automaticka obranna vez vlevo od zdi v horni casti mapy; je vykreslena jako ctvercovy objekt a kazdych 5 sekund vystreli projektil za 10 damage na nejblizsiho nepritele v dosahu odpovidajicim dostrelu hrdinu.
 2026-03-13:
 - Restart hry byl rozsiren tak, aby obnovil skutecny pocatecni stav celeho runu vcetne 1. vlny, casu, statistik, pozic hrdinu, behavior/attack modu, zoomu a rychlosti hry `2x`.
+2026-03-13:
+- Pozadi cele herni plochy bylo zmeneno na obrazek `assets/backgrounds/grass.png`, ktery se vykresluje pres celou mapu.

@@ -468,6 +468,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   final Map<String, double> _damageBonuses = {}; // heroName -> damage bonus
   final Map<String, double> _cooldownReductions = {}; // heroName -> cooldown reduction (seconds)
   ui.Image? _enemySpriteSheet;
+  ui.Image? _grassBackground;
   int _enemySpriteFrameCount = 0;
   double _baseMapScale = 1.0;
   double _zoomMultiplier = 1.0;
@@ -499,6 +500,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       vsync: this,
       duration: const Duration(milliseconds: 180),
     );
+    _loadGrassBackground();
     _loadEnemySpriteSheet();
     // Load RPG bonuses
     _loadHeroBonuses();
@@ -544,6 +546,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   @override
   void dispose() {
     _enemySpriteSheet?.dispose();
+    _grassBackground?.dispose();
     _mapTransformController.dispose();
     _aerinMenuController.dispose();
     _veyraMenuController.dispose();
@@ -557,6 +560,25 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     _eldrinMenuController.dispose();
     _ticker.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadGrassBackground() async {
+    try {
+      final data = await rootBundle.load('assets/backgrounds/grass.png');
+      final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+      final frame = await codec.getNextFrame();
+      final image = frame.image;
+      if (!mounted) {
+        image.dispose();
+        return;
+      }
+      setState(() {
+        _grassBackground?.dispose();
+        _grassBackground = image;
+      });
+    } catch (_) {
+      // Keep the solid-color background fallback if the texture cannot load.
+    }
   }
 
   Future<void> _loadEnemySpriteSheet() async {
@@ -3236,6 +3258,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                                 heroStates: _heroStates,
                                 thalorMode: _thalorMode,
                                 time: _lastTime,
+                                grassBackground: _grassBackground,
                                 enemySpriteSheet: _enemySpriteSheet,
                                 enemySpriteFrameCount: _enemySpriteFrameCount,
                                 targetIndicator: _targetIndicator,
@@ -3643,6 +3666,7 @@ class _GamePainter extends CustomPainter {
     required this.heroStates,
     required this.thalorMode,
     required this.time,
+    required this.grassBackground,
     required this.enemySpriteSheet,
     required this.enemySpriteFrameCount,
     this.targetIndicator,
@@ -3664,6 +3688,7 @@ class _GamePainter extends CustomPainter {
   final List<_HeroState> heroStates;
   final _ThalorMode thalorMode;
   final double time;
+  final ui.Image? grassBackground;
   final ui.Image? enemySpriteSheet;
   final int enemySpriteFrameCount;
   final Offset? targetIndicator;
@@ -3672,6 +3697,19 @@ class _GamePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final bg = Paint()..color = const Color(0xFF0E1412);
     canvas.drawRect(Offset.zero & size, bg);
+    if (grassBackground != null) {
+      canvas.drawImageRect(
+        grassBackground!,
+        Rect.fromLTWH(
+          0,
+          0,
+          grassBackground!.width.toDouble(),
+          grassBackground!.height.toDouble(),
+        ),
+        Offset.zero & size,
+        Paint(),
+      );
+    }
 
     for (int i = 0; i < heroes.length; i++) {
       if (!heroAlive[i]) {
