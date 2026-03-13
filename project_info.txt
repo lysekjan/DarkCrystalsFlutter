@@ -260,3 +260,7 @@ Spusteni
 2026-03-13:
 - Nepratele po dosazeni linie zdi davaji zdi absolutni prioritu.
 - Pokud se nepritel dostane ke zdi, okamzite ji utoci a uz se nenecha odtahnout honenim hrdinu za zed.
+2026-03-13:
+- Hrac muze na prazdne mape tahnout prstem a kreslit selection ctverec pro vyber vice hrdinu najednou.
+- V multi-select modu se nezobrazuji kontextova menu jednotlivych hrdinu.
+- Klik na mapu po multi-selectu zada skupinovy presun; vybrani hrdinove dostanou cilove pozice s malym rozestupem, aby se v cili neprekryvali, a oznaceni se hned po zadani presunu zrusi.

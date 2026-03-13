@@ -353,6 +353,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   static const double zoomStep = 0.2;
   static const double heroRangeIndicatorVisibleDuration = 5.0;
   static const double heroRangeIndicatorFadeDuration = 0.6;
+  static const double multiSelectDragThreshold = 18.0;
+  static const double multiMoveSpacing = heroUnitSize + 12.0;
   static const double enemyHeroContactRange = enemySize / 2 + heroUnitSize / 2;
   static const double offensiveRangePadding = 18.0;
   static const double defensiveThreatPadding = 28.0;
@@ -426,10 +428,12 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   bool _isHoldingTouch = false;
   Offset? _holdPosition;
   int? _selectedHeroIndex;
+  final Set<int> _multiSelectedHeroIndices = <int>{};
   int? _rangeIndicatorHeroIndex;
   double? _rangeIndicatorShownAt;
   Offset? _pointerDownScenePosition;
   int? _pointerDownHeroIndex;
+  Offset? _selectionDragCurrent;
 
   // RPG bonus helper methods
   // RPG system variables
@@ -727,6 +731,88 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     _rangeIndicatorShownAt = _lastTime;
   }
 
+  void _clearHeroRangeIndicator() {
+    _rangeIndicatorHeroIndex = null;
+    _rangeIndicatorShownAt = null;
+  }
+
+  bool get _isMultiSelectMode => _multiSelectedHeroIndices.isNotEmpty;
+
+  Rect _selectionSquareFromPoints(Offset start, Offset current) {
+    final dx = current.dx - start.dx;
+    final dy = current.dy - start.dy;
+    final side = max(dx.abs(), dy.abs());
+    final end = Offset(
+      start.dx + (dx >= 0 ? side : -side),
+      start.dy + (dy >= 0 ? side : -side),
+    );
+    return Rect.fromPoints(start, end);
+  }
+
+  Rect? _activeSelectionSquare() {
+    final start = _pointerDownScenePosition;
+    final current = _selectionDragCurrent;
+    if (start == null || current == null || _pointerDownHeroIndex != null) {
+      return null;
+    }
+    if ((current - start).distance < multiSelectDragThreshold) {
+      return null;
+    }
+    return _selectionSquareFromPoints(start, current);
+  }
+
+  void _issueMoveOrder(int heroIndex, Offset target) {
+    final unit = _heroUnits[heroIndex];
+    unit
+      ..homePosition = target
+      ..hasManualMoveOrder = true
+      ..defensiveRetreatLockUntil = 0
+      ..target = target
+      ..isMoving = (unit.position - target).distance > 0.01;
+  }
+
+  void _issueMultiMoveOrder(Offset center) {
+    final heroIndices = _multiSelectedHeroIndices.where(_isHeroAlive).toList()..sort();
+    if (heroIndices.isEmpty) {
+      _multiSelectedHeroIndices.clear();
+      return;
+    }
+    final columns = max(1, sqrt(heroIndices.length).ceil());
+    final rows = (heroIndices.length / columns).ceil();
+    final startX = center.dx - (columns - 1) * multiMoveSpacing / 2;
+    final startY = center.dy - (rows - 1) * multiMoveSpacing / 2;
+    for (int i = 0; i < heroIndices.length; i++) {
+      final row = i ~/ columns;
+      final column = i % columns;
+      final target = _clampHeroTarget(
+        Offset(
+          startX + column * multiMoveSpacing,
+          startY + row * multiMoveSpacing,
+        ),
+      );
+      _issueMoveOrder(heroIndices[i], target);
+    }
+  }
+
+  void _selectHeroesInSquare(Rect square) {
+    final selected = <int>{};
+    for (int i = 0; i < _heroUnits.length; i++) {
+      if (!_isHeroAlive(i)) {
+        continue;
+      }
+      if (square.contains(_heroPosition(i))) {
+        selected.add(i);
+      }
+    }
+    setState(() {
+      _selectedHeroIndex = null;
+      _multiSelectedHeroIndices
+        ..clear()
+        ..addAll(selected);
+      _clearHeroRangeIndicator();
+    });
+  }
+
   double _heroRangeIndicatorOpacity() {
     final heroIndex = _rangeIndicatorHeroIndex;
     final shownAt = _rangeIndicatorShownAt;
@@ -750,6 +836,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
 
   void _selectHero(int heroIndex) {
     setState(() {
+      _multiSelectedHeroIndices.clear();
       _selectedHeroIndex = heroIndex;
       _showHeroRangeIndicator(heroIndex);
     });
@@ -762,6 +849,14 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       return;
     }
 
+    if (_isMultiSelectMode) {
+      setState(() {
+        _issueMultiMoveOrder(_clampHeroTarget(position));
+        _multiSelectedHeroIndices.clear();
+      });
+      return;
+    }
+
     final selectedHeroIndex = _selectedHeroIndex;
     if (selectedHeroIndex == null || !_isHeroAlive(selectedHeroIndex)) {
       return;
@@ -769,13 +864,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
 
     setState(() {
       final target = _clampHeroTarget(position);
-      final unit = _heroUnits[selectedHeroIndex];
-      unit
-        ..homePosition = target
-        ..hasManualMoveOrder = true
-        ..defensiveRetreatLockUntil = 0
-        ..target = target
-        ..isMoving = (unit.position - target).distance > 0.01;
+      _issueMoveOrder(selectedHeroIndex, target);
       _selectedHeroIndex = null;
     });
   }
@@ -1207,9 +1296,9 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       if (_selectedHeroIndex == heroIndex) {
         _selectedHeroIndex = null;
       }
+      _multiSelectedHeroIndices.remove(heroIndex);
       if (_rangeIndicatorHeroIndex == heroIndex) {
-        _rangeIndicatorHeroIndex = null;
-        _rangeIndicatorShownAt = null;
+        _clearHeroRangeIndicator();
       }
     }
   }
@@ -1521,6 +1610,11 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       state.beamTarget = null;
     }
     _selectedHeroIndex = null;
+    _multiSelectedHeroIndices.clear();
+    _selectionDragCurrent = null;
+    _pointerDownScenePosition = null;
+    _pointerDownHeroIndex = null;
+    _clearHeroRangeIndicator();
   }
 
   Future<void> _showGameOverDialog() {
@@ -2963,6 +3057,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       widget.heroes.length,
       (i) => _effectiveCooldown(i),
     );
+    final selectionSquare = _activeSelectionSquare();
     return PopScope(
       canPop: true,
       onPopInvoked: (didPop) async {
@@ -3080,14 +3175,42 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                                   _pointerDownHeroIndex = _pointerDownScenePosition == null
                                       ? null
                                       : _hitTestHero(_pointerDownScenePosition!);
+                                  _selectionDragCurrent = null;
+                                },
+                                onPointerMove: (event) {
+                                  final start = _pointerDownScenePosition;
+                                  if (start == null || _pointerDownHeroIndex != null) {
+                                    return;
+                                  }
+                                  final scenePosition = _pointerEventToScenePosition(event);
+                                  if ((scenePosition - start).distance < multiSelectDragThreshold) {
+                                    return;
+                                  }
+                                  setState(() {
+                                    _selectionDragCurrent = scenePosition;
+                                  });
                                 },
                                 onPointerUp: (event) {
                                   final scenePosition = _pointerEventToScenePosition(event);
                                   final start = _pointerDownScenePosition;
                                   final pointerDownHeroIndex = _pointerDownHeroIndex;
+                                  final dragDistance = start == null
+                                      ? 0.0
+                                      : (scenePosition - start).distance;
                                   _pointerDownScenePosition = null;
                                   _pointerDownHeroIndex = null;
-                                  if (start == null || (scenePosition - start).distance > 12) {
+                                  _selectionDragCurrent = null;
+                                  if (start == null) {
+                                    return;
+                                  }
+                                  if (pointerDownHeroIndex == null &&
+                                      dragDistance >= multiSelectDragThreshold) {
+                                    _selectHeroesInSquare(
+                                      _selectionSquareFromPoints(start, scenePosition),
+                                    );
+                                    return;
+                                  }
+                                  if (dragDistance > 12) {
                                     return;
                                   }
                                   if (pointerDownHeroIndex != null) {
@@ -3099,11 +3222,27 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                                 onPointerCancel: (event) {
                                   _pointerDownScenePosition = null;
                                   _pointerDownHeroIndex = null;
+                                  _selectionDragCurrent = null;
                                 },
                                 behavior: HitTestBehavior.opaque,
                                 child: const SizedBox.expand(),
                               ),
                             ),
+                            if (selectionSquare != null)
+                              Positioned.fromRect(
+                                rect: selectionSquare,
+                                child: IgnorePointer(
+                                  child: DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      color: const Color(0x3358D68D),
+                                      border: Border.all(
+                                        color: const Color(0xFF58D68D),
+                                        width: 2,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
                             for (int i = 0; i < widget.heroes.length; i++)
                               if (_heroUnits[i].isAlive)
                               Positioned(
@@ -3121,7 +3260,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                                       child: _HeroUnitWidget(
                                         hero: widget.heroes[i],
                                         state: _heroStates[i],
-                                        isSelected: _selectedHeroIndex == i,
+                                        isSelected: _selectedHeroIndex == i ||
+                                            _multiSelectedHeroIndices.contains(i),
                                         isMoving: _heroUnits[i].isMoving,
                                         hp: _heroUnits[i].hp,
                                         maxHp: _heroUnits[i].maxHp,

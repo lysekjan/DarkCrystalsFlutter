@@ -38,7 +38,9 @@
 - The game now effectively runs in automatic attack mode all the time.
 - Heroes are selectable directly on the map.
 - Clicking a hero selects it.
+- Dragging on empty map space now draws a square selection box and can multi-select all heroes inside it.
 - Clicking a map position while a hero is selected gives that hero a move order.
+- Clicking a map position while multiple heroes are selected sends the whole group there in a small spaced formation so they do not overlap, and the multi-selection is cleared immediately after issuing the order.
 - During movement, the hero cannot attack.
 - During movement, cooldown continues to progress normally.
 - If cooldown finishes during movement, the attack is queued and starts only after the hero reaches the destination.
@@ -57,6 +59,7 @@
 - Selecting or re-clicking a hero also shows a translucent circle for that hero's current attack range.
 - The attack-range circle stays fully visible for `5` seconds and then fades out smoothly.
 - Selecting a hero now also shows a second horizontal context menu above the hero for behavior selection.
+- In multi-select mode, hero context menus are hidden.
 - Behavior menu now actively controls hero movement AI.
 - `hold position`: hero stays at the chosen spot and attacks only enemies currently inside range.
 - `offensive`: hero automatically moves toward the nearest targetable enemy until that enemy enters the hero's range; if no enemies exist, the hero stands still.
@@ -146,6 +149,8 @@ Detailed balance values are documented in `INFO.txt` and `project_info.txt`.
 - 2026-03-13: Defensive retreat was changed from per-tick retargeting to a locked longer fallback move, so heroes retreat smoothly for roughly 2 seconds before evaluating another retreat.
 - 2026-03-13: Manual repositioning now works even in `offensive` and `defensive` modes; AI behavior waits until the ordered move finishes before taking control again.
 - 2026-03-13: Enemy wall priority was tightened so enemies that reach the wall attack it immediately and no longer chase heroes behind the wall line.
+- 2026-03-13: Added drag multi-select with a square selection box; selected groups can receive a shared move order and spread into a small formation at the target point, while hero context menus stay hidden during multi-select.
+- 2026-03-13: Group move-orders from multi-select now clear the selection immediately after the player clicks the destination.
 
 ## Legacy Historical Notes
 
