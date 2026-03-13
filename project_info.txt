@@ -204,3 +204,59 @@ Spusteni
 - Po refaktoru pohybu hrdinu byly opraveny rozbite pomocne tridy v `main.dart` (projektily, painter a sdilene pomocne typy), aby zbytek hry znovu spravne videl sdilene definice jako `HeroDef`, `_ExplosionEffect` a `_LightningEffect`.
 - Vyber hrdiny byl zpresnen: klik se bere proti vetsimu hitboxu celeho objektu hrdiny a vyber se zamkne na hrdinu detekovaneho uz pri stisku, aby nevadil jeho drobny pohyb mezi stiskem a pustenim.
 - Vyber hrdiny je nyni navic resen i pres samostatny `GestureDetector` primo na kazde jednotce hrdiny, aby sel spolehlive vybrat klikem kamkoliv do jeho objektu.
+- Rychlost pohybu hrdinu byla snizena, aby presuny pusobily plynuleji a mene zbrkle.
+2026-03-11:
+- Nepratele uz nejsou omezeni jen na primy pohyb v 5 radcich; po spawnuti sice stale zacinaji v lanech, ale behem hry se mohou pohybovat volne po mape.
+- Kazdy nepritel pri kazdem tiku hleda nejblizsiho ziveho hrdinu, ktery je nalevo od nej (`hero.x < enemy.x`).
+- Pokud takovy hrdina existuje, nepritel se k nemu pohybuje primo podle skutecne 2D vzdalenosti.
+- Pokud je nepritel v dosahu, zastavi se u hrdiny a utoci do nej obdobne jako do zdi.
+- Pokud pred nepritelem neni zadny zivy hrdina, pokracuje primym pohybem doleva ke zdi.
+- Hrdinove maji nyni vlastni HP a mohou zemrit.
+- Aktualni vychozi HP hrdiny je `20`, ale hodnota je ulozena v `HeroDef.maxHp`, aby sla pozdeji menit per-hero i pres bonusy/vylepseni.
+- Po smrti hrdina zmizi z mapy, neni dal vykreslovan, nejde vybrat, nehybe se a neutoci.
+- Widget hrdiny ted zobrazuje jak HP bar, tak cooldown bar.
+2026-03-11:
+- Opraven prevod kliknuti pro zadani pohybu hrdiny pri zoomovane mape.
+- Pozice cile se ted nepocita z `localPosition` transformovaneho child stacku, ale z globalni pozice prepocitane do viewportu `InteractiveViewer` a az potom do scene souradnic.
+- Tim se odstranil posun mezi mistem kliknuti a realnym cilem presunu.
+2026-03-11:
+- Po oznaceni hrdiny se u nej na mape zobrazi kontextove menu pro prepinani typu utoku.
+- Kontextove menu je navazane primo na vybraneho hrdinu a pohybuje/zooumuje se spolu s mapovou vrstvou.
+- Pro jednotlive mody se pouzivaji stejne ikony jako drive ve slotovem/card UI.
+2026-03-12:
+- Aktualni existujici enemy sprite typ byl prejmenovan na `FatZombie`, aby bylo mozne pozdeji pridavat dalsi enemy varianty s jednoznacnym pojmenovanim.
+- Aktivni asset reference v `main.dart` ted pouziva `assets/enemies/FatZombie.png`.
+2026-03-12:
+- Hrdinove uz nepropaluji utok ani dalsi cooldown ve chvili, kdy na mape neni zadny platny cil.
+- Pokud cooldown dobehne a zadny nepritel neni k dispozici, hrdina zustane pripraveny s cooldownem na nule.
+- Jakmile se objevi platny cil, hrdina okamzite vstoupi do `sending` a provede utok.
+- Stejna logika plati i pro pripad, kdy cooldown dobehne behem pohybu a po zastaveni zrovna neni na koho utocit.
+2026-03-12:
+- Hrdinove uz nemaji globalni dostrel pres celou mapu.
+- Kazdy hrdina ma vlastni `attackRange` ulozeny v `HeroDef`; aktualni vychozi hodnota je priblizne tretina sirky obrazovky/mapy.
+- Hrdina zahaji utok jen tehdy, pokud je alespon jeden nepritel uvnitr jeho aktualniho dosahu.
+- Projektilove, beam a chain utoky si jako prvni cil vybiraji jen enemy v dosahu daneho hrdiny.
+- Pri oznaceni hrdiny se kolem nej vykresli lehce pruhledny kruh znazorňujici jeho aktualni dosah.
+2026-03-13:
+- Klik na hrdinu vzdy znovu spusti zobrazeni kruhu dosahu, i kdyz je stejny hrdina uz vybrany.
+- Kruh dosahu zustane plne viditelny 5 sekund a potom plynule zmizi.
+2026-03-13:
+- Po kliknuti na hrdinu se nad nim zobrazi druhe vodorovne kontextove menu pro volbu chovani.
+- Dostupne volby chovani jsou `Drzet pozici` (default), `Utocny`, `Obranny`.
+- Kazdy hrdina ma vlastni zvolenou volbu chovani.
+2026-03-13:
+- Chovani hrdinu je nyni aktivni gameplay logika:
+- `Drzet pozici`: hrdina zustava na miste a utoci jen kdyz je cil v jeho dosahu.
+- `Utocny`: hrdina automaticky vyhledava nejblizsiho ziveho nepritele a sam se presouva tak, aby jej dostal do vlastniho dostrelu.
+- `Obranny`: hrdina drzi svou guard pozici, utoci z ni na cile v dosahu, ale pri prilis blizkem nepriteli ustupuje smerem od nej a po odezneni hrozby se vraci zpet.
+2026-03-13:
+- Obranny mod byl doladen tak, aby hrdina pri ustupu odskocil o citelne vetsi vzdalenost.
+2026-03-13:
+- Obranny ustup uz se neprepocitava kazdy tick.
+- Pri ohrozeni si hrdina v obrannem modu vybere jeden delsi retreat cil, pohybuje se k nemu zhruba 2 sekundy a teprve potom muze spustit dalsi ustup.
+2026-03-13:
+- Hrac muze rucne zadat presun hrdiny i kdyz je prave v modu `Utocny` nebo `Obranny`.
+- Po dobu tohoto rucne zadaneho presunu behavior AI neprepisuje cil pohybu; automaticke chovani se znovu aktivuje az po dorazeni na zadanou pozici.
+2026-03-13:
+- Nepratele po dosazeni linie zdi davaji zdi absolutni prioritu.
+- Pokud se nepritel dostane ke zdi, okamzite ji utoci a uz se nenecha odtahnout honenim hrdinu za zed.

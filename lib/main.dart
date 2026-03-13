@@ -332,10 +332,12 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   static const double enemySize = 40;
   static const double enemySpeed = 16; // units per second
   static const double projectileSpeed = 160; // units per second
-  static const double heroMoveSpeed = 180; // units per second
+  static const double heroMoveSpeed = 110; // units per second
+  static const double enemyHeroDps = 5; // damage per second
   static const double spellSendingDuration = 2; // seconds
   static const double spellCooldownDuration = 10; // seconds
   static const double cooldownScale = 0.25;
+  static const double defaultHeroAttackRange = mapWidth / 3;
   static const double enemyTapRadius = 18;
   static const double heroTapRadius = 24;
   static const double heroUnitSize = 44;
@@ -349,6 +351,14 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   static const double minZoomMultiplier = 1.0;
   static const double maxZoomMultiplier = 2.5;
   static const double zoomStep = 0.2;
+  static const double heroRangeIndicatorVisibleDuration = 5.0;
+  static const double heroRangeIndicatorFadeDuration = 0.6;
+  static const double enemyHeroContactRange = enemySize / 2 + heroUnitSize / 2;
+  static const double offensiveRangePadding = 18.0;
+  static const double defensiveThreatPadding = 28.0;
+  static const double defensiveRetreatPadding = 180.0;
+  static const double defensiveReturnTolerance = 8.0;
+  static const double defensiveRetreatMinDuration = 2.0;
 
   final Random _rng = Random();
   late final Ticker _ticker;
@@ -365,6 +375,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   late final List<_HeroState> _heroStates;
   late final List<int> _heroSlotIndices;
   late final List<_HeroUnit> _heroUnits;
+  late final List<_HeroBehaviorMode> _heroBehaviors;
   bool _gameOver = false;
   bool _gameOverDialogShown = false;
   double _gameSpeed = 2;
@@ -415,6 +426,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   bool _isHoldingTouch = false;
   Offset? _holdPosition;
   int? _selectedHeroIndex;
+  int? _rangeIndicatorHeroIndex;
+  double? _rangeIndicatorShownAt;
   Offset? _pointerDownScenePosition;
   int? _pointerDownHeroIndex;
 
@@ -448,6 +461,10 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     _heroUnits = List<_HeroUnit>.generate(
       widget.heroes.length,
       _initialHeroUnit,
+    );
+    _heroBehaviors = List<_HeroBehaviorMode>.filled(
+      widget.heroes.length,
+      _HeroBehaviorMode.holdPosition,
     );
     _aerinMenuController = AnimationController(
       vsync: this,
@@ -516,7 +533,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
 
   Future<void> _loadEnemySpriteSheet() async {
     try {
-      final data = await rootBundle.load('assets/enemies/FatGoblin.png');
+      final data = await rootBundle.load('assets/enemies/FatZombie.png');
       final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
       final frame = await codec.getNextFrame();
       final image = frame.image;
@@ -597,6 +614,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
 
   bool _isEnemyTargetable(_Enemy enemy) => !enemy.isDying;
 
+  bool _isHeroAlive(int heroIndex) => _heroUnits[heroIndex].isAlive;
+
   bool _containsTargetableEnemy(_Enemy? enemy) {
     return enemy != null && _enemies.contains(enemy) && _isEnemyTargetable(enemy);
   }
@@ -610,6 +629,62 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       }
     }
     return null;
+  }
+
+  double _heroCurrentAttackRange(int heroIndex) {
+    if (_isThalor(heroIndex) && _thalorMode == _ThalorMode.sword) {
+      return swordRadius;
+    }
+    if (_isMyris(heroIndex) && _myrisMode == _MyrisMode.freeze) {
+      return 200;
+    }
+    if (_isKaelen(heroIndex) && _kaelenMode == _KaelenMode.vine) {
+      return 100;
+    }
+    if (_isSolenne(heroIndex)) {
+      switch (_solenneMode) {
+        case _SolenneMode.sunburst:
+          return 40;
+        case _SolenneMode.radiant:
+          return 90;
+        case _SolenneMode.normal:
+          return widget.heroes[heroIndex].attackRange;
+      }
+    }
+    if (_isBrann(heroIndex) && _brannMode == _BrannMode.earthquake) {
+      return 80;
+    }
+    if (_isEldrin(heroIndex) && _eldrinMode == _EldrinMode.nova) {
+      return 100;
+    }
+    return widget.heroes[heroIndex].attackRange;
+  }
+
+  bool _isEnemyInHeroRange(int heroIndex, _Enemy enemy, {double? range}) {
+    if (!_isEnemyTargetable(enemy) || !_isHeroAlive(heroIndex)) {
+      return false;
+    }
+    final maxRange = range ?? _heroCurrentAttackRange(heroIndex);
+    return (enemy.position - _heroPosition(heroIndex)).distance <= maxRange;
+  }
+
+  _Enemy? _nearestEnemyForHero(
+    int heroIndex, {
+    _Enemy? preferredTarget,
+    Set<_Enemy> exclude = const <_Enemy>{},
+    double? range,
+  }) {
+    final maxRange = range ?? _heroCurrentAttackRange(heroIndex);
+    if (_containsTargetableEnemy(preferredTarget) &&
+        !exclude.contains(preferredTarget) &&
+        _isEnemyInHeroRange(heroIndex, preferredTarget!, range: maxRange)) {
+      return preferredTarget;
+    }
+    return _nearestEnemy(
+      _heroPosition(heroIndex),
+      exclude,
+      maxDistance: maxRange,
+    );
   }
 
   void _beginEnemyDeath(_Enemy enemy) {
@@ -632,6 +707,9 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
 
   int? _hitTestHero(Offset position) {
     for (int i = _heroUnits.length - 1; i >= 0; i--) {
+      if (!_heroUnits[i].isAlive) {
+        continue;
+      }
       final hitBox = Rect.fromCenter(
         center: _heroUnits[i].position.translate(0, 5),
         width: heroUnitSize + 18,
@@ -644,17 +722,48 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     return null;
   }
 
+  void _showHeroRangeIndicator(int heroIndex) {
+    _rangeIndicatorHeroIndex = heroIndex;
+    _rangeIndicatorShownAt = _lastTime;
+  }
+
+  double _heroRangeIndicatorOpacity() {
+    final heroIndex = _rangeIndicatorHeroIndex;
+    final shownAt = _rangeIndicatorShownAt;
+    if (heroIndex == null || shownAt == null || !_isHeroAlive(heroIndex)) {
+      return 0;
+    }
+    final elapsed = _lastTime - shownAt;
+    if (elapsed < 0) {
+      return 0;
+    }
+    if (elapsed <= heroRangeIndicatorVisibleDuration) {
+      return 1;
+    }
+    final fadeProgress =
+        (elapsed - heroRangeIndicatorVisibleDuration) / heroRangeIndicatorFadeDuration;
+    if (fadeProgress >= 1) {
+      return 0;
+    }
+    return 1 - fadeProgress;
+  }
+
+  void _selectHero(int heroIndex) {
+    setState(() {
+      _selectedHeroIndex = heroIndex;
+      _showHeroRangeIndicator(heroIndex);
+    });
+  }
+
   void _handleMapTap(Offset position) {
     final tappedHeroIndex = _hitTestHero(position);
     if (tappedHeroIndex != null) {
-      setState(() {
-        _selectedHeroIndex = tappedHeroIndex;
-      });
+      _selectHero(tappedHeroIndex);
       return;
     }
 
     final selectedHeroIndex = _selectedHeroIndex;
-    if (selectedHeroIndex == null) {
+    if (selectedHeroIndex == null || !_isHeroAlive(selectedHeroIndex)) {
       return;
     }
 
@@ -662,6 +771,9 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       final target = _clampHeroTarget(position);
       final unit = _heroUnits[selectedHeroIndex];
       unit
+        ..homePosition = target
+        ..hasManualMoveOrder = true
+        ..defensiveRetreatLockUntil = 0
         ..target = target
         ..isMoving = (unit.position - target).distance > 0.01;
       _selectedHeroIndex = null;
@@ -678,7 +790,13 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       heroAreaWidth * 0.6,
       spacing * (index + 1),
     );
-    return _HeroUnit(position: position, target: position);
+    return _HeroUnit(
+      position: position,
+      target: position,
+      homePosition: position,
+      hp: widget.heroes[index].maxHp,
+      maxHp: widget.heroes[index].maxHp,
+    );
   }
 
   Offset _heroPosition(int heroIndex) => _heroUnits[heroIndex].position;
@@ -718,6 +836,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     _updateSpawning(dt);
     _updateEnemies(dt);
     _updateProjectiles(dt);
+    _updateHeroBehaviorTargets();
     _updateHeroMovement(dt);
     _updateHero(dt);
     _updateEffects(dt);
@@ -772,26 +891,144 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       if (enemy.isDying) {
         continue;
       }
-      if (enemy.position.dx > heroAreaWidth + 4) {
-        enemy.position = enemy.position.translate(-enemySpeed * dt, 0);
-        enemy.attacking = false;
-      } else {
+      if (enemy.position.dx <= heroAreaWidth + 4) {
         enemy.attacking = true;
         _wallHp -= wallDps * dt;
+        continue;
+      }
+      final targetHeroIndex = _nearestHeroAheadOfEnemy(enemy);
+      if (targetHeroIndex != null) {
+        final heroPos = _heroUnits[targetHeroIndex].position;
+        final delta = heroPos - enemy.position;
+        final distance = delta.distance;
+        final attackRange = enemySize / 2 + heroUnitSize / 2;
+        if (distance <= attackRange) {
+          enemy.attacking = true;
+          _applyHeroDamage(targetHeroIndex, enemyHeroDps * dt);
+        } else {
+          enemy.attacking = false;
+          final step = min(enemySpeed * dt, distance);
+          enemy.position = enemy.position.translate(
+            delta.dx / distance * step,
+            delta.dy / distance * step,
+          );
+        }
+      } else if (enemy.position.dx > heroAreaWidth + 4) {
+        enemy.position = enemy.position.translate(-enemySpeed * dt, 0);
+        enemy.attacking = false;
       }
     }
     _enemies.removeWhere((e) => e.canRemove);
   }
 
+  void _updateHeroBehaviorTargets() {
+    for (int i = 0; i < _heroUnits.length; i++) {
+      if (!_isHeroAlive(i)) {
+        continue;
+      }
+      if (_heroUnits[i].hasManualMoveOrder) {
+        continue;
+      }
+      switch (_heroBehaviors[i]) {
+        case _HeroBehaviorMode.holdPosition:
+          break;
+        case _HeroBehaviorMode.offensive:
+          _updateOffensiveBehaviorTarget(i);
+          break;
+        case _HeroBehaviorMode.defensive:
+          _updateDefensiveBehaviorTarget(i);
+          break;
+      }
+    }
+  }
+
+  void _updateOffensiveBehaviorTarget(int heroIndex) {
+    final unit = _heroUnits[heroIndex];
+    final enemy = _nearestEnemy(unit.position, const <_Enemy>{});
+    if (enemy == null) {
+      unit.target = unit.position;
+      return;
+    }
+    if (_isEnemyInHeroRange(heroIndex, enemy)) {
+      unit.target = unit.position;
+      return;
+    }
+    unit.target = _offensiveApproachTarget(heroIndex, enemy);
+  }
+
+  void _updateDefensiveBehaviorTarget(int heroIndex) {
+    final unit = _heroUnits[heroIndex];
+    if (unit.defensiveRetreatLockUntil > _lastTime) {
+      return;
+    }
+    final threatRange = enemyHeroContactRange + defensiveThreatPadding;
+    final threat = _nearestEnemy(unit.position, const <_Enemy>{}, maxDistance: threatRange);
+    if (threat != null) {
+      unit
+        ..target = _defensiveRetreatTarget(heroIndex, threat)
+        ..defensiveRetreatLockUntil = _lastTime + defensiveRetreatMinDuration;
+      return;
+    }
+
+    final hasEnemyInAttackRange = _nearestEnemyForHero(heroIndex) != null;
+    if (!hasEnemyInAttackRange &&
+        (unit.position - unit.homePosition).distance > defensiveReturnTolerance) {
+      unit.target = unit.homePosition;
+      return;
+    }
+
+    unit.target = unit.position;
+  }
+
+  Offset _offensiveApproachTarget(int heroIndex, _Enemy enemy) {
+    final heroPos = _heroPosition(heroIndex);
+    final desiredDistance = max(
+      24.0,
+      _heroCurrentAttackRange(heroIndex) - offensiveRangePadding,
+    );
+    final delta = heroPos - enemy.position;
+    if (delta.distance <= 0.001) {
+      return _clampHeroTarget(
+        enemy.position.translate(-desiredDistance, 0),
+      );
+    }
+    final direction = delta / delta.distance;
+    return _clampHeroTarget(enemy.position + direction * desiredDistance);
+  }
+
+  Offset _defensiveRetreatTarget(int heroIndex, _Enemy enemy) {
+    final heroPos = _heroPosition(heroIndex);
+    final safeDistance = max(
+      max(
+        enemyHeroContactRange + defensiveRetreatPadding,
+        heroMoveSpeed * defensiveRetreatMinDuration,
+      ),
+      _heroCurrentAttackRange(heroIndex) * 0.7,
+    );
+    final delta = heroPos - enemy.position;
+    if (delta.distance <= 0.001) {
+      return _clampHeroTarget(
+        heroPos.translate(-safeDistance, 0),
+      );
+    }
+    final direction = delta / delta.distance;
+    return _clampHeroTarget(enemy.position + direction * safeDistance);
+  }
+
   void _updateHeroMovement(double dt) {
     for (int i = 0; i < _heroUnits.length; i++) {
       final unit = _heroUnits[i];
+      if (!unit.isAlive) {
+        continue;
+      }
       final delta = unit.target - unit.position;
       final distance = delta.distance;
       if (distance <= 0.01) {
         unit
           ..position = unit.target
-          ..isMoving = false;
+          ..isMoving = false
+          ..hasManualMoveOrder = false;
+        _tryPerformQueuedAttackAfterMovement(i);
         continue;
       }
 
@@ -799,17 +1036,31 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       if (step >= distance) {
         unit
           ..position = unit.target
-          ..isMoving = false;
-        final state = _heroStates[i];
-        if (state.phase == _HeroPhase.sending && state.pendingAttack) {
-          state.pendingAttack = false;
-          _performAttack(i);
-        }
+          ..isMoving = false
+          ..hasManualMoveOrder = false;
+        _tryPerformQueuedAttackAfterMovement(i);
       } else {
         unit
           ..position = unit.position + Offset(delta.dx / distance * step, delta.dy / distance * step)
           ..isMoving = true;
       }
+    }
+  }
+
+  void _tryPerformQueuedAttackAfterMovement(int heroIndex) {
+    final state = _heroStates[heroIndex];
+    if (state.phase != _HeroPhase.sending || !state.pendingAttack || !_isHeroAlive(heroIndex)) {
+      return;
+    }
+    if (_heroCanAutoAttackNow(heroIndex)) {
+      state.pendingAttack = false;
+      _performAttack(heroIndex);
+    } else {
+      state
+        ..phase = _HeroPhase.cooldown
+        ..timeRemaining = 0
+        ..pendingAttack = false
+        ..beamTarget = null;
     }
   }
 
@@ -869,6 +1120,9 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
 
   void _updateHero(double dt) {
     for (int i = 0; i < _heroStates.length; i++) {
+      if (!_isHeroAlive(i)) {
+        continue;
+      }
       final state = _heroStates[i];
       final unit = _heroUnits[i];
       if (unit.isMoving && state.phase == _HeroPhase.sending) {
@@ -879,10 +1133,21 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
         if (state.phase == _HeroPhase.sending) {
           _enterCooldown(i);
         } else {
-          _enterSending(i);
+          if (_heroCanAutoAttackNow(i)) {
+            _enterSending(i);
+          } else {
+            state.timeRemaining = 0;
+          }
         }
       }
     }
+  }
+
+  bool _heroCanAutoAttackNow(int heroIndex) {
+    if (!_isHeroAlive(heroIndex)) {
+      return false;
+    }
+    return _nearestEnemyForHero(heroIndex) != null;
   }
 
   void _applyDamage(_Enemy enemy, double damage) {
@@ -907,6 +1172,48 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     }
   }
 
+  int? _nearestHeroAheadOfEnemy(_Enemy enemy) {
+    int? bestIndex;
+    double bestDistance = double.infinity;
+    for (int i = 0; i < _heroUnits.length; i++) {
+      final hero = _heroUnits[i];
+      if (!hero.isAlive || hero.position.dx >= enemy.position.dx) {
+        continue;
+      }
+      final distance = (hero.position - enemy.position).distance;
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestIndex = i;
+      }
+    }
+    return bestIndex;
+  }
+
+  void _applyHeroDamage(int heroIndex, double damage) {
+    final hero = _heroUnits[heroIndex];
+    if (!hero.isAlive || damage <= 0) {
+      return;
+    }
+    hero.hp = max(0, hero.hp - damage);
+    if (hero.hp <= 0) {
+      hero
+        ..isAlive = false
+        ..isMoving = false
+        ..target = hero.position;
+      final state = _heroStates[heroIndex];
+      state
+        ..pendingAttack = false
+        ..beamTarget = null;
+      if (_selectedHeroIndex == heroIndex) {
+        _selectedHeroIndex = null;
+      }
+      if (_rangeIndicatorHeroIndex == heroIndex) {
+        _rangeIndicatorHeroIndex = null;
+        _rangeIndicatorShownAt = null;
+      }
+    }
+  }
+
   // Mode selector state
   bool _modeSelectorOpen = false;
   int? _selectorHeroIndex;
@@ -917,6 +1224,259 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       _modeSelectorOpen = true;
       _selectorHeroIndex = heroIndex;
     });
+  }
+
+  List<_HeroModeAction> _heroModeActions(int heroIndex) {
+    final hero = widget.heroes[heroIndex];
+    switch (hero.name) {
+      case 'Aerin':
+        return [
+          _HeroModeAction(
+            icon: _aerinModeIcon(_HeroMode.normal),
+            selected: _aerinMode == _HeroMode.normal,
+            onTap: () => _setHeroMode(heroIndex, _HeroMode.normal),
+          ),
+          _HeroModeAction(
+            icon: _aerinModeIcon(_HeroMode.fast),
+            selected: _aerinMode == _HeroMode.fast,
+            onTap: () => _setHeroMode(heroIndex, _HeroMode.fast),
+          ),
+          _HeroModeAction(
+            icon: _aerinModeIcon(_HeroMode.strong),
+            selected: _aerinMode == _HeroMode.strong,
+            onTap: () => _setHeroMode(heroIndex, _HeroMode.strong),
+          ),
+        ];
+      case 'Veyra':
+        return [
+          _HeroModeAction(
+            icon: _veyraModeIcon(_VeyraMode.rapid),
+            selected: _veyraMode == _VeyraMode.rapid,
+            onTap: () => _setHeroMode(heroIndex, _VeyraMode.rapid),
+          ),
+          _HeroModeAction(
+            icon: _veyraModeIcon(_VeyraMode.explosive),
+            selected: _veyraMode == _VeyraMode.explosive,
+            onTap: () => _setHeroMode(heroIndex, _VeyraMode.explosive),
+          ),
+          _HeroModeAction(
+            icon: _veyraModeIcon(_VeyraMode.lightning),
+            selected: _veyraMode == _VeyraMode.lightning,
+            onTap: () => _setHeroMode(heroIndex, _VeyraMode.lightning),
+          ),
+        ];
+      case 'Thalor':
+        return [
+          _HeroModeAction(
+            icon: _thalorModeIcon(_ThalorMode.projectile),
+            selected: _thalorMode == _ThalorMode.projectile,
+            onTap: () => _setHeroMode(heroIndex, _ThalorMode.projectile),
+          ),
+          _HeroModeAction(
+            icon: _thalorModeIcon(_ThalorMode.sword),
+            selected: _thalorMode == _ThalorMode.sword,
+            onTap: () => _setHeroMode(heroIndex, _ThalorMode.sword),
+          ),
+          _HeroModeAction(
+            icon: _thalorModeIcon(_ThalorMode.energy),
+            selected: _thalorMode == _ThalorMode.energy,
+            onTap: () => _setHeroMode(heroIndex, _ThalorMode.energy),
+          ),
+        ];
+      case 'Nyxra':
+        return [
+          _HeroModeAction(
+            icon: _nyxraModeIcon(_NyxraMode.normal),
+            selected: _nyxraMode == _NyxraMode.normal,
+            onTap: () => _setHeroMode(heroIndex, _NyxraMode.normal),
+          ),
+          _HeroModeAction(
+            icon: _nyxraModeIcon(_NyxraMode.lightning),
+            selected: _nyxraMode == _NyxraMode.lightning,
+            onTap: () => _setHeroMode(heroIndex, _NyxraMode.lightning),
+          ),
+          _HeroModeAction(
+            icon: _nyxraModeIcon(_NyxraMode.voidchain),
+            selected: _nyxraMode == _NyxraMode.voidchain,
+            onTap: () => _setHeroMode(heroIndex, _NyxraMode.voidchain),
+          ),
+        ];
+      case 'Myris':
+        return [
+          _HeroModeAction(
+            icon: _myrisModeIcon(_MyrisMode.normal),
+            selected: _myrisMode == _MyrisMode.normal,
+            onTap: () => _setHeroMode(heroIndex, _MyrisMode.normal),
+          ),
+          _HeroModeAction(
+            icon: _myrisModeIcon(_MyrisMode.ice),
+            selected: _myrisMode == _MyrisMode.ice,
+            onTap: () => _setHeroMode(heroIndex, _MyrisMode.ice),
+          ),
+          _HeroModeAction(
+            icon: _myrisModeIcon(_MyrisMode.freeze),
+            selected: _myrisMode == _MyrisMode.freeze,
+            onTap: () => _setHeroMode(heroIndex, _MyrisMode.freeze),
+          ),
+        ];
+      case 'Kaelen':
+        return [
+          _HeroModeAction(
+            icon: _kaelenModeIcon(_KaelenMode.normal),
+            selected: _kaelenMode == _KaelenMode.normal,
+            onTap: () => _setHeroMode(heroIndex, _KaelenMode.normal),
+          ),
+          _HeroModeAction(
+            icon: _kaelenModeIcon(_KaelenMode.vine),
+            selected: _kaelenMode == _KaelenMode.vine,
+            onTap: () => _setHeroMode(heroIndex, _KaelenMode.vine),
+          ),
+          _HeroModeAction(
+            icon: _kaelenModeIcon(_KaelenMode.spore),
+            selected: _kaelenMode == _KaelenMode.spore,
+            onTap: () => _setHeroMode(heroIndex, _KaelenMode.spore),
+          ),
+        ];
+      case 'Solenne':
+        return [
+          _HeroModeAction(
+            icon: _solenneModeIcon(_SolenneMode.normal),
+            selected: _solenneMode == _SolenneMode.normal,
+            onTap: () => _setHeroMode(heroIndex, _SolenneMode.normal),
+          ),
+          _HeroModeAction(
+            icon: _solenneModeIcon(_SolenneMode.sunburst),
+            selected: _solenneMode == _SolenneMode.sunburst,
+            onTap: () => _setHeroMode(heroIndex, _SolenneMode.sunburst),
+          ),
+          _HeroModeAction(
+            icon: _solenneModeIcon(_SolenneMode.radiant),
+            selected: _solenneMode == _SolenneMode.radiant,
+            onTap: () => _setHeroMode(heroIndex, _SolenneMode.radiant),
+          ),
+        ];
+      case 'Ravik':
+        return [
+          _HeroModeAction(
+            icon: _ravikModeIcon(_RavikMode.normal),
+            selected: _ravikMode == _RavikMode.normal,
+            onTap: () => _setHeroMode(heroIndex, _RavikMode.normal),
+          ),
+          _HeroModeAction(
+            icon: _ravikModeIcon(_RavikMode.voidburst),
+            selected: _ravikMode == _RavikMode.voidburst,
+            onTap: () => _setHeroMode(heroIndex, _RavikMode.voidburst),
+          ),
+          _HeroModeAction(
+            icon: _ravikModeIcon(_RavikMode.soul),
+            selected: _ravikMode == _RavikMode.soul,
+            onTap: () => _setHeroMode(heroIndex, _RavikMode.soul),
+          ),
+        ];
+      case 'Brann':
+        return [
+          _HeroModeAction(
+            icon: _brannModeIcon(_BrannMode.normal),
+            selected: _brannMode == _BrannMode.normal,
+            onTap: () => _setHeroMode(heroIndex, _BrannMode.normal),
+          ),
+          _HeroModeAction(
+            icon: _brannModeIcon(_BrannMode.earthquake),
+            selected: _brannMode == _BrannMode.earthquake,
+            onTap: () => _setHeroMode(heroIndex, _BrannMode.earthquake),
+          ),
+          _HeroModeAction(
+            icon: _brannModeIcon(_BrannMode.boulder),
+            selected: _brannMode == _BrannMode.boulder,
+            onTap: () => _setHeroMode(heroIndex, _BrannMode.boulder),
+          ),
+        ];
+      case 'Eldrin':
+        return [
+          _HeroModeAction(
+            icon: _eldrinModeIcon(_EldrinMode.normal),
+            selected: _eldrinMode == _EldrinMode.normal,
+            onTap: () => _setHeroMode(heroIndex, _EldrinMode.normal),
+          ),
+          _HeroModeAction(
+            icon: _eldrinModeIcon(_EldrinMode.cosmic),
+            selected: _eldrinMode == _EldrinMode.cosmic,
+            onTap: () => _setHeroMode(heroIndex, _EldrinMode.cosmic),
+          ),
+          _HeroModeAction(
+            icon: _eldrinModeIcon(_EldrinMode.nova),
+            selected: _eldrinMode == _EldrinMode.nova,
+            onTap: () => _setHeroMode(heroIndex, _EldrinMode.nova),
+          ),
+        ];
+    }
+    return const [];
+  }
+
+  Widget _buildSelectedHeroModeMenu() {
+    final selectedHeroIndex = _selectedHeroIndex;
+    if (selectedHeroIndex == null || !_isHeroAlive(selectedHeroIndex)) {
+      return const SizedBox.shrink();
+    }
+    final actions = _heroModeActions(selectedHeroIndex);
+    if (actions.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return _HeroContextModeMenu(
+      center: _heroPosition(selectedHeroIndex),
+      heroColor: widget.heroes[selectedHeroIndex].color,
+      actions: actions,
+      verticalOffset: _GameViewState.heroUnitSize * 0.9,
+    );
+  }
+
+  void _setHeroBehavior(int heroIndex, _HeroBehaviorMode behavior) {
+    setState(() {
+      _heroBehaviors[heroIndex] = behavior;
+      if (behavior != _HeroBehaviorMode.offensive) {
+        final unit = _heroUnits[heroIndex];
+        unit
+          ..homePosition = unit.position
+          ..hasManualMoveOrder = false
+          ..defensiveRetreatLockUntil = 0
+          ..target = unit.position
+          ..isMoving = false;
+      }
+    });
+  }
+
+  List<_HeroModeAction> _heroBehaviorActions(int heroIndex) {
+    final behavior = _heroBehaviors[heroIndex];
+    return [
+      _HeroModeAction(
+        icon: Icons.flag,
+        selected: behavior == _HeroBehaviorMode.holdPosition,
+        onTap: () => _setHeroBehavior(heroIndex, _HeroBehaviorMode.holdPosition),
+      ),
+      _HeroModeAction(
+        icon: Icons.flash_on,
+        selected: behavior == _HeroBehaviorMode.offensive,
+        onTap: () => _setHeroBehavior(heroIndex, _HeroBehaviorMode.offensive),
+      ),
+      _HeroModeAction(
+        icon: Icons.security,
+        selected: behavior == _HeroBehaviorMode.defensive,
+        onTap: () => _setHeroBehavior(heroIndex, _HeroBehaviorMode.defensive),
+      ),
+    ];
+  }
+
+  Widget _buildSelectedHeroBehaviorMenu() {
+    final selectedHeroIndex = _selectedHeroIndex;
+    if (selectedHeroIndex == null || !_isHeroAlive(selectedHeroIndex)) {
+      return const SizedBox.shrink();
+    }
+    return _HeroContextModeMenu(
+      center: _heroPosition(selectedHeroIndex),
+      heroColor: widget.heroes[selectedHeroIndex].color,
+      actions: _heroBehaviorActions(selectedHeroIndex),
+      verticalOffset: -_GameViewState.heroUnitSize * 2.1,
+    );
   }
 
   Future<void> _saveProgress() async {
@@ -1124,38 +1684,23 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   }
 
   void _applyBeamDamage(int heroIndex, double dt) {
-    if (_heroUnits[heroIndex].isMoving) {
+    if (!_isHeroAlive(heroIndex) || _heroUnits[heroIndex].isMoving) {
       return;
     }
     final hero = widget.heroes[heroIndex];
     final heroPos = _heroPosition(_heroSlotIndices[heroIndex]);
+    final range = _heroCurrentAttackRange(heroIndex);
     final damage = hero.beamDps * dt;
     if (damage <= 0) {
       return;
     }
-
-    if (!_hasTargetableEnemies) {
+    final state = _heroStates[heroIndex];
+    final nearest = _nearestEnemyForHero(heroIndex, preferredTarget: state.beamTarget);
+    if (nearest == null) {
+      state.beamTarget = null;
       return;
     }
-
-    final state = _heroStates[heroIndex];
-    _Enemy nearest;
-    if (_containsTargetableEnemy(state.beamTarget)) {
-      nearest = state.beamTarget!;
-    } else {
-      nearest = _firstTargetableEnemy()!;
-      double bestDist = (nearest.position - heroPos).distance;
-      for (final enemy in _enemies) {
-        if (!_isEnemyTargetable(enemy) || identical(enemy, nearest)) {
-          continue;
-        }
-        final d = (enemy.position - heroPos).distance;
-        if (d < bestDist) {
-          bestDist = d;
-          nearest = enemy;
-        }
-      }
-    }
+    state.beamTarget = nearest;
 
     final dir = nearest.position - heroPos;
     final len = max(dir.distance, 0.001);
@@ -1169,7 +1714,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       final vx = enemy.position.dx - heroPos.dx;
       final vy = enemy.position.dy - heroPos.dy;
       final proj = vx * ux + vy * uy;
-      if (proj < 0) {
+      if (proj < 0 || proj > range) {
         continue;
       }
       final perp = (vx * vx + vy * vy) - proj * proj;
@@ -1219,6 +1764,14 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   }
 
   void _enterSending(int heroIndex) {
+    if (!_heroCanAutoAttackNow(heroIndex)) {
+      _heroStates[heroIndex]
+        ..phase = _HeroPhase.cooldown
+        ..timeRemaining = 0
+        ..pendingAttack = false
+        ..beamTarget = null;
+      return;
+    }
     final isMoving = _heroUnits[heroIndex].isMoving;
     _heroStates[heroIndex]
       ..phase = _HeroPhase.sending
@@ -1245,6 +1798,9 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   }
 
   void _performAttack(int heroIndex, {_Enemy? target}) {
+    if (!_isHeroAlive(heroIndex)) {
+      return;
+    }
     final attackType = widget.heroes[heroIndex].attackType;
 
     if (_isMyris(heroIndex)) {
@@ -1475,6 +2031,15 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     return screenPosition;
   }
 
+  Offset _pointerEventToScenePosition(PointerEvent event) {
+    final renderObject = _interactiveViewerKey.currentContext?.findRenderObject();
+    if (renderObject is RenderBox) {
+      final viewportPosition = renderObject.globalToLocal(event.position);
+      return _mapTransformController.toScene(viewportPosition);
+    }
+    return event.localPosition;
+  }
+
   bool _isHeroReady(int heroIndex) {
     final state = _heroStates[heroIndex];
     if (_autoMode) {
@@ -1506,27 +2071,15 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   }
 
   void _fireProjectile(int heroIndex, {_Enemy? target}) {
-    final heroPos = _heroPosition(_heroSlotIndices[heroIndex]);
-    Offset targetPos;
-    if (_containsTargetableEnemy(target)) {
-      targetPos = target!.position;
-    } else if (!_hasTargetableEnemies) {
-      targetPos = Offset(mapWidth, heroPos.dy);
-    } else {
-      _Enemy nearest = _firstTargetableEnemy()!;
-      double bestDist = (nearest.position - heroPos).distance;
-      for (final enemy in _enemies) {
-        if (!_isEnemyTargetable(enemy) || identical(enemy, nearest)) {
-          continue;
-        }
-        final d = (enemy.position - heroPos).distance;
-        if (d < bestDist) {
-          bestDist = d;
-          nearest = enemy;
-        }
-      }
-      targetPos = nearest.position;
+    if (!_isHeroAlive(heroIndex)) {
+      return;
     }
+    final heroPos = _heroPosition(_heroSlotIndices[heroIndex]);
+    final resolvedTarget = _nearestEnemyForHero(heroIndex, preferredTarget: target);
+    if (resolvedTarget == null) {
+      return;
+    }
+    final targetPos = resolvedTarget.position;
 
     final dir = (targetPos - heroPos);
     final len = max(dir.distance, 0.001);
@@ -2029,9 +2582,9 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     return 0;
   }
 
-  _Enemy? _nearestEnemy(Offset from, Set<_Enemy> exclude) {
+  _Enemy? _nearestEnemy(Offset from, Set<_Enemy> exclude, {double? maxDistance}) {
     _Enemy? nearest;
-    double bestDist = double.infinity;
+    double bestDist = maxDistance ?? double.infinity;
     for (final enemy in _enemies) {
       if (exclude.contains(enemy) || !_isEnemyTargetable(enemy)) {
         continue;
@@ -2046,13 +2599,10 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   }
 
   void _castNyxraLightning(int heroIndex, {_Enemy? target}) {
-    if (!_hasTargetableEnemies) {
-      return;
-    }
     final heroPos = _heroPosition(_heroSlotIndices[heroIndex]);
     final used = <_Enemy>{};
 
-    final first = _containsTargetableEnemy(target) ? target : _nearestEnemy(heroPos, used);
+    final first = _nearestEnemyForHero(heroIndex, preferredTarget: target, exclude: used);
     if (first == null) {
       return;
     }
@@ -2083,6 +2633,9 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   }
 
   void _swordHit(int heroIndex) {
+    if (!_isHeroAlive(heroIndex)) {
+      return;
+    }
     final heroPos = _heroPosition(_heroSlotIndices[heroIndex]);
     final damage = _effectiveDamage(heroIndex);
     for (final enemy in _enemies) {
@@ -2096,6 +2649,9 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   }
 
   bool _hasEnemyInSwordRange(int heroIndex) {
+    if (!_isHeroAlive(heroIndex)) {
+      return false;
+    }
     final heroPos = _heroPosition(_heroSlotIndices[heroIndex]);
     for (final enemy in _enemies) {
       if (!_isEnemyTargetable(enemy)) {
@@ -2204,13 +2760,10 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   }
 
   void _castRavikSoulDrain(int heroIndex, {_Enemy? target}) {
-    if (!_hasTargetableEnemies) {
-      return;
-    }
     final heroPos = _heroPosition(_heroSlotIndices[heroIndex]);
     final used = <_Enemy>{};
 
-    final first = _containsTargetableEnemy(target) ? target : _nearestEnemy(heroPos, used);
+    final first = _nearestEnemyForHero(heroIndex, preferredTarget: target, exclude: used);
     if (first == null) {
       return;
     }
@@ -2283,11 +2836,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   }
 
   void _castVeyraLightning(int heroIndex, {_Enemy? target}) {
-    if (!_hasTargetableEnemies) {
-      return;
-    }
     final heroPos = _heroPosition(_heroSlotIndices[heroIndex]);
-    final resolvedTarget = _containsTargetableEnemy(target) ? target : _nearestEnemy(heroPos, {});
+    final resolvedTarget = _nearestEnemyForHero(heroIndex, preferredTarget: target);
     if (resolvedTarget == null) {
       return;
     }
@@ -2307,13 +2857,10 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   }
 
   void _castNyxraVoidChain(int heroIndex, {_Enemy? target}) {
-    if (!_hasTargetableEnemies) {
-      return;
-    }
     final heroPos = _heroPosition(_heroSlotIndices[heroIndex]);
     final used = <_Enemy>{};
 
-    final first = _containsTargetableEnemy(target) ? target : _nearestEnemy(heroPos, used);
+    final first = _nearestEnemyForHero(heroIndex, preferredTarget: target, exclude: used);
     if (first == null) {
       return;
     }
@@ -2356,26 +2903,11 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     bool isFire, {
     _Enemy? target,
   }) {
-    Offset targetPos;
-    if (_containsTargetableEnemy(target)) {
-      targetPos = target!.position;
-    } else if (!_hasTargetableEnemies) {
-      targetPos = Offset(mapWidth, heroPos.dy);
-    } else {
-      _Enemy nearest = _firstTargetableEnemy()!;
-      double bestDist = (nearest.position - heroPos).distance;
-      for (final enemy in _enemies) {
-        if (!_isEnemyTargetable(enemy) || identical(enemy, nearest)) {
-          continue;
-        }
-        final d = (enemy.position - heroPos).distance;
-        if (d < bestDist) {
-          bestDist = d;
-          nearest = enemy;
-        }
-      }
-      targetPos = nearest.position;
+    final resolvedTarget = _nearestEnemyForHero(heroIndex, preferredTarget: target);
+    if (resolvedTarget == null) {
+      return;
     }
+    final targetPos = resolvedTarget.position;
 
     final dir = (targetPos - heroPos);
     final len = max(dir.distance, 0.001);
@@ -2501,6 +3033,11 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                                 wallX: heroAreaWidth,
                                 heroes: widget.heroes,
                                 heroPositions: _heroUnits.map((unit) => unit.position).toList(),
+                                heroAttackRanges: List<double>.generate(
+                                  widget.heroes.length,
+                                  _heroCurrentAttackRange,
+                                ),
+                                heroAlive: _heroUnits.map((unit) => unit.isAlive).toList(),
                                 heroStates: _heroStates,
                                 thalorMode: _thalorMode,
                                 time: _lastTime,
@@ -2509,20 +3046,43 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                                 targetIndicator: _targetIndicator,
                               ),
                             ),
+                            if (_rangeIndicatorHeroIndex != null &&
+                                _isHeroAlive(_rangeIndicatorHeroIndex!) &&
+                                _heroRangeIndicatorOpacity() > 0)
+                              Positioned(
+                                left: _heroPosition(_rangeIndicatorHeroIndex!).dx -
+                                    _heroCurrentAttackRange(_rangeIndicatorHeroIndex!),
+                                top: _heroPosition(_rangeIndicatorHeroIndex!).dy -
+                                    _heroCurrentAttackRange(_rangeIndicatorHeroIndex!),
+                                child: IgnorePointer(
+                                  child: Container(
+                                    width: _heroCurrentAttackRange(_rangeIndicatorHeroIndex!) * 2,
+                                    height: _heroCurrentAttackRange(_rangeIndicatorHeroIndex!) * 2,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: widget.heroes[_rangeIndicatorHeroIndex!]
+                                          .color
+                                          .withOpacity(0.08 * _heroRangeIndicatorOpacity()),
+                                      border: Border.all(
+                                        color: widget.heroes[_rangeIndicatorHeroIndex!]
+                                            .color
+                                            .withOpacity(0.3 * _heroRangeIndicatorOpacity()),
+                                        width: 2,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
                             Positioned.fill(
                               child: Listener(
                                 onPointerDown: (event) {
-                                  _pointerDownScenePosition = _mapTransformController.toScene(
-                                    event.localPosition,
-                                  );
+                                  _pointerDownScenePosition = _pointerEventToScenePosition(event);
                                   _pointerDownHeroIndex = _pointerDownScenePosition == null
                                       ? null
                                       : _hitTestHero(_pointerDownScenePosition!);
                                 },
                                 onPointerUp: (event) {
-                                  final scenePosition = _mapTransformController.toScene(
-                                    event.localPosition,
-                                  );
+                                  final scenePosition = _pointerEventToScenePosition(event);
                                   final start = _pointerDownScenePosition;
                                   final pointerDownHeroIndex = _pointerDownHeroIndex;
                                   _pointerDownScenePosition = null;
@@ -2531,9 +3091,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                                     return;
                                   }
                                   if (pointerDownHeroIndex != null) {
-                                    setState(() {
-                                      _selectedHeroIndex = pointerDownHeroIndex;
-                                    });
+                                    _selectHero(pointerDownHeroIndex);
                                     return;
                                   }
                                   _handleMapTap(scenePosition);
@@ -2547,15 +3105,14 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                               ),
                             ),
                             for (int i = 0; i < widget.heroes.length; i++)
+                              if (_heroUnits[i].isAlive)
                               Positioned(
                                 left: _heroPosition(i).dx - (heroUnitSize + 18) / 2,
                                 top: _heroPosition(i).dy - (heroUnitSize + 22) / 2,
                                 child: GestureDetector(
                                   behavior: HitTestBehavior.opaque,
                                   onTap: () {
-                                    setState(() {
-                                      _selectedHeroIndex = i;
-                                    });
+                                    _selectHero(i);
                                   },
                                   child: SizedBox(
                                     width: heroUnitSize + 18,
@@ -2566,6 +3123,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                                         state: _heroStates[i],
                                         isSelected: _selectedHeroIndex == i,
                                         isMoving: _heroUnits[i].isMoving,
+                                        hp: _heroUnits[i].hp,
+                                        maxHp: _heroUnits[i].maxHp,
                                         cooldownDuration: heroCooldowns[i],
                                         size: heroUnitSize,
                                         time: _lastTime,
@@ -2574,6 +3133,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                                   ),
                                 ),
                               ),
+                            _buildSelectedHeroBehaviorMenu(),
+                            _buildSelectedHeroModeMenu(),
                           ],
                         ),
                       ),
@@ -2614,6 +3175,8 @@ class _HeroUnitWidget extends StatelessWidget {
     required this.state,
     required this.isSelected,
     required this.isMoving,
+    required this.hp,
+    required this.maxHp,
     required this.cooldownDuration,
     required this.size,
     required this.time,
@@ -2623,6 +3186,8 @@ class _HeroUnitWidget extends StatelessWidget {
   final _HeroState state;
   final bool isSelected;
   final bool isMoving;
+  final double hp;
+  final double maxHp;
   final double cooldownDuration;
   final double size;
   final double time;
@@ -2634,10 +3199,11 @@ class _HeroUnitWidget extends StatelessWidget {
         (state.phase == _HeroPhase.cooldown && cooldownDuration > 0)
             ? (state.timeRemaining / cooldownDuration).clamp(0.0, 1.0)
             : 0.0;
+    final hpFraction = maxHp > 0 ? (hp / maxHp).clamp(0.0, 1.0) : 0.0;
 
     return SizedBox(
       width: size,
-      height: size + 10,
+      height: size + 16,
       child: Column(
         children: [
           Container(
@@ -2682,6 +3248,27 @@ class _HeroUnitWidget extends StatelessWidget {
                       child: const Icon(Icons.directions_run, color: Colors.white, size: 16),
                     ),
                 ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Container(
+            width: size,
+            height: 4,
+            decoration: BoxDecoration(
+              color: const Color(0x66160F0F),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: FractionallySizedBox(
+                widthFactor: hpFraction,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEF6A6A),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
               ),
             ),
           ),
@@ -2747,11 +3334,20 @@ class _HeroUnit {
   _HeroUnit({
     required this.position,
     required this.target,
+    required this.homePosition,
+    required this.hp,
+    required this.maxHp,
   });
 
   Offset position;
   Offset target;
+  Offset homePosition;
+  double hp;
+  double maxHp;
   bool isMoving = false;
+  bool isAlive = true;
+  bool hasManualMoveOrder = false;
+  double defensiveRetreatLockUntil = 0;
 }
 
 class _Enemy {
@@ -2807,6 +3403,8 @@ class _GamePainter extends CustomPainter {
     required this.wallX,
     required this.heroes,
     required this.heroPositions,
+    required this.heroAttackRanges,
+    required this.heroAlive,
     required this.heroStates,
     required this.thalorMode,
     required this.time,
@@ -2824,6 +3422,8 @@ class _GamePainter extends CustomPainter {
   final double wallX;
   final List<HeroDef> heroes;
   final List<Offset> heroPositions;
+  final List<double> heroAttackRanges;
+  final List<bool> heroAlive;
   final List<_HeroState> heroStates;
   final _ThalorMode thalorMode;
   final double time;
@@ -2837,6 +3437,9 @@ class _GamePainter extends CustomPainter {
     canvas.drawRect(Offset.zero & size, bg);
 
     for (int i = 0; i < heroes.length; i++) {
+      if (!heroAlive[i]) {
+        continue;
+      }
       final heroPos = heroPositions[i];
       if (heroes[i].attackType == _AttackType.beam && heroStates[i].phase == _HeroPhase.sending) {
         _Enemy? nearest;
@@ -2846,7 +3449,7 @@ class _GamePainter extends CustomPainter {
             continue;
           }
           final dist = (enemy.position - heroPos).distance;
-          if (dist < minDist) {
+          if (dist <= heroAttackRanges[i] && dist < minDist) {
             minDist = dist;
             nearest = enemy;
           }
@@ -2854,7 +3457,7 @@ class _GamePainter extends CustomPainter {
         if (nearest != null) {
           final dir = nearest.position - heroPos;
           final len = max(dir.distance, 0.001);
-          final end = heroPos + Offset(dir.dx / len * size.width, dir.dy / len * size.width);
+          final end = heroPos + Offset(dir.dx / len * heroAttackRanges[i], dir.dy / len * heroAttackRanges[i]);
           _drawMagicBeam(canvas, heroPos, end, heroes[i].color, time);
         }
       }
@@ -3591,6 +4194,7 @@ enum _SolenneMode { normal, sunburst, radiant }
 enum _RavikMode { normal, voidburst, soul }
 enum _BrannMode { normal, earthquake, boulder }
 enum _EldrinMode { normal, cosmic, nova }
+enum _HeroBehaviorMode { holdPosition, offensive, defensive }
 
 class _HeroState {
   _HeroState({
@@ -3611,6 +4215,8 @@ class HeroDef {
     this.name,
     this.color, {
     this.imageAsset = '',
+    this.maxHp = 20.0,
+    this.attackRange = _GameViewState.defaultHeroAttackRange,
     this.cooldownDuration = _GameViewState.spellCooldownDuration,
     this.damage = 5.0,
     this.attackType = _AttackType.projectile,
@@ -3620,6 +4226,8 @@ class HeroDef {
   final String name;
   final Color color;
   final String imageAsset;
+  final double maxHp;
+  final double attackRange;
   final double cooldownDuration;
   final double damage;
   final _AttackType attackType;
@@ -4093,6 +4701,84 @@ class _ModeCircleButton extends StatelessWidget {
           icon,
           size: 18,
           color: Colors.white,
+        ),
+      ),
+    );
+  }
+}
+
+class _HeroModeAction {
+  const _HeroModeAction({
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+}
+
+class _HeroContextModeMenu extends StatelessWidget {
+  const _HeroContextModeMenu({
+    required this.center,
+    required this.heroColor,
+    required this.actions,
+    required this.verticalOffset,
+  });
+
+  final Offset center;
+  final Color heroColor;
+  final List<_HeroModeAction> actions;
+  final double verticalOffset;
+
+  @override
+  Widget build(BuildContext context) {
+    if (actions.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    const buttonSize = 36.0;
+    const spacing = 44.0;
+    final totalWidth = buttonSize + max(0, actions.length - 1) * spacing;
+    final left = center.dx - totalWidth / 2;
+    final top = center.dy + verticalOffset;
+
+    return Positioned(
+      left: left,
+      top: top,
+      child: IgnorePointer(
+        ignoring: false,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: const Color(0xCC101816),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFF2C3F3A)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.35),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (int i = 0; i < actions.length; i++) ...[
+                  if (i > 0) const SizedBox(width: 8),
+                  _ModeCircleButton(
+                    icon: actions[i].icon,
+                    selected: actions[i].selected,
+                    color: heroColor,
+                    onTap: actions[i].onTap,
+                  ),
+                ],
+              ],
+            ),
+          ),
         ),
       ),
     );
