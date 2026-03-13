@@ -22,12 +22,6 @@ class _HeroUpgradeScreenState extends State<HeroUpgradeScreen> {
     _progressFuture = _loadProgress();
   }
 
-  @override
-  void dispose() {
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    super.dispose();
-  }
-
   Future<PlayerProgress> _loadProgress() async {
     final progress = await RpgSystem.getProgress();
     if (mounted) {

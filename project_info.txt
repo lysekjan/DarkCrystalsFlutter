@@ -3,6 +3,7 @@ PROJECT INFO: Dark Crystals (Flutter)
 Shrnuti projektu
 - Jednoducha arkadova/tower-defense minihra ve Flutteru s vlastnim hernim loopem a vykreslovanim pres CustomPainter.
 - Aplikace je uzamcena na landscape orientaci a hlavni hra i vyber hrdinu bezi ve fullscreenu (immersive).
+- Fullscreen rezim je pri startu aplikace i po navratu znovu vynucen pres `SystemUiMode.immersiveSticky`, aby se na Androidu nevracela horni systemova lista.
 - Flow: Intro obrazovka -> vyber hrdinu -> herni scena.
 - Herni logika a UI jsou soustredeny v jedinem souboru `lib/main.dart`.
 
@@ -12,8 +13,10 @@ Jak to funguje (gameplay)
 - Hrac vybere 1-5 hrdinu; hrdinove utoci ve dvoufazovem cyklu: sending -> cooldown (casting faze byla zrusena).
 - Nepratele spawnuji nahodne po lanech na pravem okraji mapy a pohybuji se doleva.
 - Pokud nepritel dojde k hradbe (x <= heroAreaWidth + 4), zacne utocit do zdi.
+- V horni leve casti mapy vlevo od zdi je jednoducha staticka obranna vez; hrac ji neovlada, nehybe se a automaticky kazdych 5 sekund vystreli projektil za 10 damage na nejblizsiho nepritele v dosahu stejnem jako hrdinove.
 - Zed ma HP 300. Nepritel udeluje wallDps = 5 damage za sekundu. Konec hry pri HP <= 0.
 - Rychlost hry lze prepnut v panelu na 1x/2x/4x/8x, default je 2x.
+- Restart hry ted vraci cely run na vychozi startovni stav: znovu zacina od 1. vlny, resetuje cas/statistiky, vraci hrdiny na startovni pozice, jejich behavior a attack mody na default a rychlost hry zpet na `2x`.
 
 Herni konstanty (GameView)
 - mapWidth = 1600, mapHeight = 640
@@ -50,6 +53,7 @@ Zavislosti
 
 Obrazovky a UI
 - IntroScreen: gradientni pozadi, nadpis "Dark Crystals", tlacitko Play.
+- Flutter debug banner v pravem hornim rohu je vypnuty (`debugShowCheckedModeBanner: false`).
 - HeroSelectScreen:
   - Fullscreen (immersive), zarovnane k hornimu/levemu okraji.
   - Horni horizontalni seznam 10 hrdinu.
@@ -59,6 +63,7 @@ Obrazovky a UI
   - Fullscreen (immersive) s cerne pozadi, bez systemoveho panelu.
   - Herni plocha kreslena CustomPainterem.
   - InteractiveViewer je zarovnany k levemu a hornimu okraji (neumi se odtahnout vlevo/nahoru); je povoleny posun doprava/dolu a zoom.
+  - Zoom tlacitka `+` a `-` jsou primo v horni HUD liste vlevo od menu tlacitka, samostatna druha zoom lista uz neni.
   - Panel rychlosti vpravo dole.
   - Prepinac "Automode" vedle panelu rychlosti.
   - Menu tlacitko vpravo nahore (dialog s navratem do hlavniho menu).
@@ -264,3 +269,9 @@ Spusteni
 - Hrac muze na prazdne mape tahnout prstem a kreslit selection ctverec pro vyber vice hrdinu najednou.
 - V multi-select modu se nezobrazuji kontextova menu jednotlivych hrdinu.
 - Klik na mapu po multi-selectu zada skupinovy presun; vybrani hrdinove dostanou cilove pozice s malym rozestupem, aby se v cili neprekryvali, a oznaceni se hned po zadani presunu zrusi.
+2026-03-13:
+- Zoom ovladani bylo presunuto ze samostatne druhe listy do hlavni horni HUD listy, hned vlevo od menu tlacitka, aby mela herni plocha vice mista na vysku.
+2026-03-13:
+- Pridana jednoducha automaticka obranna vez vlevo od zdi v horni casti mapy; je vykreslena jako ctvercovy objekt a kazdych 5 sekund vystreli projektil za 10 damage na nejblizsiho nepritele v dosahu odpovidajicim dostrelu hrdinu.
+2026-03-13:
+- Restart hry byl rozsiren tak, aby obnovil skutecny pocatecni stav celeho runu vcetne 1. vlny, casu, statistik, pozic hrdinu, behavior/attack modu, zoomu a rychlosti hry `2x`.

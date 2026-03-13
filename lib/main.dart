@@ -11,13 +11,19 @@ import 'skill_trees.dart';
 import 'localization.dart';
 import 'language_manager.dart';
 import 'language_switcher.dart';
+
+Future<void> _enableFullscreenMode() async {
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await LanguageManager.init();
-  SystemChrome.setPreferredOrientations([
+  await SystemChrome.setPreferredOrientations([
     DeviceOrientation.landscapeLeft,
     DeviceOrientation.landscapeRight,
   ]);
+  await _enableFullscreenMode();
   runApp(const MyApp());
 }
 
@@ -28,17 +34,29 @@ class MyApp extends StatefulWidget {
   State<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> {
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     LanguageManager.languageNotifier.addListener(_onLanguageChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _enableFullscreenMode();
+    });
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     LanguageManager.languageNotifier.removeListener(_onLanguageChanged);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _enableFullscreenMode();
+    }
   }
 
   void _onLanguageChanged() {
@@ -49,6 +67,7 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Dark Crystals',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
         useMaterial3: true,
@@ -361,6 +380,11 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   static const double defensiveRetreatPadding = 180.0;
   static const double defensiveReturnTolerance = 8.0;
   static const double defensiveRetreatMinDuration = 2.0;
+  static const double towerCooldownDuration = 5.0;
+  static const double towerDamage = 10.0;
+  static const double towerSize = 34.0;
+  static const double towerRange = defaultHeroAttackRange;
+  static const Offset towerPosition = Offset(44, 42);
 
   final Random _rng = Random();
   late final Ticker _ticker;
@@ -447,11 +471,12 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   int _enemySpriteFrameCount = 0;
   double _baseMapScale = 1.0;
   double _zoomMultiplier = 1.0;
+  double _towerCooldownRemaining = 0.0;
 
   @override
   void initState() {
     super.initState();
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    _enableFullscreenMode();
     _timeUntilNextSpawn = 4;
     _heroSlotIndices = List<int>.generate(widget.heroes.length, (index) => index);
     _heroStates = List<_HeroState>.generate(
@@ -518,7 +543,6 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     _enemySpriteSheet?.dispose();
     _mapTransformController.dispose();
     _aerinMenuController.dispose();
@@ -925,6 +949,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     _updateSpawning(dt);
     _updateEnemies(dt);
     _updateProjectiles(dt);
+    _updateTower(dt);
     _updateHeroBehaviorTargets();
     _updateHeroMovement(dt);
     _updateHero(dt);
@@ -1205,6 +1230,44 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
         _projectiles.remove(proj);
       }
     }
+  }
+
+  void _updateTower(double dt) {
+    _towerCooldownRemaining = max(0, _towerCooldownRemaining - dt);
+    if (_towerCooldownRemaining > 0) {
+      return;
+    }
+    final target = _nearestEnemy(
+      towerPosition,
+      const <_Enemy>{},
+      maxDistance: towerRange,
+    );
+    if (target == null) {
+      return;
+    }
+    _fireTowerProjectile(target);
+    _towerCooldownRemaining = towerCooldownDuration;
+  }
+
+  void _fireTowerProjectile(_Enemy target) {
+    final dir = target.position - towerPosition;
+    final len = max(dir.distance, 0.001);
+    final velocity = Offset(
+      dir.dx / len * projectileSpeed,
+      dir.dy / len * projectileSpeed,
+    );
+    _projectiles.add(
+      _Projectile(
+        position: towerPosition,
+        velocity: velocity,
+        damage: towerDamage,
+        radius: projectileRadius + 1,
+        aoeRadius: 0,
+        isAerinStrong: false,
+        seed: _rng.nextDouble() * 1000,
+        color: const Color(0xFF7CE7FF),
+      ),
+    );
   }
 
   void _updateHero(double dt) {
@@ -1590,31 +1653,65 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
 
   Future<void> _resetGame() async {
     await _saveProgress();
+    if (!mounted) {
+      return;
+    }
 
-    _timeUntilNextSpawn = 4;
-    _wallHp = wallHpMax;
-    _gameOver = false;
-    _gameOverDialogShown = false;
-    _enemies.clear();
-    _projectiles.clear();
-    _damageTexts.clear();
-    _explosions.clear();
-    _lightnings.clear();
-    for (int i = 0; i < _heroUnits.length; i++) {
-      _heroUnits[i] = _initialHeroUnit(i);
-    }
-    for (final state in _heroStates) {
-      state.phase = _HeroPhase.cooldown;
-      state.timeRemaining = 0;
-      state.pendingAttack = false;
-      state.beamTarget = null;
-    }
-    _selectedHeroIndex = null;
-    _multiSelectedHeroIndices.clear();
-    _selectionDragCurrent = null;
-    _pointerDownScenePosition = null;
-    _pointerDownHeroIndex = null;
-    _clearHeroRangeIndicator();
+    setState(() {
+      _gameStartTime = DateTime.now();
+      _lastTime = 0;
+      _timeUntilNextSpawn = 4;
+      _wallHp = wallHpMax;
+      _currentWave = 1;
+      _enemiesKilled = 0;
+      _enemiesInWave = 0;
+      _enemiesSpawnedInWave = 0;
+      _gameOver = false;
+      _gameOverDialogShown = false;
+      _gameSpeed = 2;
+      _speedPanelOpen = false;
+      _autoMode = true;
+      _readyHeroIndex = null;
+      _towerCooldownRemaining = 0;
+      _zoomMultiplier = 1.0;
+      _targetIndicator = null;
+      _preventAutoReselect = false;
+      _lastManualFireTime = DateTime.now();
+      _modeSelectorOpen = false;
+      _aerinMode = _HeroMode.normal;
+      _veyraMode = _VeyraMode.rapid;
+      _thalorMode = _ThalorMode.projectile;
+      _nyxraMode = _NyxraMode.normal;
+      _myrisMode = _MyrisMode.normal;
+      _kaelenMode = _KaelenMode.normal;
+      _solenneMode = _SolenneMode.normal;
+      _ravikMode = _RavikMode.normal;
+      _brannMode = _BrannMode.normal;
+      _eldrinMode = _EldrinMode.normal;
+      _closeAllModeMenus();
+      _enemies.clear();
+      _projectiles.clear();
+      _damageTexts.clear();
+      _explosions.clear();
+      _lightnings.clear();
+      for (int i = 0; i < _heroUnits.length; i++) {
+        _heroUnits[i] = _initialHeroUnit(i);
+        _heroBehaviors[i] = _HeroBehaviorMode.holdPosition;
+      }
+      for (final state in _heroStates) {
+        state.phase = _HeroPhase.cooldown;
+        state.timeRemaining = 0;
+        state.pendingAttack = false;
+        state.beamTarget = null;
+      }
+      _selectedHeroIndex = null;
+      _multiSelectedHeroIndices.clear();
+      _selectionDragCurrent = null;
+      _pointerDownScenePosition = null;
+      _pointerDownHeroIndex = null;
+      _clearHeroRangeIndicator();
+      _applyMapTransform();
+    });
   }
 
   Future<void> _showGameOverDialog() {
@@ -1654,11 +1751,9 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
           ),
           actions: [
             TextButton(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.of(dialogContext).pop();
-                setState(() {
-                  _resetGame();
-                });
+                await _resetGame();
               },
               child: const Text('Restart'),
             ),
@@ -3077,11 +3172,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                 gameDurationText: _gameDurationText,
                 enemiesInWave: _enemiesSpawnedInWave,
                 totalEnemiesInWave: _enemiesForWave(_currentWave),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(0, 8, 12, 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     _ZoomButton(
                       icon: Icons.add,
@@ -3091,6 +3183,12 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                     _ZoomButton(
                       icon: Icons.remove,
                       onTap: () => _changeZoom(-zoomStep),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      onPressed: () => _openMenu(context),
+                      icon: const Icon(Icons.menu),
+                      color: Colors.white,
                     ),
                   ],
                 ),
@@ -3126,6 +3224,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                                 explosions: _explosions,
                                 lightnings: _lightnings,
                                 wallX: heroAreaWidth,
+                                towerPosition: towerPosition,
+                                towerSize: towerSize,
                                 heroes: widget.heroes,
                                 heroPositions: _heroUnits.map((unit) => unit.position).toList(),
                                 heroAttackRanges: List<double>.generate(
@@ -3283,15 +3383,6 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                 ),
               ),
             ],
-          ),
-          Positioned(
-            top: 6,
-            right: 6,
-            child: IconButton(
-              onPressed: () => _openMenu(context),
-              icon: const Icon(Icons.menu),
-              color: Colors.white,
-            ),
           ),
           Positioned(
             right: 8,
@@ -3521,6 +3612,7 @@ class _Projectile {
     required this.aoeRadius,
     required this.isAerinStrong,
     required this.seed,
+    this.color = const Color(0xFFF2E86D),
   });
 
   Offset position;
@@ -3530,6 +3622,7 @@ class _Projectile {
   double aoeRadius;
   final bool isAerinStrong;
   final double seed;
+  final Color color;
 }
 
 class _GamePainter extends CustomPainter {
@@ -3541,6 +3634,8 @@ class _GamePainter extends CustomPainter {
     required this.explosions,
     required this.lightnings,
     required this.wallX,
+    required this.towerPosition,
+    required this.towerSize,
     required this.heroes,
     required this.heroPositions,
     required this.heroAttackRanges,
@@ -3560,6 +3655,8 @@ class _GamePainter extends CustomPainter {
   final List<_ExplosionEffect> explosions;
   final List<_LightningEffect> lightnings;
   final double wallX;
+  final Offset towerPosition;
+  final double towerSize;
   final List<HeroDef> heroes;
   final List<Offset> heroPositions;
   final List<double> heroAttackRanges;
@@ -3623,6 +3720,7 @@ class _GamePainter extends CustomPainter {
       ..style = PaintingStyle.fill;
     final hpRatio = (wallHp / _GameViewState.wallHpMax).clamp(0.0, 1.0);
     canvas.drawRect(Rect.fromLTWH(wallX + 2, 0, 2, size.height * hpRatio), wallHpPaint);
+    _drawDefenseTower(canvas);
 
     final enemyPaint = Paint()..color = const Color(0xFFE06A5E);
     final enemyHitPaint = Paint()..color = Colors.white;
@@ -3649,8 +3747,8 @@ class _GamePainter extends CustomPainter {
       canvas.drawRect(fillRect, enemyHpFill);
     }
 
-    final projPaint = Paint()..color = const Color(0xFFF2E86D);
     for (final p in projectiles) {
+      final projPaint = Paint()..color = p.color;
       if (p.isAerinStrong) {
         _drawFireballProjectile(canvas, p, time);
       } else {
@@ -3699,6 +3797,39 @@ class _GamePainter extends CustomPainter {
       _drawTargetIndicator(canvas, targetIndicator!);
     }
 
+  }
+
+  void _drawDefenseTower(Canvas canvas) {
+    final towerRect = Rect.fromCenter(
+      center: towerPosition,
+      width: towerSize,
+      height: towerSize,
+    );
+    final basePaint = Paint()..color = const Color(0xFF284B57);
+    final borderPaint = Paint()
+      ..color = const Color(0xFF8FE9FF)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    final corePaint = Paint()..color = const Color(0xFF7CE7FF);
+    final barrelPaint = Paint()
+      ..color = const Color(0xFFB9F5FF)
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(towerRect, const Radius.circular(6)),
+      basePaint,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(towerRect, const Radius.circular(6)),
+      borderPaint,
+    );
+    canvas.drawCircle(towerPosition, 6, corePaint);
+    canvas.drawLine(
+      towerPosition,
+      towerPosition.translate(12, 0),
+      barrelPaint,
+    );
   }
 
   void _drawFireballProjectile(Canvas canvas, _Projectile p, double time) {
@@ -4228,6 +4359,7 @@ class _HpBar extends StatelessWidget {
     required this.gameDurationText,
     required this.enemiesInWave,
     required this.totalEnemiesInWave,
+    this.trailing,
   });
 
   final double wallHp;
@@ -4237,6 +4369,7 @@ class _HpBar extends StatelessWidget {
   final String gameDurationText;
   final int enemiesInWave;
   final int totalEnemiesInWave;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -4302,6 +4435,10 @@ class _HpBar extends StatelessWidget {
               ],
             ),
           ),
+          if (trailing != null) ...[
+            const SizedBox(width: 12),
+            trailing!,
+          ],
         ],
       ),
     );
@@ -4954,7 +5091,7 @@ class _HeroSelectScreenState extends State<HeroSelectScreen> {
   @override
   void initState() {
     super.initState();
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    _enableFullscreenMode();
     _loadProgress();
   }
 
@@ -4974,7 +5111,6 @@ class _HeroSelectScreenState extends State<HeroSelectScreen> {
 
   @override
   void dispose() {
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
   }
 
