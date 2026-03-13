@@ -63,7 +63,8 @@ Obrazovky a UI
   - Fullscreen (immersive) s cerne pozadi, bez systemoveho panelu.
   - Herni plocha kreslena CustomPainterem.
   - Cela herni plocha mapy pouziva jako pozadi obrazek `assets/backgrounds/grass.png`.
-  - InteractiveViewer je zarovnany k levemu a hornimu okraji (neumi se odtahnout vlevo/nahoru); je povoleny posun doprava/dolu a zoom.
+  - InteractiveViewer je zarovnany k levemu a hornimu okraji (neumi se odtahnout vlevo/nahoru); zoom zustava dostupny a posun mapy se pri zoomu aktivuje jen pri dotyku dvema a vice prsty.
+  - Dvouprsty posun mapy je rizeny rucne pres `TransformationController` a stred aktivnich dotyku, ne pres vestaveny pan gesture `InteractiveViewer`.
   - Zoom tlacitka `+` a `-` jsou primo v horni HUD liste vlevo od menu tlacitka, samostatna druha zoom lista uz neni.
   - Panel rychlosti vpravo dole.
   - Prepinac "Automode" vedle panelu rychlosti.
@@ -278,3 +279,9 @@ Spusteni
 - Restart hry byl rozsiren tak, aby obnovil skutecny pocatecni stav celeho runu vcetne 1. vlny, casu, statistik, pozic hrdinu, behavior/attack modu, zoomu a rychlosti hry `2x`.
 2026-03-13:
 - Pozadi cele herni plochy bylo zmeneno na obrazek `assets/backgrounds/grass.png`, ktery se vykresluje pres celou mapu.
+2026-03-13:
+- Ovládání zoomnute mapy bylo upraveno tak, aby jeden prst vzdy ovladal gameplay a posun mapy se aktivoval az pri dvouprstem gestu; tim zustava funkcni i drag multi-select na priblizene mape.
+2026-03-13:
+- Dvouprste ovladani mapy bylo nasledne predelano z puvodniho pokusu s `InteractiveViewer.panEnabled` na rucni posun pres `TransformationController`, protoze puvodni varianta byla na mobilu neintuitivni a nespolehliva.
+2026-03-13:
+- Zoom pres tlacitka `+` a `-` byl upraven tak, aby se meril od stredu viewportu; pri zmene priblizeni se tak mapa uz neutrhava k levemu hornimu rohu.

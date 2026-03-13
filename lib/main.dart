@@ -458,6 +458,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   Offset? _pointerDownScenePosition;
   int? _pointerDownHeroIndex;
   Offset? _selectionDragCurrent;
+  int _activePointerCount = 0;
 
   // RPG bonus helper methods
   // RPG system variables
@@ -473,6 +474,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   double _baseMapScale = 1.0;
   double _zoomMultiplier = 1.0;
   double _towerCooldownRemaining = 0.0;
+  Offset _mapViewportOffset = Offset.zero;
+  final Map<int, Offset> _activeViewportPointers = <int, Offset>{};
 
   @override
   void initState() {
@@ -625,12 +628,14 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       return;
     }
     _baseMapScale = fitToWidthScale;
+    _mapViewportOffset = _clampMapViewportOffset(_mapViewportOffset);
     _applyMapTransform();
   }
 
   void _applyMapTransform() {
-    _mapTransformController.value = Matrix4.identity()
-      ..scale(_baseMapScale * _zoomMultiplier);
+    final matrix = Matrix4.identity()..scale(_baseMapScale * _zoomMultiplier);
+    matrix.setTranslationRaw(_mapViewportOffset.dx, _mapViewportOffset.dy, 0);
+    _mapTransformController.value = matrix;
   }
 
   void _changeZoom(double delta) {
@@ -641,10 +646,64 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     if ((nextZoom - _zoomMultiplier).abs() < 0.0001) {
       return;
     }
+    final viewportSize = _interactiveViewportSize();
+    final viewportCenter = viewportSize == null
+        ? null
+        : Offset(viewportSize.width / 2, viewportSize.height / 2);
+    final centerScenePosition = viewportCenter == null
+        ? null
+        : _mapTransformController.toScene(viewportCenter);
     setState(() {
       _zoomMultiplier = nextZoom;
+      if (viewportCenter != null && centerScenePosition != null) {
+        final nextScale = _baseMapScale * _zoomMultiplier;
+        _mapViewportOffset = Offset(
+          viewportCenter.dx - centerScenePosition.dx * nextScale,
+          viewportCenter.dy - centerScenePosition.dy * nextScale,
+        );
+      }
+      _mapViewportOffset = _clampMapViewportOffset(_mapViewportOffset);
       _applyMapTransform();
     });
+  }
+
+  Size? _interactiveViewportSize() {
+    final renderObject = _interactiveViewerKey.currentContext?.findRenderObject();
+    if (renderObject is RenderBox) {
+      return renderObject.size;
+    }
+    return null;
+  }
+
+  Offset _clampMapViewportOffset(Offset offset) {
+    final viewportSize = _interactiveViewportSize();
+    if (viewportSize == null) {
+      return offset;
+    }
+    final scale = _baseMapScale * _zoomMultiplier;
+    final scaledWidth = mapWidth * scale;
+    final scaledHeight = mapHeight * scale;
+    final minDx = min(0.0, viewportSize.width - scaledWidth);
+    final minDy = min(0.0, viewportSize.height - scaledHeight);
+    return Offset(
+      offset.dx.clamp(minDx, 0.0),
+      offset.dy.clamp(minDy, 0.0),
+    );
+  }
+
+  Offset _viewportCentroid(Iterable<Offset> positions) {
+    double dx = 0;
+    double dy = 0;
+    int count = 0;
+    for (final position in positions) {
+      dx += position.dx;
+      dy += position.dy;
+      count++;
+    }
+    if (count == 0) {
+      return Offset.zero;
+    }
+    return Offset(dx / count, dy / count);
   }
 
   Map<String, SkillTree> _getSkillTrees() {
@@ -1731,6 +1790,9 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       _selectionDragCurrent = null;
       _pointerDownScenePosition = null;
       _pointerDownHeroIndex = null;
+      _activePointerCount = 0;
+      _activeViewportPointers.clear();
+      _mapViewportOffset = Offset.zero;
       _clearHeroRangeIndicator();
       _applyMapTransform();
     });
@@ -2243,10 +2305,14 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   }
 
   Offset _pointerEventToScenePosition(PointerEvent event) {
+    final viewportPosition = _pointerEventToViewportPosition(event);
+    return _mapTransformController.toScene(viewportPosition);
+  }
+
+  Offset _pointerEventToViewportPosition(PointerEvent event) {
     final renderObject = _interactiveViewerKey.currentContext?.findRenderObject();
     if (renderObject is RenderBox) {
-      final viewportPosition = renderObject.globalToLocal(event.position);
-      return _mapTransformController.toScene(viewportPosition);
+      return renderObject.globalToLocal(event.position);
     }
     return event.localPosition;
   }
@@ -3225,7 +3291,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                       key: _interactiveViewerKey,
                       transformationController: _mapTransformController,
                       constrained: false,
-                      panEnabled: _zoomMultiplier > minZoomMultiplier,
+                      panEnabled: false,
                       scaleEnabled: false,
                       boundaryMargin: EdgeInsets.zero,
                       minScale: fitToWidthScale,
@@ -3294,15 +3360,59 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                             Positioned.fill(
                               child: Listener(
                                 onPointerDown: (event) {
-                                  _pointerDownScenePosition = _pointerEventToScenePosition(event);
-                                  _pointerDownHeroIndex = _pointerDownScenePosition == null
-                                      ? null
-                                      : _hitTestHero(_pointerDownScenePosition!);
-                                  _selectionDragCurrent = null;
+                                  final viewportPosition = _pointerEventToViewportPosition(event);
+                                  final scenePosition = _pointerEventToScenePosition(event);
+                                  final nextPointerCount = _activePointerCount + 1;
+                                  setState(() {
+                                    _activeViewportPointers[event.pointer] = viewportPosition;
+                                    _activePointerCount = nextPointerCount;
+                                    if (_activePointerCount >= 2) {
+                                      _pointerDownScenePosition = null;
+                                      _pointerDownHeroIndex = null;
+                                      _selectionDragCurrent = null;
+                                    } else {
+                                      _pointerDownScenePosition = scenePosition;
+                                      _pointerDownHeroIndex = _hitTestHero(scenePosition);
+                                      _selectionDragCurrent = null;
+                                    }
+                                  });
                                 },
                                 onPointerMove: (event) {
+                                  final previousViewportPosition = _activeViewportPointers[event.pointer];
+                                  final viewportPosition = _pointerEventToViewportPosition(event);
+                                  if (previousViewportPosition != null) {
+                                    _activeViewportPointers[event.pointer] = viewportPosition;
+                                  }
+                                  if (_activeViewportPointers.length >= 2 &&
+                                      _zoomMultiplier > minZoomMultiplier &&
+                                      previousViewportPosition != null) {
+                                    final previousCentroid = _viewportCentroid(
+                                      _activeViewportPointers.entries.map(
+                                        (entry) => entry.key == event.pointer
+                                            ? previousViewportPosition
+                                            : entry.value,
+                                      ),
+                                    );
+                                    final currentCentroid =
+                                        _viewportCentroid(_activeViewportPointers.values);
+                                    final delta = currentCentroid - previousCentroid;
+                                    if (delta.distanceSquared > 0) {
+                                      setState(() {
+                                        _mapViewportOffset = _clampMapViewportOffset(
+                                          _mapViewportOffset + delta,
+                                        );
+                                        _pointerDownScenePosition = null;
+                                        _pointerDownHeroIndex = null;
+                                        _selectionDragCurrent = null;
+                                        _applyMapTransform();
+                                      });
+                                    }
+                                    return;
+                                  }
                                   final start = _pointerDownScenePosition;
-                                  if (start == null || _pointerDownHeroIndex != null) {
+                                  if (_activePointerCount != 1 ||
+                                      start == null ||
+                                      _pointerDownHeroIndex != null) {
                                     return;
                                   }
                                   final scenePosition = _pointerEventToScenePosition(event);
@@ -3317,12 +3427,20 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                                   final scenePosition = _pointerEventToScenePosition(event);
                                   final start = _pointerDownScenePosition;
                                   final pointerDownHeroIndex = _pointerDownHeroIndex;
+                                  final wasMultiTouchGesture = _activePointerCount >= 2;
                                   final dragDistance = start == null
                                       ? 0.0
                                       : (scenePosition - start).distance;
-                                  _pointerDownScenePosition = null;
-                                  _pointerDownHeroIndex = null;
-                                  _selectionDragCurrent = null;
+                                  setState(() {
+                                    _activeViewportPointers.remove(event.pointer);
+                                    _activePointerCount = max(0, _activePointerCount - 1);
+                                    _pointerDownScenePosition = null;
+                                    _pointerDownHeroIndex = null;
+                                    _selectionDragCurrent = null;
+                                  });
+                                  if (wasMultiTouchGesture) {
+                                    return;
+                                  }
                                   if (start == null) {
                                     return;
                                   }
@@ -3343,9 +3461,13 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                                   _handleMapTap(scenePosition);
                                 },
                                 onPointerCancel: (event) {
-                                  _pointerDownScenePosition = null;
-                                  _pointerDownHeroIndex = null;
-                                  _selectionDragCurrent = null;
+                                  setState(() {
+                                    _activeViewportPointers.remove(event.pointer);
+                                    _activePointerCount = max(0, _activePointerCount - 1);
+                                    _pointerDownScenePosition = null;
+                                    _pointerDownHeroIndex = null;
+                                    _selectionDragCurrent = null;
+                                  });
                                 },
                                 behavior: HitTestBehavior.opaque,
                                 child: const SizedBox.expand(),
