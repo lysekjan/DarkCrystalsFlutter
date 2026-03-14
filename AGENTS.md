@@ -110,6 +110,10 @@ Detailed balance values are documented in `INFO.txt` and `project_info.txt`.
 - Input positions are converted with `TransformationController.toScene(...)` where needed so manual targeting stays accurate.
 - For map taps inside the zoomed gameplay view, pointer coordinates must be converted from the `InteractiveViewer` viewport (`globalToLocal`) before calling `TransformationController.toScene(...)`; using the transformed child `localPosition` directly causes offset targets.
 - The old left hero card panel and the automode switch are removed from gameplay UI.
+- A compact hero-card strip is now shown in the bottom-right gameplay HUD next to the speed panel.
+- Each gameplay hero card shows the hero portrait used in hero selection and a small HP bar.
+- Clicking a gameplay hero card selects that hero exactly like clicking the hero unit on the map.
+- When a hero dies, that hero's gameplay card remains visible but becomes greyed out.
 
 ## Enemy Targeting Behavior
 
@@ -162,6 +166,7 @@ Detailed balance values are documented in `INFO.txt` and `project_info.txt`.
 - 2026-03-13: Added a simple fixed defense tower in the upper-left area left of the wall; it auto-fires every 5 seconds at the nearest enemy within hero-range distance and deals 10 projectile damage per hit.
 - 2026-03-13: `Restart` now fully resets the run to its initial state: wave/stat counters, game timer, hero positions, hero behavior/mode settings, zoom, selection state, and game speed all return to startup defaults.
 - 2026-03-13: The gameplay map background now uses `assets/backgrounds/grass.png` stretched over the whole map area, with the old flat-color fill kept only as a fallback.
+- 2026-03-14: Added a compact bottom-right gameplay strip of hero cards with hero-select portraits and HP bars; clicking a card selects the same hero as a direct map click, and dead heroes keep a greyed-out card.
 - 2026-03-13: Zoomed map control was split by touch count: one finger always controls gameplay, while map panning activates only on two-finger gestures so drag multi-select still works when zoomed in.
 - 2026-03-13: Two-finger map movement was reworked to use manual viewport-offset dragging from active touch positions, because `InteractiveViewer` did not provide reliable two-finger-only pan behavior in this setup.
 - 2026-03-13: Zoom button scaling now anchors around the center of the viewport instead of the top-left corner, so pressing `+` or `-` keeps the current center area stable.

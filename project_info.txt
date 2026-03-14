@@ -63,6 +63,10 @@ Obrazovky a UI
   - Fullscreen (immersive) s cerne pozadi, bez systemoveho panelu.
   - Herni plocha kreslena CustomPainterem.
   - Cela herni plocha mapy pouziva jako pozadi obrazek `assets/backgrounds/grass.png`.
+  - Vpravo dole vedle panelu rychlosti je novy kompaktni pruh karet aktivnich hrdinu.
+  - Kazda karta hrdiny zobrazuje stejny portret jako ve vyberu hrdinu a maly HP ukazatel.
+  - Klik na kartu hrdiny vybere daneho hrdinu stejne jako klik primo na jednotku na mape.
+  - Po smrti hrdiny jeho karta zustava viditelna, ale zesedne.
 - Aerin ma ve hre vlastni animovany vzhled jednotky ze sprite sheetu `assets/heroes/Aerin_sheet.png`; v menu a vyberovych ikonach zustava puvodni portret.
 - Aerinuv in-game sprite se vykresluje bez barevneho podkladu a bez ramecku, aby byl videt jen samotny PNG obrazek s pruhlednym pozadim.
 - Aerinuv animovany sprite se kresli bez vyhlazovani (`FilterQuality.none`, bez antialiasingu), aby se kolem transparentnich okraju pixel-artu netvorily tmave artefakty.
@@ -318,3 +322,5 @@ Spusteni
 - Prehravani Aerin ze sprite sheetu bylo nasledne opraveno na alignment-based vyrez jednoho framu; puvodni translate varianta mohla ve hre zobrazit jen prazdny pruhledny prostor misto samotne postavy.
 2026-03-14:
 - Vykresleni Aerin ze sprite sheetu bylo nakonec presunuto na prime kresleni jednoho `sourceRect` z `ui.Image`; tim se obchazi nespolehlive widgetove orezavani velmi sirokeho sheetu, ktere jeste mohlo ukazovat prazdne misto.
+2026-03-14:
+- Na herni obrazovku byl pridany novy pravodolni strip karet hrdinu s portrety a HP bary; klik na kartu vybira hrdinu stejne jako klik na jednotku a mrtvi hrdinove maji zesedlou kartu.

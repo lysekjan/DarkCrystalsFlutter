@@ -3640,14 +3640,73 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
           Positioned(
             right: 8,
             bottom: 8,
-            child: _SpeedPanel(
-              isOpen: _speedPanelOpen,
-              speed: _gameSpeed,
-              onToggle: () => setState(() => _speedPanelOpen = !_speedPanelOpen),
-              onSetSpeed: (value) => setState(() => _gameSpeed = value),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                _HeroCardsPanel(
+                  heroes: widget.heroes,
+                  heroUnits: _heroUnits,
+                  selectedHeroIndex: _selectedHeroIndex,
+                  multiSelectedHeroIndices: _multiSelectedHeroIndices,
+                  onHeroTap: _selectHero,
+                ),
+                const SizedBox(width: 8),
+                _SpeedPanel(
+                  isOpen: _speedPanelOpen,
+                  speed: _gameSpeed,
+                  onToggle: () => setState(() => _speedPanelOpen = !_speedPanelOpen),
+                  onSetSpeed: (value) => setState(() => _gameSpeed = value),
+                ),
+              ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _HeroCardsPanel extends StatelessWidget {
+  const _HeroCardsPanel({
+    required this.heroes,
+    required this.heroUnits,
+    required this.selectedHeroIndex,
+    required this.multiSelectedHeroIndices,
+    required this.onHeroTap,
+  });
+
+  final List<HeroDef> heroes;
+  final List<_HeroUnit> heroUnits;
+  final int? selectedHeroIndex;
+  final Set<int> multiSelectedHeroIndices;
+  final ValueChanged<int> onHeroTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xB012171B),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(heroes.length, (index) {
+            final isSelected =
+                selectedHeroIndex == index || multiSelectedHeroIndices.contains(index);
+            return Padding(
+              padding: EdgeInsets.only(right: index == heroes.length - 1 ? 0 : 8),
+              child: _HeroQuickCard(
+                hero: heroes[index],
+                unit: heroUnits[index],
+                isSelected: isSelected,
+                onTap: heroUnits[index].isAlive ? () => onHeroTap(index) : null,
+              ),
+            );
+          }),
+        ),
       ),
     );
   }
@@ -3886,6 +3945,127 @@ class _ZoomButton extends StatelessWidget {
           child: Icon(icon, color: Colors.white, size: 20),
         ),
       ),
+    );
+  }
+}
+
+class _HeroQuickCard extends StatelessWidget {
+  const _HeroQuickCard({
+    required this.hero,
+    required this.unit,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  static const List<double> _grayscaleMatrix = <double>[
+    0.2126, 0.7152, 0.0722, 0, 0,
+    0.2126, 0.7152, 0.0722, 0, 0,
+    0.2126, 0.7152, 0.0722, 0, 0,
+    0, 0, 0, 1, 0,
+  ];
+
+  final HeroDef hero;
+  final _HeroUnit unit;
+  final bool isSelected;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final hpFraction = unit.maxHp > 0 ? (unit.hp / unit.maxHp).clamp(0.0, 1.0) : 0.0;
+    final isDead = !unit.isAlive;
+    final content = Container(
+      width: 66,
+      padding: const EdgeInsets.fromLTRB(6, 6, 6, 7),
+      decoration: BoxDecoration(
+        color: isDead
+            ? const Color(0xCC3A3A3A)
+            : const Color(0xCC1A2228),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: isSelected ? const Color(0xFFFFE08A) : Colors.white24,
+          width: isSelected ? 2 : 1,
+        ),
+        boxShadow: isSelected
+            ? [
+                BoxShadow(
+                  color: const Color(0x66FFE08A),
+                  blurRadius: 10,
+                  spreadRadius: 1,
+                ),
+              ]
+            : null,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 52,
+            height: 52,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(7),
+              child: hero.imageAsset.isNotEmpty
+                  ? ColorFiltered(
+                      colorFilter: ColorFilter.matrix(
+                        isDead
+                            ? _grayscaleMatrix
+                            : const <double>[
+                                1, 0, 0, 0, 0,
+                                0, 1, 0, 0, 0,
+                                0, 0, 1, 0, 0,
+                                0, 0, 0, 1, 0,
+                              ],
+                      ),
+                      child: Opacity(
+                        opacity: isDead ? 0.55 : 1,
+                        child: Image.asset(
+                          hero.imageAsset,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Icon(Icons.person, color: Colors.white54);
+                          },
+                        ),
+                      ),
+                    )
+                  : Icon(
+                      Icons.person,
+                      color: isDead ? Colors.white38 : Colors.white54,
+                    ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Container(
+            width: double.infinity,
+            height: 6,
+            decoration: BoxDecoration(
+              color: const Color(0x66160F0F),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                width: 54 * hpFraction,
+                decoration: BoxDecoration(
+                  color: isDead
+                      ? Colors.grey.shade500
+                      : Color.lerp(
+                            const Color(0xFFE14D4D),
+                            const Color(0xFF58D68D),
+                            hpFraction,
+                          ) ??
+                          const Color(0xFF58D68D),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: content,
     );
   }
 }
