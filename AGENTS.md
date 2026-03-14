@@ -41,6 +41,10 @@
 - Dragging on empty map space now draws a square selection box and can multi-select all heroes inside it.
 - Clicking a map position while a hero is selected gives that hero a move order.
 - Clicking a map position while multiple heroes are selected sends the whole group there in a small spaced formation so they do not overlap, and the multi-selection is cleared immediately after issuing the order.
+- Clicking a targetable enemy while one or more heroes are selected now issues a focused attack order: each selected hero moves until that specific enemy is inside that hero's own current attack range.
+- While a focused attack order is active, the ordered heroes keep prioritizing only that chosen enemy until it dies.
+- If the focused enemy dies during the approach, those heroes stop immediately and then continue again under their normal behavior mode.
+- Focused attack orders clear the current selection immediately after the enemy click.
 - During movement, the hero cannot attack.
 - During movement, cooldown continues to progress normally.
 - If cooldown finishes during movement, the attack is queued and starts only after the hero reaches the destination.
@@ -151,6 +155,7 @@ Detailed balance values are documented in `INFO.txt` and `project_info.txt`.
 - 2026-03-13: Enemy wall priority was tightened so enemies that reach the wall attack it immediately and no longer chase heroes behind the wall line.
 - 2026-03-13: Added drag multi-select with a square selection box; selected groups can receive a shared move order and spread into a small formation at the target point, while hero context menus stay hidden during multi-select.
 - 2026-03-13: Group move-orders from multi-select now clear the selection immediately after the player clicks the destination.
+- 2026-03-14: Clicking a targetable enemy with one or more selected heroes now issues a focused attack order; each hero moves into its own range for that enemy, keeps focus on that enemy only until it dies, and the selection clears right after the command.
 - 2026-03-13: Zoom `+` and `-` controls were moved from their own second bar into the main top HUD bar, positioned immediately left of the menu button to give the map more vertical space.
 - 2026-03-13: Fullscreen handling was hardened across the app: immersive sticky mode is now reapplied at startup and when the app resumes, and screen disposes no longer switch back to edge-to-edge, reducing Android status-bar bleed-through.
 - 2026-03-13: The Flutter debug banner in the top-right corner was disabled in `MaterialApp`.
@@ -160,6 +165,17 @@ Detailed balance values are documented in `INFO.txt` and `project_info.txt`.
 - 2026-03-13: Zoomed map control was split by touch count: one finger always controls gameplay, while map panning activates only on two-finger gestures so drag multi-select still works when zoomed in.
 - 2026-03-13: Two-finger map movement was reworked to use manual viewport-offset dragging from active touch positions, because `InteractiveViewer` did not provide reliable two-finger-only pan behavior in this setup.
 - 2026-03-13: Zoom button scaling now anchors around the center of the viewport instead of the top-left corner, so pressing `+` or `-` keeps the current center area stable.
+- 2026-03-13: The default minimum zoom now fits the map to the available height under the top HUD, so the gameplay area fills the device height at maximum zoom-out.
+- 2026-03-13: In-game Aerin rendering now overrides the shared hero portrait and uses `assets/heroes/Aerin_default.png`, while menu/select icons keep the original `hero_aerin.png` asset.
+- 2026-03-13: Aerin's in-game sprite now renders as a transparent PNG-only unit with no colored tile background, border, or selection glow frame behind it.
+- 2026-03-13: Aerin also skips the standard moving overlay, so no dark movement outline/icon appears around the transparent sprite while repositioning.
+- 2026-03-13: In-game hero units were enlarged, and the hero tap radius was increased accordingly so selection remains comfortable.
+- 2026-03-13: Aerin's in-game appearance now uses a looping animation for gameplay while menu icons still stay static.
+- 2026-03-13: The Aerin animation path was hardened with `gaplessPlayback` and a fallback to `assets/heroes/Aerin_default.png`, so a broken frame does not show the generic white icon.
+- 2026-03-13: Aerin's animated in-game sprite now renders with `FilterQuality.none` and antialiasing disabled, which avoids dark interpolation artifacts around transparent pixel-art edges.
+- 2026-03-14: Aerin animation frames were converted into a single transparent sprite sheet `assets/heroes/Aerin_sheet.png`; the gameplay render now reads 31 frames of `479x404` from that sheet, which removes the black background at the asset level instead of trying to hide it in UI code.
+- 2026-03-14: Aerin sprite-sheet playback was then corrected to use alignment-based frame cropping inside the hero widget; the earlier translate-based approach could leave the unit visually empty even though the sheet asset existed and loaded.
+- 2026-03-14: Aerin sprite-sheet playback was then moved off widget-layout cropping entirely and now draws the selected frame via `ui.Image` + `drawImageRect`; this avoids blank renders caused by layout-based clipping of the very wide sheet.
 
 ## Legacy Historical Notes
 

@@ -63,6 +63,12 @@ Obrazovky a UI
   - Fullscreen (immersive) s cerne pozadi, bez systemoveho panelu.
   - Herni plocha kreslena CustomPainterem.
   - Cela herni plocha mapy pouziva jako pozadi obrazek `assets/backgrounds/grass.png`.
+- Aerin ma ve hre vlastni animovany vzhled jednotky ze sprite sheetu `assets/heroes/Aerin_sheet.png`; v menu a vyberovych ikonach zustava puvodni portret.
+- Aerinuv in-game sprite se vykresluje bez barevneho podkladu a bez ramecku, aby byl videt jen samotny PNG obrazek s pruhlednym pozadim.
+- Aerinuv animovany sprite se kresli bez vyhlazovani (`FilterQuality.none`, bez antialiasingu), aby se kolem transparentnich okraju pixel-artu netvorily tmave artefakty.
+- Pri pohybu se na Aerinuv sprite neaplikuje standardni tmavy moving overlay s ikonou behu.
+  - Herni jednotky hrdinu jsou ted vetsi a tomu odpovida i zvetseny selection/tap radius.
+  - Pri vychozim zobrazeni / maximalnim odzoomovani se mapa skaluje podle vysky dostupne plochy pod hornim HUDem, aby vyplnila celou vysku displeje.
   - InteractiveViewer je zarovnany k levemu a hornimu okraji (neumi se odtahnout vlevo/nahoru); zoom zustava dostupny a posun mapy se pri zoomu aktivuje jen pri dotyku dvema a vice prsty.
   - Dvouprsty posun mapy je rizeny rucne pres `TransformationController` a stred aktivnich dotyku, ne pres vestaveny pan gesture `InteractiveViewer`.
   - Zoom tlacitka `+` a `-` jsou primo v horni HUD liste vlevo od menu tlacitka, samostatna druha zoom lista uz neni.
@@ -244,6 +250,10 @@ Spusteni
 - Hrdina zahaji utok jen tehdy, pokud je alespon jeden nepritel uvnitr jeho aktualniho dosahu.
 - Projektilove, beam a chain utoky si jako prvni cil vybiraji jen enemy v dosahu daneho hrdiny.
 - Pri oznaceni hrdiny se kolem nej vykresli lehce pruhledny kruh znazorňujici jeho aktualni dosah.
+- Klik na konkretniho nepritele pri oznacenem jednom nebo vice hrdinech ted zada cileny utok: kazdy vybrany hrdina se presune na vlastni pozici, ze ktere ma prave tohoto nepritele v dostrelu.
+- Dokud oznaceny cil zije, dotceni hrdinove ignoruji ostatni nepratele a fokus drzi jen na nem.
+- Pokud cileny nepritel zemre behem presunu, dotceni hrdinove se ihned zastavi a vrati se ke svemu beznemu behavior modu.
+- Po zadani tohoto cilenego utoku se aktualni selection zrusi.
 2026-03-13:
 - Klik na hrdinu vzdy znovu spusti zobrazeni kruhu dosahu, i kdyz je stejny hrdina uz vybrany.
 - Kruh dosahu zustane plne viditelny 5 sekund a potom plynule zmizi.
@@ -285,3 +295,26 @@ Spusteni
 - Dvouprste ovladani mapy bylo nasledne predelano z puvodniho pokusu s `InteractiveViewer.panEnabled` na rucni posun pres `TransformationController`, protoze puvodni varianta byla na mobilu neintuitivni a nespolehliva.
 2026-03-13:
 - Zoom pres tlacitka `+` a `-` byl upraven tak, aby se meril od stredu viewportu; pri zmene priblizeni se tak mapa uz neutrhava k levemu hornimu rohu.
+2026-03-13:
+- Vychozi minimalni zoom byl zmenen z fit-to-width na fit-to-height, takze herni plocha pri maximalnim odzoomovani vzdy vyplni celou vysku displeje pod hornim HUDem.
+2026-03-13:
+- In-game vzhled hrdiny Aerin byl oddelen od menu ikon a ve hre ted pouziva asset `assets/heroes/Aerin_default.png`, zatimco menu ponechava puvodni portret.
+2026-03-13:
+- Aerinuv herni sprite byl dale upraven tak, aby se kreslil jako samotny transparentni PNG bez barevneho podkladu, ramecku a glow okraje.
+2026-03-13:
+- Aerin pri pohybu prestal pouzivat standardni tmavy moving overlay a ikonu behu, aby kolem transparentniho sprite nezustaval zadny obrys.
+2026-03-13:
+- Aerinuv in-game vzhled byl nasledne zmenen ze statickeho obrazku na looping frame animaci slozenou z PNG framu ve slozce `assets/heroes/Aerin/`.
+2026-03-13:
+- Nacitani Aerinovy frame animace bylo zpevnene fallbackem na `assets/heroes/Aerin_default.png`, aby se pri chybe nezobrazovala obecna bila ikona.
+- Samotne vykresleni Aerinovych animovanych framu bylo doladeno vypnutim vyhlazovani, aby transparentni hrany sprite necerpaly tmavy lem z interpolace.
+2026-03-13:
+- Vsechny herni jednotky hrdinu byly zvetseny a tap radius pro jejich vyber byl take zvysen.
+2026-03-14:
+- Klik na targetable enemy s jednim nebo vice oznacenymi hrdiny ted zada cileny attack order; kazdy hrdina si drzi vlastni dostrelovou pozici pro stejny cil, fokus trva jen do smrti cile a selection se po prikazu hned vycisti.
+2026-03-14:
+- Framova sada Aerin byla prevedena do jednoho transparentniho sprite sheetu `assets/heroes/Aerin_sheet.png` s 31 framy o velikosti `479x404`; hra ted prehrava animaci z tohoto sheetu a cerny obrys se odstranuje uz na urovni assetu.
+2026-03-14:
+- Prehravani Aerin ze sprite sheetu bylo nasledne opraveno na alignment-based vyrez jednoho framu; puvodni translate varianta mohla ve hre zobrazit jen prazdny pruhledny prostor misto samotne postavy.
+2026-03-14:
+- Vykresleni Aerin ze sprite sheetu bylo nakonec presunuto na prime kresleni jednoho `sourceRect` z `ui.Image`; tim se obchazi nespolehlive widgetove orezavani velmi sirokeho sheetu, ktere jeste mohlo ukazovat prazdne misto.

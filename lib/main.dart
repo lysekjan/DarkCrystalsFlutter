@@ -358,8 +358,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   static const double cooldownScale = 0.25;
   static const double defaultHeroAttackRange = mapWidth / 3;
   static const double enemyTapRadius = 18;
-  static const double heroTapRadius = 24;
-  static const double heroUnitSize = 44;
+  static const double heroTapRadius = 30;
+  static const double heroUnitSize = 56;
   static const double wallDps = 5; // damage per second
   static const double hitFlashDuration = 0.12; // seconds
   static const double projectileRadius = 2;
@@ -623,11 +623,11 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     }
   }
 
-  void _updateMapScale(double fitToWidthScale) {
-    if ((_baseMapScale - fitToWidthScale).abs() < 0.0001) {
+  void _updateMapScale(double baseScale) {
+    if ((_baseMapScale - baseScale).abs() < 0.0001) {
       return;
     }
-    _baseMapScale = fitToWidthScale;
+    _baseMapScale = baseScale;
     _mapViewportOffset = _clampMapViewportOffset(_mapViewportOffset);
     _applyMapTransform();
   }
@@ -777,6 +777,11 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     return (enemy.position - _heroPosition(heroIndex)).distance <= maxRange;
   }
 
+  _Enemy? _forcedTargetForHero(int heroIndex) {
+    final target = _heroUnits[heroIndex].forcedAttackTarget;
+    return _containsTargetableEnemy(target) ? target : null;
+  }
+
   _Enemy? _nearestEnemyForHero(
     int heroIndex, {
     _Enemy? preferredTarget,
@@ -784,6 +789,14 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     double? range,
   }) {
     final maxRange = range ?? _heroCurrentAttackRange(heroIndex);
+    final forcedTarget = _forcedTargetForHero(heroIndex);
+    if (forcedTarget != null) {
+      if (!exclude.contains(forcedTarget) &&
+          _isEnemyInHeroRange(heroIndex, forcedTarget, range: maxRange)) {
+        return forcedTarget;
+      }
+      return null;
+    }
     if (_containsTargetableEnemy(preferredTarget) &&
         !exclude.contains(preferredTarget) &&
         _isEnemyInHeroRange(heroIndex, preferredTarget!, range: maxRange)) {
@@ -796,9 +809,30 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     );
   }
 
+  _Enemy? _hitTestEnemy(Offset position) {
+    _Enemy? hit;
+    double bestDist = double.infinity;
+    for (final enemy in _enemies) {
+      if (!_isEnemyTargetable(enemy)) {
+        continue;
+      }
+      final dist = (enemy.position - position).distance;
+      if (dist <= enemySize / 2 + enemyTapRadius && dist < bestDist) {
+        bestDist = dist;
+        hit = enemy;
+      }
+    }
+    return hit;
+  }
+
   void _beginEnemyDeath(_Enemy enemy) {
     if (enemy.isDying) {
       return;
+    }
+    for (int i = 0; i < _heroUnits.length; i++) {
+      if (identical(_heroUnits[i].forcedAttackTarget, enemy)) {
+        _clearForcedAttackOrder(i);
+      }
     }
     enemy
       ..hp = 0
@@ -869,11 +903,58 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   void _issueMoveOrder(int heroIndex, Offset target) {
     final unit = _heroUnits[heroIndex];
     unit
+      ..forcedAttackTarget = null
       ..homePosition = target
       ..hasManualMoveOrder = true
       ..defensiveRetreatLockUntil = 0
       ..target = target
       ..isMoving = (unit.position - target).distance > 0.01;
+  }
+
+  Offset _attackApproachTarget(int heroIndex, _Enemy enemy) {
+    final heroPos = _heroPosition(heroIndex);
+    final desiredDistance = max(
+      24.0,
+      _heroCurrentAttackRange(heroIndex) - offensiveRangePadding,
+    );
+    final delta = heroPos - enemy.position;
+    if (delta.distance <= 0.001) {
+      return _clampHeroTarget(
+        enemy.position.translate(-desiredDistance, 0),
+      );
+    }
+    final direction = delta / delta.distance;
+    return _clampHeroTarget(enemy.position + direction * desiredDistance);
+  }
+
+  void _issueAttackOrder(int heroIndex, _Enemy enemy) {
+    final unit = _heroUnits[heroIndex];
+    final target = _attackApproachTarget(heroIndex, enemy);
+    unit
+      ..forcedAttackTarget = enemy
+      ..homePosition = target
+      ..hasManualMoveOrder = true
+      ..defensiveRetreatLockUntil = 0
+      ..target = target
+      ..isMoving = (unit.position - target).distance > 0.01;
+  }
+
+  void _issueMultiAttackOrder(_Enemy enemy) {
+    final heroIndices = _multiSelectedHeroIndices.where(_isHeroAlive).toList()..sort();
+    for (final heroIndex in heroIndices) {
+      _issueAttackOrder(heroIndex, enemy);
+    }
+  }
+
+  void _clearForcedAttackOrder(int heroIndex, {bool stopMovement = true}) {
+    final unit = _heroUnits[heroIndex];
+    unit.forcedAttackTarget = null;
+    unit.hasManualMoveOrder = false;
+    if (stopMovement) {
+      unit
+        ..target = unit.position
+        ..isMoving = false;
+    }
   }
 
   void _issueMultiMoveOrder(Offset center) {
@@ -952,6 +1033,27 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     if (tappedHeroIndex != null) {
       _selectHero(tappedHeroIndex);
       return;
+    }
+
+    final tappedEnemy = _hitTestEnemy(position);
+    if (tappedEnemy != null) {
+      if (_isMultiSelectMode) {
+        setState(() {
+          _issueMultiAttackOrder(tappedEnemy);
+          _multiSelectedHeroIndices.clear();
+          _selectedHeroIndex = null;
+        });
+        return;
+      }
+
+      final selectedHeroIndex = _selectedHeroIndex;
+      if (selectedHeroIndex != null && _isHeroAlive(selectedHeroIndex)) {
+        setState(() {
+          _issueAttackOrder(selectedHeroIndex, tappedEnemy);
+          _selectedHeroIndex = null;
+        });
+        return;
+      }
     }
 
     if (_isMultiSelectMode) {
@@ -1121,6 +1223,14 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       if (!_isHeroAlive(i)) {
         continue;
       }
+      final forcedTarget = _forcedTargetForHero(i);
+      if (forcedTarget != null) {
+        _updateForcedAttackTarget(i, forcedTarget);
+        continue;
+      }
+      if (_heroUnits[i].forcedAttackTarget != null) {
+        _clearForcedAttackOrder(i);
+      }
       if (_heroUnits[i].hasManualMoveOrder) {
         continue;
       }
@@ -1135,6 +1245,22 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
           break;
       }
     }
+  }
+
+  void _updateForcedAttackTarget(int heroIndex, _Enemy enemy) {
+    final unit = _heroUnits[heroIndex];
+    if (_isEnemyInHeroRange(heroIndex, enemy)) {
+      unit
+        ..target = unit.position
+        ..isMoving = false;
+      return;
+    }
+    final target = _attackApproachTarget(heroIndex, enemy);
+    unit
+      ..homePosition = target
+      ..hasManualMoveOrder = true
+      ..defensiveRetreatLockUntil = 0
+      ..target = target;
   }
 
   void _updateOffensiveBehaviorTarget(int heroIndex) {
@@ -1176,19 +1302,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   }
 
   Offset _offensiveApproachTarget(int heroIndex, _Enemy enemy) {
-    final heroPos = _heroPosition(heroIndex);
-    final desiredDistance = max(
-      24.0,
-      _heroCurrentAttackRange(heroIndex) - offensiveRangePadding,
-    );
-    final delta = heroPos - enemy.position;
-    if (delta.distance <= 0.001) {
-      return _clampHeroTarget(
-        enemy.position.translate(-desiredDistance, 0),
-      );
-    }
-    final direction = delta / delta.distance;
-    return _clampHeroTarget(enemy.position + direction * desiredDistance);
+    return _attackApproachTarget(heroIndex, enemy);
   }
 
   Offset _defensiveRetreatTarget(int heroIndex, _Enemy enemy) {
@@ -1247,9 +1361,10 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     if (state.phase != _HeroPhase.sending || !state.pendingAttack || !_isHeroAlive(heroIndex)) {
       return;
     }
+    final forcedTarget = _forcedTargetForHero(heroIndex);
     if (_heroCanAutoAttackNow(heroIndex)) {
       state.pendingAttack = false;
-      _performAttack(heroIndex);
+      _performAttack(heroIndex, target: forcedTarget);
     } else {
       state
         ..phase = _HeroPhase.cooldown
@@ -1379,6 +1494,10 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   bool _heroCanAutoAttackNow(int heroIndex) {
     if (!_isHeroAlive(heroIndex)) {
       return false;
+    }
+    final forcedTarget = _forcedTargetForHero(heroIndex);
+    if (forcedTarget != null) {
+      return _isEnemyInHeroRange(heroIndex, forcedTarget);
     }
     return _nearestEnemyForHero(heroIndex) != null;
   }
@@ -2218,18 +2337,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     }
 
     // Fallback: find nearest enemy if no hero ready
-    _Enemy? hit;
-    double bestDist = double.infinity;
-    for (final enemy in _enemies) {
-      if (!_isEnemyTargetable(enemy)) {
-        continue;
-      }
-      final dist = (enemy.position - position).distance;
-      if (dist <= enemySize / 2 + enemyTapRadius && dist < bestDist) {
-        bestDist = dist;
-        hit = enemy;
-      }
-    }
+    final hit = _hitTestEnemy(position);
     if (hit == null) {
       return;
     }
@@ -3284,8 +3392,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
               Expanded(
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    final fitToWidthScale = constraints.maxWidth / mapWidth;
-                    _updateMapScale(fitToWidthScale);
+                    final fitToHeightScale = constraints.maxHeight / mapHeight;
+                    _updateMapScale(fitToHeightScale);
 
                     return InteractiveViewer(
                       key: _interactiveViewerKey,
@@ -3294,8 +3402,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                       panEnabled: false,
                       scaleEnabled: false,
                       boundaryMargin: EdgeInsets.zero,
-                      minScale: fitToWidthScale,
-                      maxScale: fitToWidthScale * maxZoomMultiplier,
+                      minScale: fitToHeightScale,
+                      maxScale: fitToHeightScale * maxZoomMultiplier,
                       alignment: Alignment.topLeft,
                       child: SizedBox(
                         width: mapWidth,
@@ -3568,9 +3676,82 @@ class _HeroUnitWidget extends StatelessWidget {
   final double size;
   final double time;
 
+  static const String _aerinSpriteSheetAsset = 'assets/heroes/Aerin_sheet.png';
+  static const String _aerinFallbackAsset = 'assets/heroes/Aerin_default.png';
+  static const int _aerinFrameCount = 31;
+  static const double _aerinFrameWidth = 479;
+  static const double _aerinFrameHeight = 404;
+  static final Future<ui.Image?> _aerinSpriteSheetFuture = _loadAerinSpriteSheet();
+
+  static Future<ui.Image?> _loadAerinSpriteSheet() async {
+    try {
+      final data = await rootBundle.load(_aerinSpriteSheetAsset);
+      final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+      final frame = await codec.getNextFrame();
+      return frame.image;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Widget _buildHeroImage({
+    required String imageAsset,
+    required bool isAerinInGameSprite,
+  }) {
+    return Image.asset(
+      imageAsset,
+      fit: isAerinInGameSprite ? BoxFit.contain : BoxFit.cover,
+      filterQuality: isAerinInGameSprite ? FilterQuality.none : FilterQuality.low,
+      isAntiAlias: !isAerinInGameSprite,
+      gaplessPlayback: true,
+      errorBuilder: (context, error, stackTrace) {
+        if (isAerinInGameSprite) {
+          return Image.asset(
+            _aerinFallbackAsset,
+            fit: BoxFit.contain,
+            filterQuality: FilterQuality.none,
+            isAntiAlias: false,
+            gaplessPlayback: true,
+            errorBuilder: (context, error, stackTrace) {
+              return const Icon(Icons.person, color: Colors.white70, size: 20);
+            },
+          );
+        }
+        return const Icon(Icons.person, color: Colors.white70, size: 20);
+      },
+    );
+  }
+
+  Widget _buildAerinFrame(int frameIndex) {
+    return FutureBuilder<ui.Image?>(
+      future: _aerinSpriteSheetFuture,
+      builder: (context, snapshot) {
+        final spriteSheet = snapshot.data;
+        if (spriteSheet == null) {
+          return _buildHeroImage(
+            imageAsset: _aerinFallbackAsset,
+            isAerinInGameSprite: true,
+          );
+        }
+        return SizedBox.expand(
+          child: CustomPaint(
+            painter: _SpriteFramePainter(
+              spriteSheet: spriteSheet,
+              frameIndex: frameIndex,
+              frameCount: _aerinFrameCount,
+              frameWidth: _aerinFrameWidth,
+              frameHeight: _aerinFrameHeight,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final pulse = sin(time * 6) * 0.5 + 0.5;
+    final isAerinInGameSprite = hero.name == 'Aerin';
     final cooldownFraction =
         (state.phase == _HeroPhase.cooldown && cooldownDuration > 0)
             ? (state.timeRemaining / cooldownDuration).clamp(0.0, 1.0)
@@ -3586,13 +3767,17 @@ class _HeroUnitWidget extends StatelessWidget {
             width: size,
             height: size,
             decoration: BoxDecoration(
-              color: hero.color.withOpacity(isMoving ? 0.75 : 0.9),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: isSelected ? const Color(0xFFFFE08A) : Colors.white24,
-                width: isSelected ? 2.5 : 1,
-              ),
-              boxShadow: isSelected
+              color: isAerinInGameSprite
+                  ? Colors.transparent
+                  : hero.color.withOpacity(isMoving ? 0.75 : 0.9),
+              borderRadius: BorderRadius.circular(isAerinInGameSprite ? 0 : 10),
+              border: isAerinInGameSprite
+                  ? null
+                  : Border.all(
+                      color: isSelected ? const Color(0xFFFFE08A) : Colors.white24,
+                      width: isSelected ? 2.5 : 1,
+                    ),
+              boxShadow: isSelected && !isAerinInGameSprite
                   ? [
                       BoxShadow(
                         color: const Color(0xFFFFE08A).withOpacity(0.5 + pulse * 0.35),
@@ -3603,21 +3788,20 @@ class _HeroUnitWidget extends StatelessWidget {
                   : null,
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(9),
+              borderRadius: BorderRadius.circular(isAerinInGameSprite ? 0 : 9),
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  if (hero.imageAsset.isNotEmpty)
-                    Image.asset(
-                      hero.imageAsset,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Icon(Icons.person, color: Colors.white70, size: 20);
-                      },
+                  if (isAerinInGameSprite)
+                    _buildAerinFrame((time * 12).floor() % _aerinFrameCount)
+                  else if (hero.imageAsset.isNotEmpty)
+                    _buildHeroImage(
+                      imageAsset: hero.imageAsset,
+                      isAerinInGameSprite: false,
                     )
                   else
                     const Icon(Icons.person, color: Colors.white70, size: 20),
-                  if (isMoving)
+                  if (isMoving && !isAerinInGameSprite)
                     Container(
                       color: const Color(0x66000000),
                       alignment: Alignment.center,
@@ -3706,6 +3890,62 @@ class _ZoomButton extends StatelessWidget {
   }
 }
 
+class _SpriteFramePainter extends CustomPainter {
+  const _SpriteFramePainter({
+    required this.spriteSheet,
+    required this.frameIndex,
+    required this.frameCount,
+    required this.frameWidth,
+    required this.frameHeight,
+  });
+
+  final ui.Image spriteSheet;
+  final int frameIndex;
+  final int frameCount;
+  final double frameWidth;
+  final double frameHeight;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty || frameCount <= 0) {
+      return;
+    }
+    final clampedFrameIndex = frameIndex.clamp(0, frameCount - 1);
+    final src = Rect.fromLTWH(
+      clampedFrameIndex * frameWidth,
+      0,
+      frameWidth,
+      frameHeight,
+    );
+    final scale = min(size.width / frameWidth, size.height / frameHeight);
+    final drawWidth = frameWidth * scale;
+    final drawHeight = frameHeight * scale;
+    final dst = Rect.fromLTWH(
+      (size.width - drawWidth) / 2,
+      (size.height - drawHeight) / 2,
+      drawWidth,
+      drawHeight,
+    );
+    canvas.drawImageRect(
+      spriteSheet,
+      src,
+      dst,
+      Paint()
+        ..isAntiAlias = false
+        ..filterQuality = FilterQuality.none,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _SpriteFramePainter oldDelegate) {
+    return oldDelegate.spriteSheet != spriteSheet ||
+        oldDelegate.frameIndex != frameIndex ||
+        oldDelegate.frameCount != frameCount ||
+        oldDelegate.frameWidth != frameWidth ||
+        oldDelegate.frameHeight != frameHeight;
+  }
+}
+
 class _HeroUnit {
   _HeroUnit({
     required this.position,
@@ -3724,6 +3964,7 @@ class _HeroUnit {
   bool isAlive = true;
   bool hasManualMoveOrder = false;
   double defensiveRetreatLockUntil = 0;
+  _Enemy? forcedAttackTarget;
 }
 
 class _Enemy {
