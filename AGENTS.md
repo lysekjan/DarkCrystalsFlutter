@@ -15,7 +15,7 @@
 
 - Project: `Dark Crystals`
 - Type: Flutter arcade / lane-defense game with a custom game loop and `CustomPainter` rendering.
-- Main flow: intro screen -> hero selection -> game scene.
+- Main flow: intro screen -> hero selection -> chapter selection -> level selection -> game scene.
 - Core gameplay logic is concentrated mainly in `lib/main.dart`.
 
 ## Current Gameplay Model
@@ -26,6 +26,7 @@
 - Enemies spawn on the right side in 5 lanes but can now move freely through the map.
 - The wall has `300 HP`.
 - Enemy base HP is `20`, scaled by wave.
+- Selected chapter currently only gates access; selected level also multiplies enemy HP by `1.2^(level-1)`.
 - Enemy move speed is `16`.
 - Enemy damage to both wall and heroes is currently `5 DPS`.
 - Enemy touch targeting uses a tolerant tap radius.
@@ -107,6 +108,7 @@ Detailed balance values are documented in `INFO.txt` and `project_info.txt`.
 - Zoom `+` and `-` buttons are present on screen.
 - Manual zoom is handled through `TransformationController`.
 - When zoomed in, single-touch gestures remain reserved for gameplay; map panning is handled manually from the centroid of two active touches instead of relying on `InteractiveViewer` pan gestures.
+- The same manual two-finger map panning now also remains available at the default zoom-out level, not only after zooming in.
 - Input positions are converted with `TransformationController.toScene(...)` where needed so manual targeting stays accurate.
 - For map taps inside the zoomed gameplay view, pointer coordinates must be converted from the `InteractiveViewer` viewport (`globalToLocal`) before calling `TransformationController.toScene(...)`; using the transformed child `localPosition` directly causes offset targets.
 - The old left hero card panel and the automode switch are removed from gameplay UI.
@@ -129,6 +131,9 @@ Detailed balance values are documented in `INFO.txt` and `project_info.txt`.
 
 - The game uses slot-based save data.
 - Coins, XP, unlocks, and other RPG progress are stored per save slot.
+- After hero selection, the player now goes through a chapter-selection screen and then a level-selection screen before gameplay starts.
+- There are currently 2 chapters in the selector, but only chapter 1 is unlocked.
+- Chapter 1 currently contains 19 selectable levels.
 
 ## Change Log Context
 
@@ -167,8 +172,12 @@ Detailed balance values are documented in `INFO.txt` and `project_info.txt`.
 - 2026-03-13: `Restart` now fully resets the run to its initial state: wave/stat counters, game timer, hero positions, hero behavior/mode settings, zoom, selection state, and game speed all return to startup defaults.
 - 2026-03-13: The gameplay map background now uses `assets/backgrounds/grass.png` stretched over the whole map area, with the old flat-color fill kept only as a fallback.
 - 2026-03-14: Added a compact bottom-right gameplay strip of hero cards with hero-select portraits and HP bars; clicking a card selects the same hero as a direct map click, and dead heroes keep a greyed-out card.
+- 2026-03-14: Hero selection screen back navigation was fixed to return explicitly to `SaveSlotScreen`; both the on-screen `Zpet` button and system back now avoid falling into a blank white route after the earlier `pushReplacement` flow.
+- 2026-03-14: Save-slot screen back navigation was also fixed to return explicitly to `IntroScreen`; both the on-screen `Zpet` button and system back now avoid the same blank white route issue caused by `pushReplacement`.
+- 2026-03-14: Hero selection now includes a dedicated bottom-panel button that opens the existing hero-upgrade screen directly, so upgrades are reachable without going back through the intro screen.
 - 2026-03-13: Zoomed map control was split by touch count: one finger always controls gameplay, while map panning activates only on two-finger gestures so drag multi-select still works when zoomed in.
 - 2026-03-13: Two-finger map movement was reworked to use manual viewport-offset dragging from active touch positions, because `InteractiveViewer` did not provide reliable two-finger-only pan behavior in this setup.
+- 2026-03-14: Two-finger map movement was loosened so it also works at the default zoom-out level; the offset clamp still limits movement to the real visible overflow area.
 - 2026-03-13: Zoom button scaling now anchors around the center of the viewport instead of the top-left corner, so pressing `+` or `-` keeps the current center area stable.
 - 2026-03-13: The default minimum zoom now fits the map to the available height under the top HUD, so the gameplay area fills the device height at maximum zoom-out.
 - 2026-03-13: In-game Aerin rendering now overrides the shared hero portrait and uses `assets/heroes/Aerin_default.png`, while menu/select icons keep the original `hero_aerin.png` asset.
@@ -181,6 +190,9 @@ Detailed balance values are documented in `INFO.txt` and `project_info.txt`.
 - 2026-03-14: Aerin animation frames were converted into a single transparent sprite sheet `assets/heroes/Aerin_sheet.png`; the gameplay render now reads 31 frames of `479x404` from that sheet, which removes the black background at the asset level instead of trying to hide it in UI code.
 - 2026-03-14: Aerin sprite-sheet playback was then corrected to use alignment-based frame cropping inside the hero widget; the earlier translate-based approach could leave the unit visually empty even though the sheet asset existed and loaded.
 - 2026-03-14: Aerin sprite-sheet playback was then moved off widget-layout cropping entirely and now draws the selected frame via `ui.Image` + `drawImageRect`; this avoids blank renders caused by layout-based clipping of the very wide sheet.
+- 2026-03-15: Starting gameplay from hero selection now goes through a new chapter-selection screen and then a level-selection screen; chapter 2 is already visible but locked, and chapter 1 currently exposes 19 levels.
+- 2026-03-15: Level choice now feeds into gameplay difficulty by multiplying spawned enemy HP by `1.2^(level-1)` on top of the existing per-wave HP scaling.
+- 2026-03-15: Returning from the hero-upgrade screen now reloads `PlayerProgress` on `HeroSelectScreen`, so newly unlocked heroes become immediately selectable without leaving the current flow.
 
 ## Legacy Historical Notes
 

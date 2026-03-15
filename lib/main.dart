@@ -208,6 +208,14 @@ class _SaveSlotScreenState extends State<SaveSlotScreen> {
     );
   }
 
+  void _goBackToIntro() {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(
+        builder: (_) => const IntroScreen(),
+      ),
+    );
+  }
+
   int _unlockedHeroesCount(PlayerProgress progress) {
     return progress.heroes.values.where((h) => h.unlocked).length;
   }
@@ -221,21 +229,28 @@ class _SaveSlotScreenState extends State<SaveSlotScreen> {
       );
     }
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF0B1D1A), Color(0xFF1C3B34)],
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (!didPop) {
+          _goBackToIntro();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFF0B1D1A), Color(0xFF1C3B34)],
+            ),
           ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
             const Text(
               'Vyber Herni Slot',
               style: TextStyle(
@@ -302,8 +317,476 @@ class _SaveSlotScreenState extends State<SaveSlotScreen> {
             ),
             const SizedBox(height: 16),
             OutlinedButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: _goBackToIntro,
               child: const Text('Zpet'),
+            ),
+          ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class ChapterSelectScreen extends StatefulWidget {
+  const ChapterSelectScreen({super.key, required this.heroes});
+
+  final List<HeroDef> heroes;
+
+  @override
+  State<ChapterSelectScreen> createState() => _ChapterSelectScreenState();
+}
+
+class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
+  static const List<_ChapterChoice> _chapters = [
+    _ChapterChoice(
+      number: 1,
+      title: 'Kapitola I',
+      subtitle: 'Temny les',
+      unlocked: true,
+    ),
+    _ChapterChoice(
+      number: 2,
+      title: 'Kapitola II',
+      subtitle: 'Brzy dostupne',
+      unlocked: false,
+    ),
+  ];
+
+  late final PageController _pageController;
+  int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _enableFullscreenMode();
+    _pageController = PageController(viewportFraction: 0.42);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _goBackToHeroSelect() {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(
+        builder: (_) => HeroSelectScreen(initialSelection: widget.heroes),
+      ),
+    );
+  }
+
+  Future<void> _goToChapter(int index) async {
+    await _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 240),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  void _selectCurrentChapter() {
+    final chapter = _chapters[_currentIndex];
+    if (!chapter.unlocked) {
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => LevelSelectScreen(
+          heroes: widget.heroes,
+          chapterNumber: chapter.number,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final chapter = _chapters[_currentIndex];
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (!didPop) {
+          _goBackToHeroSelect();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFF070909),
+        body: SafeArea(
+          child: Stack(
+            children: [
+              Column(
+                children: [
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Vyber Kapitolu',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    chapter.unlocked
+                        ? 'Zvol kapitolu a pokracuj do vyberu levelu.'
+                        : 'Dalsi kapitola je zatim zamcena.',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.75),
+                      fontSize: 14,
+                    ),
+                  ),
+                  const Spacer(),
+                  SizedBox(
+                    height: 320,
+                    child: PageView.builder(
+                      controller: _pageController,
+                      itemCount: _chapters.length,
+                      onPageChanged: (index) {
+                        setState(() {
+                          _currentIndex = index;
+                        });
+                      },
+                      itemBuilder: (context, index) {
+                        final item = _chapters[index];
+                        final isActive = index == _currentIndex;
+                        return AnimatedPadding(
+                          duration: const Duration(milliseconds: 180),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: isActive ? 0 : 20,
+                          ),
+                          child: _SelectionCard(
+                            title: item.title,
+                            subtitle: item.subtitle,
+                            icon: Icons.menu_book_rounded,
+                            accentColor: item.unlocked
+                                ? const Color(0xFF4DB6AC)
+                                : const Color(0xFF5A5F66),
+                            locked: !item.unlocked,
+                            buttonLabel: item.unlocked ? 'Vybrat kapitolu' : 'Zamceno',
+                            onPressed: item.unlocked && isActive ? _selectCurrentChapter : null,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const Spacer(),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: _goBackToHeroSelect,
+                            child: const Text('Zpet'),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: chapter.unlocked ? _selectCurrentChapter : null,
+                            child: Text(chapter.unlocked ? 'Pokracovat' : 'Zamceno'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              if (_currentIndex > 0)
+                Positioned(
+                  left: 16,
+                  top: 0,
+                  bottom: 0,
+                  child: Center(
+                    child: IconButton.filledTonal(
+                      onPressed: () => _goToChapter(_currentIndex - 1),
+                      iconSize: 32,
+                      icon: const Icon(Icons.chevron_left),
+                    ),
+                  ),
+                ),
+              if (_currentIndex < _chapters.length - 1)
+                Positioned(
+                  right: 16,
+                  top: 0,
+                  bottom: 0,
+                  child: Center(
+                    child: IconButton.filledTonal(
+                      onPressed: () => _goToChapter(_currentIndex + 1),
+                      iconSize: 32,
+                      icon: const Icon(Icons.chevron_right),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class LevelSelectScreen extends StatefulWidget {
+  const LevelSelectScreen({
+    super.key,
+    required this.heroes,
+    required this.chapterNumber,
+  });
+
+  final List<HeroDef> heroes;
+  final int chapterNumber;
+
+  @override
+  State<LevelSelectScreen> createState() => _LevelSelectScreenState();
+}
+
+class _LevelSelectScreenState extends State<LevelSelectScreen> {
+  static const int _levelCount = 19;
+
+  late final PageController _pageController;
+  int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _enableFullscreenMode();
+    _pageController = PageController(viewportFraction: 0.42);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _goToLevel(int index) async {
+    await _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 240),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  void _startSelectedLevel() {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(
+        builder: (_) => GameHomeScreen(
+          heroes: widget.heroes,
+          chapterNumber: widget.chapterNumber,
+          levelNumber: _currentIndex + 1,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final levelNumber = _currentIndex + 1;
+    final levelMultiplier = pow(1.2, _currentIndex).toDouble();
+    final hpBonusPercent = ((levelMultiplier - 1) * 100).round();
+    return Scaffold(
+      backgroundColor: const Color(0xFF070909),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Column(
+              children: [
+                const SizedBox(height: 20),
+                Text(
+                  'Kapitola ${widget.chapterNumber}  Level $levelNumber',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  hpBonusPercent <= 0
+                      ? 'Vychozi obtiznost.'
+                      : 'Nepratele maji o $hpBonusPercent % vice HP nez v levelu 1.',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.75),
+                    fontSize: 14,
+                  ),
+                ),
+                const Spacer(),
+                SizedBox(
+                  height: 320,
+                  child: PageView.builder(
+                    controller: _pageController,
+                    itemCount: _levelCount,
+                    onPageChanged: (index) {
+                      setState(() {
+                        _currentIndex = index;
+                      });
+                    },
+                    itemBuilder: (context, index) {
+                      final currentLevel = index + 1;
+                      final currentMultiplier = pow(1.2, index).toDouble();
+                      final currentBonusPercent = ((currentMultiplier - 1) * 100).round();
+                      final isActive = index == _currentIndex;
+                      return AnimatedPadding(
+                        duration: const Duration(milliseconds: 180),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: isActive ? 0 : 20,
+                        ),
+                        child: _SelectionCard(
+                          title: 'Level $currentLevel',
+                          subtitle: currentBonusPercent <= 0
+                              ? 'Vychozi HP nepratel'
+                              : '+$currentBonusPercent % HP nepratel',
+                          icon: Icons.flag_rounded,
+                          accentColor: const Color(0xFF64B5F6),
+                          buttonLabel: 'Spustit level',
+                          onPressed: isActive ? _startSelectedLevel : null,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const Spacer(),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text('Zpet'),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: _startSelectedLevel,
+                          child: const Text('Spustit'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (_currentIndex > 0)
+              Positioned(
+                left: 16,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: IconButton.filledTonal(
+                    onPressed: () => _goToLevel(_currentIndex - 1),
+                    iconSize: 32,
+                    icon: const Icon(Icons.chevron_left),
+                  ),
+                ),
+              ),
+            if (_currentIndex < _levelCount - 1)
+              Positioned(
+                right: 16,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: IconButton.filledTonal(
+                    onPressed: () => _goToLevel(_currentIndex + 1),
+                    iconSize: 32,
+                    icon: const Icon(Icons.chevron_right),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SelectionCard extends StatelessWidget {
+  const _SelectionCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.accentColor,
+    required this.buttonLabel,
+    this.locked = false,
+    this.onPressed,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color accentColor;
+  final String buttonLabel;
+  final bool locked;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final cardColor = locked ? const Color(0xFF25282C) : accentColor.withOpacity(0.24);
+    final borderColor = locked ? Colors.white12 : accentColor.withOpacity(0.65);
+    return Container(
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: borderColor, width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.35),
+            blurRadius: 18,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 124,
+              height: 124,
+              decoration: BoxDecoration(
+                color: locked ? Colors.black26 : accentColor.withOpacity(0.2),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: locked ? Colors.white24 : accentColor.withOpacity(0.7),
+                ),
+              ),
+              child: Icon(
+                locked ? Icons.lock : icon,
+                color: locked ? Colors.white54 : Colors.white,
+                size: 62,
+              ),
+            ),
+            const SizedBox(height: 22),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.72),
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: onPressed,
+                child: Text(buttonLabel),
+              ),
             ),
           ],
         ),
@@ -312,24 +795,56 @@ class _SaveSlotScreenState extends State<SaveSlotScreen> {
   }
 }
 
+class _ChapterChoice {
+  const _ChapterChoice({
+    required this.number,
+    required this.title,
+    required this.subtitle,
+    required this.unlocked,
+  });
+
+  final int number;
+  final String title;
+  final String subtitle;
+  final bool unlocked;
+}
+
 class GameHomeScreen extends StatelessWidget {
-  const GameHomeScreen({super.key, required this.heroes});
+  const GameHomeScreen({
+    super.key,
+    required this.heroes,
+    required this.chapterNumber,
+    required this.levelNumber,
+  });
 
   final List<HeroDef> heroes;
+  final int chapterNumber;
+  final int levelNumber;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: GameView(heroes: heroes),
+      body: GameView(
+        heroes: heroes,
+        chapterNumber: chapterNumber,
+        levelNumber: levelNumber,
+      ),
     );
   }
 }
 
 class GameView extends StatefulWidget {
-  const GameView({super.key, required this.heroes});
+  const GameView({
+    super.key,
+    required this.heroes,
+    required this.chapterNumber,
+    required this.levelNumber,
+  });
 
   final List<HeroDef> heroes;
+  final int chapterNumber;
+  final int levelNumber;
 
   @override
   State<GameView> createState() => _GameViewState();
@@ -372,6 +887,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   static const double zoomStep = 0.2;
   static const double heroRangeIndicatorVisibleDuration = 5.0;
   static const double heroRangeIndicatorFadeDuration = 0.6;
+
+  double get _levelEnemyHpMultiplier => pow(1.2, widget.levelNumber - 1).toDouble();
   static const double multiSelectDragThreshold = 18.0;
   static const double multiMoveSpacing = heroUnitSize + 12.0;
   static const double enemyHeroContactRange = enemySize / 2 + heroUnitSize / 2;
@@ -1161,8 +1678,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     if (_timeUntilNextSpawn <= 0 && _enemiesSpawnedInWave < _enemiesForWave(_currentWave)) {
       final lane = _rng.nextInt(enemyLanes);
       final y = _enemyLaneCenterY(lane);
-      // Increase enemy HP with each wave
-      final hpMultiplier = 1.0 + (_currentWave - 1) * 0.1;
+      final waveHpMultiplier = 1.0 + (_currentWave - 1) * 0.1;
+      final hpMultiplier = waveHpMultiplier * _levelEnemyHpMultiplier;
       _enemies.add(
         _Enemy(
           position: Offset(mapWidth, y),
@@ -3492,7 +4009,6 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                                     _activeViewportPointers[event.pointer] = viewportPosition;
                                   }
                                   if (_activeViewportPointers.length >= 2 &&
-                                      _zoomMultiplier > minZoomMultiplier &&
                                       previousViewportPosition != null) {
                                     final previousCentroid = _viewportCentroid(
                                       _activeViewportPointers.entries.map(
@@ -5644,7 +6160,12 @@ class _HeroContextModeMenu extends StatelessWidget {
 }
 
 class HeroSelectScreen extends StatefulWidget {
-  const HeroSelectScreen({super.key});
+  const HeroSelectScreen({
+    super.key,
+    this.initialSelection = const [],
+  });
+
+  final List<HeroDef> initialSelection;
 
   @override
   State<HeroSelectScreen> createState() => _HeroSelectScreenState();
@@ -5666,12 +6187,16 @@ class _HeroSelectScreenState extends State<HeroSelectScreen> {
     HeroDef('Eldrin', Color(0xFF9575CD), imageAsset: 'assets/heroes/hero_eldrin.png'),
   ];
 
-  late final List<HeroDef?> _slots = List<HeroDef?>.filled(slotCount, null);
+  late final List<HeroDef?> _slots;
   PlayerProgress? _progress;
 
   @override
   void initState() {
     super.initState();
+    _slots = List<HeroDef?>.filled(slotCount, null);
+    for (var i = 0; i < widget.initialSelection.length && i < slotCount; i++) {
+      _slots[i] = widget.initialSelection[i];
+    }
     _enableFullscreenMode();
     _loadProgress();
   }
@@ -5721,19 +6246,43 @@ class _HeroSelectScreenState extends State<HeroSelectScreen> {
     }
     Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(
-        builder: (_) => GameHomeScreen(heroes: selected),
+        builder: (_) => ChapterSelectScreen(heroes: selected),
       ),
     );
+  }
+
+  void _goBackToSaveSlots() {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(
+        builder: (_) => const SaveSlotScreen(),
+      ),
+    );
+  }
+
+  Future<void> _openHeroUpgrades() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const HeroUpgradeScreen(),
+      ),
+    );
+    await _loadProgress();
   }
 
   @override
   Widget build(BuildContext context) {
     final hasSelection = _slots.any((c) => c != null);
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (!didPop) {
+          _goBackToSaveSlots();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           SizedBox(
             height: 140,
             child: ListView.separated(
@@ -5826,7 +6375,7 @@ class _HeroSelectScreenState extends State<HeroSelectScreen> {
           Align(
             alignment: Alignment.bottomRight,
             child: Container(
-              width: 380,
+              width: 520,
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
               margin: const EdgeInsets.only(right: 16, bottom: 16),
               decoration: const BoxDecoration(
@@ -5880,10 +6429,15 @@ class _HeroSelectScreenState extends State<HeroSelectScreen> {
                     children: [
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                          },
+                          onPressed: _goBackToSaveSlots,
                           child: const Text('Zpět'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: _openHeroUpgrades,
+                          child: const Text('Hrdinove'),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -5900,6 +6454,7 @@ class _HeroSelectScreenState extends State<HeroSelectScreen> {
             ),
           ),
         ],
+        ),
       ),
     );
   }

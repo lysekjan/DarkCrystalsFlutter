@@ -4,7 +4,7 @@ Shrnuti projektu
 - Jednoducha arkadova/tower-defense minihra ve Flutteru s vlastnim hernim loopem a vykreslovanim pres CustomPainter.
 - Aplikace je uzamcena na landscape orientaci a hlavni hra i vyber hrdinu bezi ve fullscreenu (immersive).
 - Fullscreen rezim je pri startu aplikace i po navratu znovu vynucen pres `SystemUiMode.immersiveSticky`, aby se na Androidu nevracela horni systemova lista.
-- Flow: Intro obrazovka -> vyber hrdinu -> herni scena.
+- Flow: Intro obrazovka -> vyber hrdinu -> vyber kapitoly -> vyber levelu -> herni scena.
 - Herni logika a UI jsou soustredeny v jedinem souboru `lib/main.dart`.
 
 Jak to funguje (gameplay)
@@ -58,7 +58,16 @@ Obrazovky a UI
   - Fullscreen (immersive), zarovnane k hornimu/levemu okraji.
   - Horni horizontalni seznam 10 hrdinu.
   - Sloty pro vyber jsou vpravo dole (zarovnane k pravemu/spodnimu okraji).
-  - Tlacitko "Boj" spusti hru.
+  - Ve spodnim pravem panelu je nove i tlacitko pro prechod na obrazovku vylepsovani hrdinu.
+  - Tlacitko "Boj" otevira nejdriv obrazovku pro vyber kapitoly.
+- ChapterSelectScreen:
+  - Zobrazuje se po vyberu hrdinu a pred vyberem levelu.
+  - Uprostred je velka karta kapitoly, mezi kapitolami jde prepinat sipkami i swipem.
+  - Aktualne jsou pripraveny 2 kapitoly, ale kapitola 2 je zamcena.
+- LevelSelectScreen:
+  - Zobrazuje se po vyberu odemcene kapitoly a pred samotnou hrou.
+  - Uprostred je velka karta levelu, mezi levely jde prepinat sipkami i swipem.
+  - Aktualne je v kapitole 1 pripraveno 19 levelu.
 - GameView:
   - Fullscreen (immersive) s cerne pozadi, bez systemoveho panelu.
   - Herni plocha kreslena CustomPainterem.
@@ -74,7 +83,7 @@ Obrazovky a UI
   - Herni jednotky hrdinu jsou ted vetsi a tomu odpovida i zvetseny selection/tap radius.
   - Pri vychozim zobrazeni / maximalnim odzoomovani se mapa skaluje podle vysky dostupne plochy pod hornim HUDem, aby vyplnila celou vysku displeje.
   - InteractiveViewer je zarovnany k levemu a hornimu okraji (neumi se odtahnout vlevo/nahoru); zoom zustava dostupny a posun mapy se pri zoomu aktivuje jen pri dotyku dvema a vice prsty.
-  - Dvouprsty posun mapy je rizeny rucne pres `TransformationController` a stred aktivnich dotyku, ne pres vestaveny pan gesture `InteractiveViewer`.
+  - Dvouprsty posun mapy je rizeny rucne pres `TransformationController` a stred aktivnich dotyku, ne pres vestaveny pan gesture `InteractiveViewer`; funguje i pri vychozim odzoomovani, pokud ma mapa v viewportu realny presah.
   - Zoom tlacitka `+` a `-` jsou primo v horni HUD liste vlevo od menu tlacitka, samostatna druha zoom lista uz neni.
   - Panel rychlosti vpravo dole.
   - Prepinac "Automode" vedle panelu rychlosti.
@@ -92,6 +101,7 @@ Herni cyklus hrdinu
 
 Logika nepratelu
 - HP = 20, velikost 40
+- Kazdy dalsi level zvysuje HP nepratel o 20 % oproti predchozimu levelu (`1.2^(level-1)`), a tento multiplier se pak dale kombinuje s existujicim wave scalingem.
 - Pohyb konstantni rychlosti 16 units/s
 - Pri zasahu se kratce blika (hitFlashDuration)
 - Po smrti jsou odstraneni
@@ -324,3 +334,21 @@ Spusteni
 - Vykresleni Aerin ze sprite sheetu bylo nakonec presunuto na prime kresleni jednoho `sourceRect` z `ui.Image`; tim se obchazi nespolehlive widgetove orezavani velmi sirokeho sheetu, ktere jeste mohlo ukazovat prazdne misto.
 2026-03-14:
 - Na herni obrazovku byl pridany novy pravodolni strip karet hrdinu s portrety a HP bary; klik na kartu vybira hrdinu stejne jako klik na jednotku a mrtvi hrdinove maji zesedlou kartu.
+2026-03-14:
+- Navrat z obrazovky vyberu hrdinu byl opraven tak, aby tlacitko `Zpet` i systemove back vracely hrace primo na vyber herniho slotu; predtim po `pushReplacement` toku mohlo dojit k bile prazdne obrazovce.
+2026-03-14:
+- Stejna oprava navratu byla provedena i pro obrazovku vyberu slotu: tlacitko `Zpet` i systemove back ted vraceji hrace primo na uvodni obrazovku misto bile prazdne route.
+2026-03-14:
+- Na obrazovku vyberu hrdinu bylo pridano prime tlacitko pro otevreni existujici obrazovky vylepsovani hrdinu, aby nebylo nutne se pro upgrade vracet pres uvodni menu.
+2026-03-14:
+- Dvouprsty manualni posun mapy byl uvolnen tak, aby fungoval i pri vychozim odzoomovani; skutecny rozsah pohybu dal omezuje stejny clamp podle realneho presahu mapy ve viewportu.
+2026-03-15:
+- Po vyberu hrdinu se hra uz nespousti rovnou; mezi HeroSelect a GameView pribyla obrazovka vyberu kapitoly a za ni jeste obrazovka vyberu levelu.
+2026-03-15:
+- Vyber kapitoly aktualne obsahuje 2 polozky, ale hratelna je zatim jen Kapitola 1; Kapitola 2 je viditelna jako zamcena.
+2026-03-15:
+- Kapitola 1 aktualne nabizi 19 levelu, mezi kterymi lze listovat swipem nebo sipkami.
+2026-03-15:
+- Zvoleny level nyni meni obtiznost: spawned enemy HP se nasobi `1.2^(level-1)` a teprve pak se na ne aplikuje i dosavadni wave scaling.
+2026-03-15:
+- Po navratu z obrazovky vylepsovani hrdinu se `HeroSelectScreen` znovu nacita z `PlayerProgress`, takze cerstve odemceny hrdina uz nezustava ve vyberu chybne zamceny.
