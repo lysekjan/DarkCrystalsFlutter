@@ -22,6 +22,7 @@
 
 - Map size is `1600 x 400`.
 - The wall is still anchored near the left side at `x = 100`.
+- Heroes can no longer move or spawn to the left of the wall; move orders are clamped so they stop just to the right of it.
 - There are 5 hero slots.
 - Enemies spawn on the right side in 5 lanes but can now move freely through the map.
 - The wall has `300 HP`.
@@ -132,6 +133,7 @@ Detailed balance values are documented in `INFO.txt` and `project_info.txt`.
 - The game uses slot-based save data.
 - Coins, XP, unlocks, and other RPG progress are stored per save slot.
 - After hero selection, the player now goes through a chapter-selection screen and then a level-selection screen before gameplay starts.
+- After save-slot selection, the player now first enters a village hub screen that serves as the main crossroads for heroes/upgrades and the battle flow.
 - There are currently 2 chapters in the selector, but only chapter 1 is unlocked.
 - Chapter 1 currently contains 19 selectable levels.
 
@@ -171,6 +173,7 @@ Detailed balance values are documented in `INFO.txt` and `project_info.txt`.
 - 2026-03-13: Added a simple fixed defense tower in the upper-left area left of the wall; it auto-fires every 5 seconds at the nearest enemy within hero-range distance and deals 10 projectile damage per hit.
 - 2026-03-13: `Restart` now fully resets the run to its initial state: wave/stat counters, game timer, hero positions, hero behavior/mode settings, zoom, selection state, and game speed all return to startup defaults.
 - 2026-03-13: The gameplay map background now uses `assets/backgrounds/grass.png` stretched over the whole map area, with the old flat-color fill kept only as a fallback.
+- 2026-03-15: The gameplay wall now uses `assets/backgrounds/palisade.png` as its visual representation, with the former simple painted wall kept as a fallback if the sprite fails to load.
 - 2026-03-14: Added a compact bottom-right gameplay strip of hero cards with hero-select portraits and HP bars; clicking a card selects the same hero as a direct map click, and dead heroes keep a greyed-out card.
 - 2026-03-14: Hero selection screen back navigation was fixed to return explicitly to `SaveSlotScreen`; both the on-screen `Zpet` button and system back now avoid falling into a blank white route after the earlier `pushReplacement` flow.
 - 2026-03-14: Save-slot screen back navigation was also fixed to return explicitly to `IntroScreen`; both the on-screen `Zpet` button and system back now avoid the same blank white route issue caused by `pushReplacement`.
@@ -193,6 +196,15 @@ Detailed balance values are documented in `INFO.txt` and `project_info.txt`.
 - 2026-03-15: Starting gameplay from hero selection now goes through a new chapter-selection screen and then a level-selection screen; chapter 2 is already visible but locked, and chapter 1 currently exposes 19 levels.
 - 2026-03-15: Level choice now feeds into gameplay difficulty by multiplying spawned enemy HP by `1.2^(level-1)` on top of the existing per-wave HP scaling.
 - 2026-03-15: Returning from the hero-upgrade screen now reloads `PlayerProgress` on `HeroSelectScreen`, so newly unlocked heroes become immediately selectable without leaving the current flow.
+- 2026-03-15: Enemies now store their spawned `maxHp` directly on each `_Enemy` instance; the gameplay HP bar therefore reflects the real per-level/per-wave HP value instead of the old fixed base constant.
+- 2026-03-15: Chapter-selection cards now switch to a lower compact layout on narrower displays, reducing carousel height and card spacing so chapter tiles no longer overflow vertically.
+- 2026-03-15: Chapter and level selection screens now use a vertical scroll container instead of a fixed full-height column, and their cards auto-densify further on very short viewports to avoid bottom overflow.
+- 2026-03-15: Gameplay map now also supports pinch zoom with two fingers; spreading fingers apart increases zoom while the existing manual two-finger centroid pan remains active in the same gesture.
+- 2026-03-15: After selecting a save slot, the player now enters a new `Vesnice` hub screen with buttons for hero upgrades, the battle flow, `Samanova chyse`, and `Management vesnice`; the last two currently only show a placeholder message.
+- 2026-03-15: The `Vesnice` hub now uses a vertical scroll layout and collapses its menu grid to a single column on tighter displays so the screen no longer overflows.
+- 2026-03-15: The gameplay wall now renders with `assets/backgrounds/palisade.png`; if the asset fails to load, the old simple painted wall line still appears.
+- 2026-03-15: When the palisade wall sprite is available, the old in-map vertical wall HP line is now hidden so no line is drawn across the texture; wall HP remains visible in the top HUD.
+- 2026-03-15: Heroes are now blocked from crossing to the left side of the wall; player orders stop them just before the wall, and level-start spawns were moved to the right side as well.
 
 ## Legacy Historical Notes
 

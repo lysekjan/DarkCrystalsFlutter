@@ -1,0 +1,4 @@
+Přidat vesnici, kde si hráč bude moct vylepšovat budovy
+Přidat hlavní postavy ve vesnici
+získávání surovin v realtime čase - když se hráč připojí druhý den, bude mít naspořené suroviny
+přidat dialogvoé okno

@@ -4,7 +4,7 @@ Shrnuti projektu
 - Jednoducha arkadova/tower-defense minihra ve Flutteru s vlastnim hernim loopem a vykreslovanim pres CustomPainter.
 - Aplikace je uzamcena na landscape orientaci a hlavni hra i vyber hrdinu bezi ve fullscreenu (immersive).
 - Fullscreen rezim je pri startu aplikace i po navratu znovu vynucen pres `SystemUiMode.immersiveSticky`, aby se na Androidu nevracela horni systemova lista.
-- Flow: Intro obrazovka -> vyber hrdinu -> vyber kapitoly -> vyber levelu -> herni scena.
+- Flow: Intro obrazovka -> vyber save slotu -> vesnice -> vyber hrdinu -> vyber kapitoly -> vyber levelu -> herni scena.
 - Herni logika a UI jsou soustredeny v jedinem souboru `lib/main.dart`.
 
 Jak to funguje (gameplay)
@@ -13,6 +13,7 @@ Jak to funguje (gameplay)
 - Hrac vybere 1-5 hrdinu; hrdinove utoci ve dvoufazovem cyklu: sending -> cooldown (casting faze byla zrusena).
 - Nepratele spawnuji nahodne po lanech na pravem okraji mapy a pohybuji se doleva.
 - Pokud nepritel dojde k hradbe (x <= heroAreaWidth + 4), zacne utocit do zdi.
+- Hrdinove se uz nemohou dostat nalevo od zdi; vsechny jejich move targety se clampuji tesne napravo od ni a stejne napravo od zdi se i spawnuji pri startu levelu.
 - V horni leve casti mapy vlevo od zdi je jednoducha staticka obranna vez; hrac ji neovlada, nehybe se a automaticky kazdych 5 sekund vystreli projektil za 10 damage na nejblizsiho nepritele v dosahu stejnem jako hrdinove.
 - Zed ma HP 300. Nepritel udeluje wallDps = 5 damage za sekundu. Konec hry pri HP <= 0.
 - Rychlost hry lze prepnut v panelu na 1x/2x/4x/8x, default je 2x.
@@ -59,19 +60,31 @@ Obrazovky a UI
   - Horni horizontalni seznam 10 hrdinu.
   - Sloty pro vyber jsou vpravo dole (zarovnane k pravemu/spodnimu okraji).
   - Ve spodnim pravem panelu je nove i tlacitko pro prechod na obrazovku vylepsovani hrdinu.
+  - Otevira se z obrazovky `Vesnice` po stisku `Branit vesnici`.
   - Tlacitko "Boj" otevira nejdriv obrazovku pro vyber kapitoly.
+- VillageScreen:
+  - Zobrazuje se hned po vyberu save slotu a slouzi jako hlavni rozcestnik.
+  - Cela obrazovka je scrollovatelna a na uzsich nebo nizsich displejich sklada menu do jednoho sloupce, aby nepretikala.
+  - Tlacitko `Hrdinove` otevre `HeroUpgradeScreen`.
+  - Tlacitko `Branit vesnici` otevre stavajici bojovy flow pres `HeroSelectScreen`.
+  - Tlacitka `Samanova chyse` a `Management vesnice` zatim pouze zobrazi placeholder zpravu.
 - ChapterSelectScreen:
   - Zobrazuje se po vyberu hrdinu a pred vyberem levelu.
   - Uprostred je velka karta kapitoly, mezi kapitolami jde prepinat sipkami i swipem.
+  - Cela obrazovka je scrollovatelna, takze se na nizsich displejich neoreze spodni cast layoutu.
+  - Na uzsich nebo nizsich displejich se karta kapitoly prepne do kompaktnejsi nizsi varianty a jeste vic se zahusti pri velmi malem prostoru, aby nepretikala.
   - Aktualne jsou pripraveny 2 kapitoly, ale kapitola 2 je zamcena.
 - LevelSelectScreen:
   - Zobrazuje se po vyberu odemcene kapitoly a pred samotnou hrou.
   - Uprostred je velka karta levelu, mezi levely jde prepinat sipkami i swipem.
+  - Pouziva stejny scrollovatelny a responsivni layout jako vyber kapitol, aby se karty ani spodni tlacitka na uzsich displejich neorezavaly.
   - Aktualne je v kapitole 1 pripraveno 19 levelu.
 - GameView:
   - Fullscreen (immersive) s cerne pozadi, bez systemoveho panelu.
   - Herni plocha kreslena CustomPainterem.
   - Cela herni plocha mapy pouziva jako pozadi obrazek `assets/backgrounds/grass.png`.
+  - Zed se ted vizualne vykresluje obrazkem `assets/backgrounds/palisade.png`; puvodni jednoducha kreslena zed zustava jen jako fallback pri selhani assetu.
+  - Pokud se palisada uspesne nacte, svisly in-map HP pruh zdi se uz nekresli pres jeji texturu; wall HP zustava viditelne v hornim HUDu.
   - Vpravo dole vedle panelu rychlosti je novy kompaktni pruh karet aktivnich hrdinu.
   - Kazda karta hrdiny zobrazuje stejny portret jako ve vyberu hrdinu a maly HP ukazatel.
   - Klik na kartu hrdiny vybere daneho hrdinu stejne jako klik primo na jednotku na mape.
@@ -84,6 +97,7 @@ Obrazovky a UI
   - Pri vychozim zobrazeni / maximalnim odzoomovani se mapa skaluje podle vysky dostupne plochy pod hornim HUDem, aby vyplnila celou vysku displeje.
   - InteractiveViewer je zarovnany k levemu a hornimu okraji (neumi se odtahnout vlevo/nahoru); zoom zustava dostupny a posun mapy se pri zoomu aktivuje jen pri dotyku dvema a vice prsty.
   - Dvouprsty posun mapy je rizeny rucne pres `TransformationController` a stred aktivnich dotyku, ne pres vestaveny pan gesture `InteractiveViewer`; funguje i pri vychozim odzoomovani, pokud ma mapa v viewportu realny presah.
+  - Dvouprste gesto ted umi i pinch zoom: pri roztahovani dvou prstu od sebe se mapa plynule priblizuje okolo stredu gesta, zatimco posun mapy zustava soucasti stejneho pohybu.
   - Zoom tlacitka `+` a `-` jsou primo v horni HUD liste vlevo od menu tlacitka, samostatna druha zoom lista uz neni.
   - Panel rychlosti vpravo dole.
   - Prepinac "Automode" vedle panelu rychlosti.
@@ -352,3 +366,11 @@ Spusteni
 - Zvoleny level nyni meni obtiznost: spawned enemy HP se nasobi `1.2^(level-1)` a teprve pak se na ne aplikuje i dosavadni wave scaling.
 2026-03-15:
 - Po navratu z obrazovky vylepsovani hrdinu se `HeroSelectScreen` znovu nacita z `PlayerProgress`, takze cerstve odemceny hrdina uz nezustava ve vyberu chybne zamceny.
+2026-03-15:
+- Kazdy spawned enemy si ted uklada vlastni `maxHp`; HP bar se tak pocita proti skutecne spawnute hodnote po level/wave scalingu misto proti stare pevne konstante 20.
+2026-03-15:
+- Po vyberu save slotu se ted nejdriv otevre nova obrazovka `Vesnice`, ktera funguje jako hlavni hub pro vylepsovani hrdinu a vstup do bojoveho flow.
+2026-03-15:
+- Graficka reprezentace zdi ve hre byla zmenena na sprite `assets/backgrounds/palisade.png`; pri chybe nacitani se fallbackne vykresli puvodni jednoducha linie zdi.
+2026-03-15:
+- Hrdinove se ted zastavi tesne napravo od zdi a pri startu levelu uz nespawnuji nalevo od ni.

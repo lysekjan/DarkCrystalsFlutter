@@ -203,7 +203,7 @@ class _SaveSlotScreenState extends State<SaveSlotScreen> {
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(
-        builder: (_) => const HeroSelectScreen(),
+        builder: (_) => const VillageScreen(),
       ),
     );
   }
@@ -328,6 +328,237 @@ class _SaveSlotScreenState extends State<SaveSlotScreen> {
   }
 }
 
+class VillageScreen extends StatefulWidget {
+  const VillageScreen({super.key});
+
+  @override
+  State<VillageScreen> createState() => _VillageScreenState();
+}
+
+class _VillageScreenState extends State<VillageScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _enableFullscreenMode();
+  }
+
+  void _goBackToSaveSlots() {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(
+        builder: (_) => const SaveSlotScreen(),
+      ),
+    );
+  }
+
+  void _openHeroes() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const HeroUpgradeScreen(),
+      ),
+    );
+  }
+
+  void _openDefenseFlow() {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(
+        builder: (_) => const HeroSelectScreen(),
+      ),
+    );
+  }
+
+  void _showPlaceholderMessage() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Tato cast vesnice zatim neni dostupna.'),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (!didPop) {
+          _goBackToSaveSlots();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = constraints.maxHeight < 520 || constraints.maxWidth < 820;
+            return Container(
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFF13211B), Color(0xFF2B4232)],
+                ),
+              ),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight - 48),
+                  child: Column(
+                    children: [
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: OutlinedButton(
+                          onPressed: _goBackToSaveSlots,
+                          child: const Text('Zpet'),
+                        ),
+                      ),
+                      SizedBox(height: compact ? 20 : 36),
+                      const Text(
+                        'Vesnice',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 34,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        'Hlavni rozcestnik po vyberu herniho slotu.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.72),
+                          fontSize: 15,
+                        ),
+                      ),
+                      SizedBox(height: compact ? 20 : 28),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 760),
+                        child: GridView.count(
+                          crossAxisCount: compact ? 1 : 2,
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          mainAxisSpacing: 18,
+                          crossAxisSpacing: 18,
+                          childAspectRatio: compact ? 3.2 : 2.5,
+                          children: [
+                            _VillageMenuButton(
+                              title: 'Hrdinove',
+                              subtitle: 'Vylepsovani a odemykani',
+                              icon: Icons.groups_rounded,
+                              color: const Color(0xFF4DB6AC),
+                              onPressed: _openHeroes,
+                            ),
+                            _VillageMenuButton(
+                              title: 'Branit vesnici',
+                              subtitle: 'Vyber hrdiny a vyraz do boje',
+                              icon: Icons.shield_rounded,
+                              color: const Color(0xFFE57373),
+                              onPressed: _openDefenseFlow,
+                            ),
+                            _VillageMenuButton(
+                              title: 'Samanova chyse',
+                              subtitle: 'Zatim prazdne',
+                              icon: Icons.auto_fix_high_rounded,
+                              color: const Color(0xFF9575CD),
+                              onPressed: _showPlaceholderMessage,
+                            ),
+                            _VillageMenuButton(
+                              title: 'Management vesnice',
+                              subtitle: 'Zatim prazdne',
+                              icon: Icons.account_balance_rounded,
+                              color: const Color(0xFFFFB74D),
+                              onPressed: _showPlaceholderMessage,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _VillageMenuButton extends StatelessWidget {
+  const _VillageMenuButton({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+    required this.onPressed,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(20),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.18),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: color.withOpacity(0.58), width: 1.2),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+            child: Row(
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.22),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: Colors.white, size: 28),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.72),
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class ChapterSelectScreen extends StatefulWidget {
   const ChapterSelectScreen({super.key, required this.heroes});
 
@@ -413,114 +644,135 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
       child: Scaffold(
         backgroundColor: const Color(0xFF070909),
         body: SafeArea(
-          child: Stack(
-            children: [
-              Column(
-                children: [
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Vyber Kapitolu',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 28,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    chapter.unlocked
-                        ? 'Zvol kapitolu a pokracuj do vyberu levelu.'
-                        : 'Dalsi kapitola je zatim zamcena.',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.75),
-                      fontSize: 14,
-                    ),
-                  ),
-                  const Spacer(),
-                  SizedBox(
-                    height: 320,
-                    child: PageView.builder(
-                      controller: _pageController,
-                      itemCount: _chapters.length,
-                      onPageChanged: (index) {
-                        setState(() {
-                          _currentIndex = index;
-                        });
-                      },
-                      itemBuilder: (context, index) {
-                        final item = _chapters[index];
-                        final isActive = index == _currentIndex;
-                        return AnimatedPadding(
-                          duration: const Duration(milliseconds: 180),
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: isActive ? 0 : 20,
-                          ),
-                          child: _SelectionCard(
-                            title: item.title,
-                            subtitle: item.subtitle,
-                            icon: Icons.menu_book_rounded,
-                            accentColor: item.unlocked
-                                ? const Color(0xFF4DB6AC)
-                                : const Color(0xFF5A5F66),
-                            locked: !item.unlocked,
-                            buttonLabel: item.unlocked ? 'Vybrat kapitolu' : 'Zamceno',
-                            onPressed: item.unlocked && isActive ? _selectCurrentChapter : null,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const Spacer(),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                    child: Row(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final compactChapterCards =
+                  constraints.maxWidth < 760 || constraints.maxHeight < 520;
+              final chapterCarouselHeight = compactChapterCards ? 280.0 : 320.0;
+              return SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(0, 20, 0, 24),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight - 44),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: _goBackToHeroSelect,
-                            child: const Text('Zpet'),
+                        const Text(
+                          'Vyber Kapitolu',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: FilledButton(
-                            onPressed: chapter.unlocked ? _selectCurrentChapter : null,
-                            child: Text(chapter.unlocked ? 'Pokracovat' : 'Zamceno'),
+                        const SizedBox(height: 10),
+                        Text(
+                          chapter.unlocked
+                              ? 'Zvol kapitolu a pokracuj do vyberu levelu.'
+                              : 'Dalsi kapitola je zatim zamcena.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.75),
+                            fontSize: 14,
                           ),
+                        ),
+                        SizedBox(height: compactChapterCards ? 16 : 24),
+                        SizedBox(
+                          height: chapterCarouselHeight,
+                          child: Stack(
+                            children: [
+                              Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: compactChapterCards ? 34 : 44,
+                                ),
+                                child: PageView.builder(
+                                  controller: _pageController,
+                                  itemCount: _chapters.length,
+                                  onPageChanged: (index) {
+                                    setState(() {
+                                      _currentIndex = index;
+                                    });
+                                  },
+                                  itemBuilder: (context, index) {
+                                    final item = _chapters[index];
+                                    final isActive = index == _currentIndex;
+                                    return AnimatedPadding(
+                                      duration: const Duration(milliseconds: 180),
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: compactChapterCards ? 8 : 12,
+                                        vertical: isActive ? 0 : (compactChapterCards ? 8 : 16),
+                                      ),
+                                      child: _SelectionCard(
+                                        title: item.title,
+                                        subtitle: item.subtitle,
+                                        icon: Icons.menu_book_rounded,
+                                        accentColor: item.unlocked
+                                            ? const Color(0xFF4DB6AC)
+                                            : const Color(0xFF5A5F66),
+                                        locked: !item.unlocked,
+                                        compact: compactChapterCards,
+                                        buttonLabel: item.unlocked ? 'Vybrat kapitolu' : 'Zamceno',
+                                        onPressed: item.unlocked && isActive ? _selectCurrentChapter : null,
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                              if (_currentIndex > 0)
+                                Positioned(
+                                  left: 0,
+                                  top: 0,
+                                  bottom: 0,
+                                  child: Center(
+                                    child: IconButton.filledTonal(
+                                      onPressed: () => _goToChapter(_currentIndex - 1),
+                                      iconSize: 32,
+                                      icon: const Icon(Icons.chevron_left),
+                                    ),
+                                  ),
+                                ),
+                              if (_currentIndex < _chapters.length - 1)
+                                Positioned(
+                                  right: 0,
+                                  top: 0,
+                                  bottom: 0,
+                                  child: Center(
+                                    child: IconButton.filledTonal(
+                                      onPressed: () => _goToChapter(_currentIndex + 1),
+                                      iconSize: 32,
+                                      icon: const Icon(Icons.chevron_right),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: _goBackToHeroSelect,
+                                child: const Text('Zpet'),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: FilledButton(
+                                onPressed: chapter.unlocked ? _selectCurrentChapter : null,
+                                child: Text(chapter.unlocked ? 'Pokracovat' : 'Zamceno'),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
-              if (_currentIndex > 0)
-                Positioned(
-                  left: 16,
-                  top: 0,
-                  bottom: 0,
-                  child: Center(
-                    child: IconButton.filledTonal(
-                      onPressed: () => _goToChapter(_currentIndex - 1),
-                      iconSize: 32,
-                      icon: const Icon(Icons.chevron_left),
-                    ),
-                  ),
                 ),
-              if (_currentIndex < _chapters.length - 1)
-                Positioned(
-                  right: 16,
-                  top: 0,
-                  bottom: 0,
-                  child: Center(
-                    child: IconButton.filledTonal(
-                      onPressed: () => _goToChapter(_currentIndex + 1),
-                      iconSize: 32,
-                      icon: const Icon(Icons.chevron_right),
-                    ),
-                  ),
-                ),
-            ],
+              );
+            },
           ),
         ),
       ),
@@ -589,115 +841,137 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF070909),
       body: SafeArea(
-        child: Stack(
-          children: [
-            Column(
-              children: [
-                const SizedBox(height: 20),
-                Text(
-                  'Kapitola ${widget.chapterNumber}  Level $levelNumber',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  hpBonusPercent <= 0
-                      ? 'Vychozi obtiznost.'
-                      : 'Nepratele maji o $hpBonusPercent % vice HP nez v levelu 1.',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.75),
-                    fontSize: 14,
-                  ),
-                ),
-                const Spacer(),
-                SizedBox(
-                  height: 320,
-                  child: PageView.builder(
-                    controller: _pageController,
-                    itemCount: _levelCount,
-                    onPageChanged: (index) {
-                      setState(() {
-                        _currentIndex = index;
-                      });
-                    },
-                    itemBuilder: (context, index) {
-                      final currentLevel = index + 1;
-                      final currentMultiplier = pow(1.2, index).toDouble();
-                      final currentBonusPercent = ((currentMultiplier - 1) * 100).round();
-                      final isActive = index == _currentIndex;
-                      return AnimatedPadding(
-                        duration: const Duration(milliseconds: 180),
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: isActive ? 0 : 20,
-                        ),
-                        child: _SelectionCard(
-                          title: 'Level $currentLevel',
-                          subtitle: currentBonusPercent <= 0
-                              ? 'Vychozi HP nepratel'
-                              : '+$currentBonusPercent % HP nepratel',
-                          icon: Icons.flag_rounded,
-                          accentColor: const Color(0xFF64B5F6),
-                          buttonLabel: 'Spustit level',
-                          onPressed: isActive ? _startSelectedLevel : null,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const Spacer(),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                  child: Row(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final compactLevelCards =
+                constraints.maxWidth < 760 || constraints.maxHeight < 520;
+            final levelCarouselHeight = compactLevelCards ? 280.0 : 320.0;
+            return SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(0, 20, 0, 24),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight - 44),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          child: const Text('Zpet'),
+                      Text(
+                        'Kapitola ${widget.chapterNumber}  Level $levelNumber',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: FilledButton(
-                          onPressed: _startSelectedLevel,
-                          child: const Text('Spustit'),
+                      const SizedBox(height: 10),
+                      Text(
+                        hpBonusPercent <= 0
+                            ? 'Vychozi obtiznost.'
+                            : 'Nepratele maji o $hpBonusPercent % vice HP nez v levelu 1.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.75),
+                          fontSize: 14,
                         ),
+                      ),
+                      SizedBox(height: compactLevelCards ? 16 : 24),
+                      SizedBox(
+                        height: levelCarouselHeight,
+                        child: Stack(
+                          children: [
+                            Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: compactLevelCards ? 34 : 44,
+                              ),
+                              child: PageView.builder(
+                                controller: _pageController,
+                                itemCount: _levelCount,
+                                onPageChanged: (index) {
+                                  setState(() {
+                                    _currentIndex = index;
+                                  });
+                                },
+                                itemBuilder: (context, index) {
+                                  final currentLevel = index + 1;
+                                  final currentMultiplier = pow(1.2, index).toDouble();
+                                  final currentBonusPercent =
+                                      ((currentMultiplier - 1) * 100).round();
+                                  final isActive = index == _currentIndex;
+                                  return AnimatedPadding(
+                                    duration: const Duration(milliseconds: 180),
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: compactLevelCards ? 8 : 12,
+                                      vertical: isActive ? 0 : (compactLevelCards ? 8 : 16),
+                                    ),
+                                    child: _SelectionCard(
+                                      title: 'Level $currentLevel',
+                                      subtitle: currentBonusPercent <= 0
+                                          ? 'Vychozi HP nepratel'
+                                          : '+$currentBonusPercent % HP nepratel',
+                                      icon: Icons.flag_rounded,
+                                      accentColor: const Color(0xFF64B5F6),
+                                      compact: compactLevelCards,
+                                      buttonLabel: 'Spustit level',
+                                      onPressed: isActive ? _startSelectedLevel : null,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            if (_currentIndex > 0)
+                              Positioned(
+                                left: 0,
+                                top: 0,
+                                bottom: 0,
+                                child: Center(
+                                  child: IconButton.filledTonal(
+                                    onPressed: () => _goToLevel(_currentIndex - 1),
+                                    iconSize: 32,
+                                    icon: const Icon(Icons.chevron_left),
+                                  ),
+                                ),
+                              ),
+                            if (_currentIndex < _levelCount - 1)
+                              Positioned(
+                                right: 0,
+                                top: 0,
+                                bottom: 0,
+                                child: Center(
+                                  child: IconButton.filledTonal(
+                                    onPressed: () => _goToLevel(_currentIndex + 1),
+                                    iconSize: 32,
+                                    icon: const Icon(Icons.chevron_right),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: const Text('Zpet'),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: FilledButton(
+                              onPressed: _startSelectedLevel,
+                              child: const Text('Spustit'),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
-            if (_currentIndex > 0)
-              Positioned(
-                left: 16,
-                top: 0,
-                bottom: 0,
-                child: Center(
-                  child: IconButton.filledTonal(
-                    onPressed: () => _goToLevel(_currentIndex - 1),
-                    iconSize: 32,
-                    icon: const Icon(Icons.chevron_left),
-                  ),
-                ),
               ),
-            if (_currentIndex < _levelCount - 1)
-              Positioned(
-                right: 16,
-                top: 0,
-                bottom: 0,
-                child: Center(
-                  child: IconButton.filledTonal(
-                    onPressed: () => _goToLevel(_currentIndex + 1),
-                    iconSize: 32,
-                    icon: const Icon(Icons.chevron_right),
-                  ),
-                ),
-              ),
-          ],
+            );
+          },
         ),
       ),
     );
@@ -712,6 +986,7 @@ class _SelectionCard extends StatelessWidget {
     required this.accentColor,
     required this.buttonLabel,
     this.locked = false,
+    this.compact = false,
     this.onPressed,
   });
 
@@ -721,76 +996,96 @@ class _SelectionCard extends StatelessWidget {
   final Color accentColor;
   final String buttonLabel;
   final bool locked;
+  final bool compact;
   final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
     final cardColor = locked ? const Color(0xFF25282C) : accentColor.withOpacity(0.24);
     final borderColor = locked ? Colors.white12 : accentColor.withOpacity(0.65);
-    return Container(
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: borderColor, width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.35),
-            blurRadius: 18,
-            offset: const Offset(0, 12),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final dense = compact || constraints.maxHeight < 290;
+        final ultraDense = constraints.maxHeight < 250;
+        final cardPadding = ultraDense ? 14.0 : (dense ? 18.0 : 24.0);
+        final iconSize = ultraDense ? 38.0 : (dense ? 46.0 : 62.0);
+        final iconContainerSize = ultraDense ? 78.0 : (dense ? 96.0 : 124.0);
+        final titleFontSize = ultraDense ? 18.0 : (dense ? 20.0 : 24.0);
+        final subtitleFontSize = ultraDense ? 12.0 : (dense ? 13.0 : 14.0);
+        final titleSpacing = ultraDense ? 10.0 : (dense ? 16.0 : 22.0);
+        final subtitleSpacing = ultraDense ? 6.0 : (dense ? 8.0 : 10.0);
+        final buttonSpacing = ultraDense ? 12.0 : (dense ? 18.0 : 24.0);
+        return Container(
+          decoration: BoxDecoration(
+            color: cardColor,
+            borderRadius: BorderRadius.circular(dense ? 20 : 24),
+            border: Border.all(color: borderColor, width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.35),
+                blurRadius: 18,
+                offset: const Offset(0, 12),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 124,
-              height: 124,
-              decoration: BoxDecoration(
-                color: locked ? Colors.black26 : accentColor.withOpacity(0.2),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: locked ? Colors.white24 : accentColor.withOpacity(0.7),
+          child: Padding(
+            padding: EdgeInsets.all(cardPadding),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: iconContainerSize,
+                  height: iconContainerSize,
+                  decoration: BoxDecoration(
+                    color: locked ? Colors.black26 : accentColor.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: locked ? Colors.white24 : accentColor.withOpacity(0.7),
+                    ),
+                  ),
+                  child: Icon(
+                    locked ? Icons.lock : icon,
+                    color: locked ? Colors.white54 : Colors.white,
+                    size: iconSize,
+                  ),
                 ),
-              ),
-              child: Icon(
-                locked ? Icons.lock : icon,
-                color: locked ? Colors.white54 : Colors.white,
-                size: 62,
-              ),
+                SizedBox(height: titleSpacing),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  maxLines: ultraDense ? 2 : null,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: titleFontSize,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                SizedBox(height: subtitleSpacing),
+                Text(
+                  subtitle,
+                  textAlign: TextAlign.center,
+                  maxLines: ultraDense ? 2 : 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.72),
+                    fontSize: subtitleFontSize,
+                  ),
+                ),
+                SizedBox(height: buttonSpacing),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: onPressed,
+                    child: Text(buttonLabel),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 22),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              subtitle,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.72),
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: onPressed,
-                child: Text(buttonLabel),
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -875,6 +1170,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   static const double enemyTapRadius = 18;
   static const double heroTapRadius = 30;
   static const double heroUnitSize = 56;
+  static const double heroWallStopPadding = heroUnitSize * 0.6;
   static const double wallDps = 5; // damage per second
   static const double hitFlashDuration = 0.12; // seconds
   static const double projectileRadius = 2;
@@ -987,6 +1283,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   final Map<String, double> _cooldownReductions = {}; // heroName -> cooldown reduction (seconds)
   ui.Image? _enemySpriteSheet;
   ui.Image? _grassBackground;
+  ui.Image? _wallSprite;
   int _enemySpriteFrameCount = 0;
   double _baseMapScale = 1.0;
   double _zoomMultiplier = 1.0;
@@ -1021,6 +1318,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       duration: const Duration(milliseconds: 180),
     );
     _loadGrassBackground();
+    _loadWallSprite();
     _loadEnemySpriteSheet();
     // Load RPG bonuses
     _loadHeroBonuses();
@@ -1067,6 +1365,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   void dispose() {
     _enemySpriteSheet?.dispose();
     _grassBackground?.dispose();
+    _wallSprite?.dispose();
     _mapTransformController.dispose();
     _aerinMenuController.dispose();
     _veyraMenuController.dispose();
@@ -1098,6 +1397,25 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       });
     } catch (_) {
       // Keep the solid-color background fallback if the texture cannot load.
+    }
+  }
+
+  Future<void> _loadWallSprite() async {
+    try {
+      final data = await rootBundle.load('assets/backgrounds/palisade.png');
+      final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+      final frame = await codec.getNextFrame();
+      final image = frame.image;
+      if (!mounted) {
+        image.dispose();
+        return;
+      }
+      setState(() {
+        _wallSprite?.dispose();
+        _wallSprite = image;
+      });
+    } catch (_) {
+      // Keep the painted wall fallback if the texture cannot load.
     }
   }
 
@@ -1221,6 +1539,14 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       return Offset.zero;
     }
     return Offset(dx / count, dy / count);
+  }
+
+  double _viewportPointerSpread(Iterable<Offset> positions) {
+    final values = positions.take(2).toList(growable: false);
+    if (values.length < 2) {
+      return 0;
+    }
+    return (values[0] - values[1]).distance;
   }
 
   Map<String, SkillTree> _getSkillTrees() {
@@ -1600,7 +1926,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     final count = max(1, widget.heroes.length);
     final spacing = mapHeight / (count + 1);
     final position = Offset(
-      heroAreaWidth * 0.6,
+      _minimumHeroX + heroUnitSize * 0.45,
       spacing * (index + 1),
     );
     return _HeroUnit(
@@ -1614,10 +1940,12 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
 
   Offset _heroPosition(int heroIndex) => _heroUnits[heroIndex].position;
 
+  double get _minimumHeroX => heroAreaWidth + 4 + heroWallStopPadding;
+
   Offset _clampHeroTarget(Offset position) {
     final padding = heroUnitSize * 0.6;
     return Offset(
-      position.dx.clamp(padding, mapWidth - padding),
+      position.dx.clamp(_minimumHeroX, mapWidth - padding),
       position.dy.clamp(padding, mapHeight - padding),
     );
   }
@@ -1680,10 +2008,12 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       final y = _enemyLaneCenterY(lane);
       final waveHpMultiplier = 1.0 + (_currentWave - 1) * 0.1;
       final hpMultiplier = waveHpMultiplier * _levelEnemyHpMultiplier;
+      final spawnedHp = enemyHpMax * hpMultiplier;
       _enemies.add(
         _Enemy(
           position: Offset(mapWidth, y),
-          hp: enemyHpMax * hpMultiplier,
+          hp: spawnedHp,
+          maxHp: spawnedHp,
           seed: _rng.nextDouble() * 1000,
         ),
       );
@@ -3950,6 +4280,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                                 thalorMode: _thalorMode,
                                 time: _lastTime,
                                 grassBackground: _grassBackground,
+                                wallSprite: _wallSprite,
                                 enemySpriteSheet: _enemySpriteSheet,
                                 enemySpriteFrameCount: _enemySpriteFrameCount,
                                 targetIndicator: _targetIndicator,
@@ -4017,13 +4348,39 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                                             : entry.value,
                                       ),
                                     );
+                                    final previousSpread = _viewportPointerSpread(
+                                      _activeViewportPointers.entries.map(
+                                        (entry) => entry.key == event.pointer
+                                            ? previousViewportPosition
+                                            : entry.value,
+                                      ),
+                                    );
                                     final currentCentroid =
                                         _viewportCentroid(_activeViewportPointers.values);
-                                    final delta = currentCentroid - previousCentroid;
-                                    if (delta.distanceSquared > 0) {
+                                    final currentSpread =
+                                        _viewportPointerSpread(_activeViewportPointers.values);
+                                    final centroidDelta = currentCentroid - previousCentroid;
+                                    final zoomRatio = previousSpread > 0 && currentSpread > 0
+                                        ? currentSpread / previousSpread
+                                        : 1.0;
+                                    final nextZoom = (_zoomMultiplier * zoomRatio)
+                                        .clamp(
+                                          minZoomMultiplier,
+                                          maxZoomMultiplier,
+                                        )
+                                        .toDouble();
+                                    final sceneAnchor =
+                                        _mapTransformController.toScene(previousCentroid);
+                                    if (centroidDelta.distanceSquared > 0 ||
+                                        (nextZoom - _zoomMultiplier).abs() > 0.0001) {
                                       setState(() {
+                                        _zoomMultiplier = nextZoom;
+                                        final nextScale = _baseMapScale * _zoomMultiplier;
                                         _mapViewportOffset = _clampMapViewportOffset(
-                                          _mapViewportOffset + delta,
+                                          Offset(
+                                            currentCentroid.dx - sceneAnchor.dx * nextScale,
+                                            currentCentroid.dy - sceneAnchor.dy * nextScale,
+                                          ),
                                         );
                                         _pointerDownScenePosition = null;
                                         _pointerDownHeroIndex = null;
@@ -4664,10 +5021,16 @@ class _HeroUnit {
 }
 
 class _Enemy {
-  _Enemy({required this.position, required this.hp, required this.seed});
+  _Enemy({
+    required this.position,
+    required this.hp,
+    required this.maxHp,
+    required this.seed,
+  });
 
   Offset position;
   double hp;
+  final double maxHp;
   final double seed;
   bool attacking = false;
   double flashRemaining = 0;
@@ -4726,6 +5089,7 @@ class _GamePainter extends CustomPainter {
     required this.thalorMode,
     required this.time,
     required this.grassBackground,
+    required this.wallSprite,
     required this.enemySpriteSheet,
     required this.enemySpriteFrameCount,
     this.targetIndicator,
@@ -4748,6 +5112,7 @@ class _GamePainter extends CustomPainter {
   final _ThalorMode thalorMode;
   final double time;
   final ui.Image? grassBackground;
+  final ui.Image? wallSprite;
   final ui.Image? enemySpriteSheet;
   final int enemySpriteFrameCount;
   final Offset? targetIndicator;
@@ -4809,14 +5174,38 @@ class _GamePainter extends CustomPainter {
       }
     }
 
-    final wall = Paint()..color = const Color(0xFF8B7D5A);
-    canvas.drawRect(Rect.fromLTWH(wallX, 0, 4, size.height), wall);
+    if (wallSprite != null) {
+      final sourceRect = Rect.fromLTWH(
+        0,
+        0,
+        wallSprite!.width.toDouble(),
+        wallSprite!.height.toDouble(),
+      );
+      final wallWidth = max(28.0, size.width * 0.03);
+      final destRect = Rect.fromLTWH(
+        wallX - wallWidth / 2,
+        0,
+        wallWidth,
+        size.height,
+      );
+      canvas.drawImageRect(
+        wallSprite!,
+        sourceRect,
+        destRect,
+        Paint(),
+      );
+    } else {
+      final wall = Paint()..color = const Color(0xFF8B7D5A);
+      canvas.drawRect(Rect.fromLTWH(wallX, 0, 4, size.height), wall);
+    }
 
-    final wallHpPaint = Paint()
-      ..color = const Color(0xFF6BFA9D)
-      ..style = PaintingStyle.fill;
-    final hpRatio = (wallHp / _GameViewState.wallHpMax).clamp(0.0, 1.0);
-    canvas.drawRect(Rect.fromLTWH(wallX + 2, 0, 2, size.height * hpRatio), wallHpPaint);
+    if (wallSprite == null) {
+      final wallHpPaint = Paint()
+        ..color = const Color(0xFF6BFA9D)
+        ..style = PaintingStyle.fill;
+      final hpRatio = (wallHp / _GameViewState.wallHpMax).clamp(0.0, 1.0);
+      canvas.drawRect(Rect.fromLTWH(wallX + 4, 0, 3, size.height * hpRatio), wallHpPaint);
+    }
     _drawDefenseTower(canvas);
 
     final enemyPaint = Paint()..color = const Color(0xFFE06A5E);
@@ -4833,7 +5222,9 @@ class _GamePainter extends CustomPainter {
       if (enemy.isDying) {
         continue;
       }
-      final hpRatio = (enemy.hp / _GameViewState.enemyHpMax).clamp(0.0, 1.0);
+      final hpRatio = enemy.maxHp > 0
+          ? (enemy.hp / enemy.maxHp).clamp(0.0, 1.0)
+          : 0.0;
       final barWidth = _GameViewState.enemySize;
       const barHeight = 4.0;
       final barLeft = enemy.position.dx - barWidth / 2;
@@ -6254,7 +6645,7 @@ class _HeroSelectScreenState extends State<HeroSelectScreen> {
   void _goBackToSaveSlots() {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(
-        builder: (_) => const SaveSlotScreen(),
+        builder: (_) => const VillageScreen(),
       ),
     );
   }
