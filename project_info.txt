@@ -15,6 +15,8 @@ Jak to funguje (gameplay)
 - Pokud nepritel dojde k hradbe (x <= heroAreaWidth + 4), zacne utocit do zdi.
 - Hrdinove se uz nemohou dostat nalevo od zdi; vsechny jejich move targety se clampuji tesne napravo od ni a stejne napravo od zdi se i spawnuji pri startu levelu.
 - V horni leve casti mapy vlevo od zdi je jednoducha staticka obranna vez; hrac ji neovlada, nehybe se a automaticky kazdych 5 sekund vystreli projektil za 10 damage na nejblizsiho nepritele v dosahu stejnem jako hrdinove.
+- Jeji vizual ve hre se nyni nacita ze sprite `assets/backgrounds/tower.png`; pri chybe nacitani zustava zachovany puvodni kresleny fallback.
+- Sprite veze byl nasledne znovu zvetsen na dvojnasobek tehdejsi velikosti a cela vez byla posunuta o kus niz.
 - Zed ma HP 300. Nepritel udeluje wallDps = 5 damage za sekundu. Konec hry pri HP <= 0.
 - Rychlost hry lze prepnut v panelu na 1x/2x/4x/8x, default je 2x.
 - Restart hry ted vraci cely run na vychozi startovni stav: znovu zacina od 1. vlny, resetuje cas/statistiky, vraci hrdiny na startovni pozice, jejich behavior a attack mody na default a rychlost hry zpet na `2x`.
@@ -85,6 +87,7 @@ Obrazovky a UI
   - Cela herni plocha mapy pouziva jako pozadi obrazek `assets/backgrounds/grass.png`.
   - Zed se ted vizualne vykresluje obrazkem `assets/backgrounds/palisade.png`; puvodni jednoducha kreslena zed zustava jen jako fallback pri selhani assetu.
   - Pokud se palisada uspesne nacte, svisly in-map HP pruh zdi se uz nekresli pres jeji texturu; wall HP zustava viditelne v hornim HUDu.
+  - Pokud nepritel utoci do palisady, palisada kratce bile zablikne a lehce se zachveje.
   - Vpravo dole vedle panelu rychlosti je novy kompaktni pruh karet aktivnich hrdinu.
   - Kazda karta hrdiny zobrazuje stejny portret jako ve vyberu hrdinu a maly HP ukazatel.
   - Klik na kartu hrdiny vybere daneho hrdinu stejne jako klik primo na jednotku na mape.
@@ -374,3 +377,15 @@ Spusteni
 - Graficka reprezentace zdi ve hre byla zmenena na sprite `assets/backgrounds/palisade.png`; pri chybe nacitani se fallbackne vykresli puvodni jednoducha linie zdi.
 2026-03-15:
 - Hrdinove se ted zastavi tesne napravo od zdi a pri startu levelu uz nespawnuji nalevo od ni.
+2026-03-15:
+- Palisada pri utoku nepratel nove bile flashuje a lehce se trese jako hit reakce.
+2026-03-16:
+- Automaticka obranna vez v levem hornim rohu herni mapy ted pouziva sprite `assets/backgrounds/tower.png`; pri chybe assetu se fallbackne vykresli puvodni jednoduchy tvar.
+2026-03-16:
+- Obranna vez byla na mape zvetsena pro lepsi citelnost.
+2026-03-16:
+- Sirka vykresleni obranne veze zustala zachovana, ale vyska byla mirne zvetsena, aby sprite pusobil o trochu vyssi.
+2026-03-16:
+- Vyska obranne veze byla jeste jednou lehce navysena, sirka zustava beze zmeny.
+2026-03-16:
+- Obranna vez byla nasledne znovu zvetsena 2x v obou rozmrech a jeji pozice se posunula niz v horni leve casti mapy.

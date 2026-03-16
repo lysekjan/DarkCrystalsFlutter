@@ -205,6 +205,12 @@ Detailed balance values are documented in `INFO.txt` and `project_info.txt`.
 - 2026-03-15: The gameplay wall now renders with `assets/backgrounds/palisade.png`; if the asset fails to load, the old simple painted wall line still appears.
 - 2026-03-15: When the palisade wall sprite is available, the old in-map vertical wall HP line is now hidden so no line is drawn across the texture; wall HP remains visible in the top HUD.
 - 2026-03-15: Heroes are now blocked from crossing to the left side of the wall; player orders stop them just before the wall, and level-start spawns were moved to the right side as well.
+- 2026-03-15: When enemies attack the palisade, it now flashes white and shakes slightly as a hit reaction.
+- 2026-03-16: The automatic defense tower in the upper-left gameplay area now renders from `assets/backgrounds/tower.png`; if the sprite fails to load, the old painted square fallback still appears.
+- 2026-03-16: The in-game defense tower sprite was enlarged on the map for better visibility.
+- 2026-03-16: The defense tower sprite width was kept unchanged, while its on-map height was increased slightly for a taller silhouette.
+- 2026-03-16: The defense tower height was nudged up once more while keeping the same width.
+- 2026-03-16: The defense tower sprite was then doubled again in both dimensions and moved lower on the map.
 
 ## Legacy Historical Notes
 

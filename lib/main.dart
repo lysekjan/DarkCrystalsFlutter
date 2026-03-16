@@ -1173,6 +1173,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   static const double heroWallStopPadding = heroUnitSize * 0.6;
   static const double wallDps = 5; // damage per second
   static const double hitFlashDuration = 0.12; // seconds
+  static const double wallHitEffectDuration = 0.16;
   static const double projectileRadius = 2;
   static const double explosionDuration = 0.35; // seconds
   static const double swordRadius = 140;
@@ -1195,15 +1196,17 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   static const double defensiveRetreatMinDuration = 2.0;
   static const double towerCooldownDuration = 5.0;
   static const double towerDamage = 10.0;
-  static const double towerSize = 34.0;
+  static const double towerWidth = 136.0;
+  static const double towerHeight = 160.0;
   static const double towerRange = defaultHeroAttackRange;
-  static const Offset towerPosition = Offset(44, 42);
+  static const Offset towerPosition = Offset(44, 72);
 
   final Random _rng = Random();
   late final Ticker _ticker;
   DateTime _gameStartTime = DateTime.now();
   double _lastTime = 0;
   double _wallHp = wallHpMax;
+  double _wallHitEffectRemaining = 0;
   double _timeUntilNextSpawn = 0;
   // Wave and statistics tracking
   int _currentWave = 1;
@@ -1284,6 +1287,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   ui.Image? _enemySpriteSheet;
   ui.Image? _grassBackground;
   ui.Image? _wallSprite;
+  ui.Image? _towerSprite;
   int _enemySpriteFrameCount = 0;
   double _baseMapScale = 1.0;
   double _zoomMultiplier = 1.0;
@@ -1319,6 +1323,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     );
     _loadGrassBackground();
     _loadWallSprite();
+    _loadTowerSprite();
     _loadEnemySpriteSheet();
     // Load RPG bonuses
     _loadHeroBonuses();
@@ -1366,6 +1371,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     _enemySpriteSheet?.dispose();
     _grassBackground?.dispose();
     _wallSprite?.dispose();
+    _towerSprite?.dispose();
     _mapTransformController.dispose();
     _aerinMenuController.dispose();
     _veyraMenuController.dispose();
@@ -1416,6 +1422,25 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       });
     } catch (_) {
       // Keep the painted wall fallback if the texture cannot load.
+    }
+  }
+
+  Future<void> _loadTowerSprite() async {
+    try {
+      final data = await rootBundle.load('assets/backgrounds/tower.png');
+      final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+      final frame = await codec.getNextFrame();
+      final image = frame.image;
+      if (!mounted) {
+        image.dispose();
+        return;
+      }
+      setState(() {
+        _towerSprite?.dispose();
+        _towerSprite = image;
+      });
+    } catch (_) {
+      // Keep the painted tower fallback if the texture cannot load.
     }
   }
 
@@ -2038,6 +2063,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       if (enemy.position.dx <= heroAreaWidth + 4) {
         enemy.attacking = true;
         _wallHp -= wallDps * dt;
+        _wallHitEffectRemaining = max(_wallHitEffectRemaining, wallHitEffectDuration);
         continue;
       }
       final targetHeroIndex = _nearestHeroAheadOfEnemy(enemy);
@@ -2709,6 +2735,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       _lastTime = 0;
       _timeUntilNextSpawn = 4;
       _wallHp = wallHpMax;
+      _wallHitEffectRemaining = 0;
       _currentWave = 1;
       _enemiesKilled = 0;
       _enemiesInWave = 0;
@@ -2965,6 +2992,9 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   }
 
   void _updateEffects(double dt) {
+    if (_wallHitEffectRemaining > 0) {
+      _wallHitEffectRemaining = max(0, _wallHitEffectRemaining - dt);
+    }
     for (final enemy in _enemies) {
       if (enemy.flashRemaining > 0) {
         enemy.flashRemaining = max(0, enemy.flashRemaining - dt);
@@ -4261,6 +4291,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                               size: const Size(mapWidth, mapHeight),
                               painter: _GamePainter(
                                 wallHp: _wallHp,
+                                wallHitEffectRemaining: _wallHitEffectRemaining,
                                 enemies: _enemies,
                                 projectiles: _projectiles,
                                 damageTexts: _damageTexts,
@@ -4268,7 +4299,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                                 lightnings: _lightnings,
                                 wallX: heroAreaWidth,
                                 towerPosition: towerPosition,
-                                towerSize: towerSize,
+                                towerWidth: towerWidth,
+                                towerHeight: towerHeight,
                                 heroes: widget.heroes,
                                 heroPositions: _heroUnits.map((unit) => unit.position).toList(),
                                 heroAttackRanges: List<double>.generate(
@@ -4281,6 +4313,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                                 time: _lastTime,
                                 grassBackground: _grassBackground,
                                 wallSprite: _wallSprite,
+                                towerSprite: _towerSprite,
                                 enemySpriteSheet: _enemySpriteSheet,
                                 enemySpriteFrameCount: _enemySpriteFrameCount,
                                 targetIndicator: _targetIndicator,
@@ -5073,6 +5106,7 @@ class _Projectile {
 class _GamePainter extends CustomPainter {
   _GamePainter({
     required this.wallHp,
+    required this.wallHitEffectRemaining,
     required this.enemies,
     required this.projectiles,
     required this.damageTexts,
@@ -5080,7 +5114,8 @@ class _GamePainter extends CustomPainter {
     required this.lightnings,
     required this.wallX,
     required this.towerPosition,
-    required this.towerSize,
+    required this.towerWidth,
+    required this.towerHeight,
     required this.heroes,
     required this.heroPositions,
     required this.heroAttackRanges,
@@ -5090,12 +5125,14 @@ class _GamePainter extends CustomPainter {
     required this.time,
     required this.grassBackground,
     required this.wallSprite,
+    required this.towerSprite,
     required this.enemySpriteSheet,
     required this.enemySpriteFrameCount,
     this.targetIndicator,
   });
 
   final double wallHp;
+  final double wallHitEffectRemaining;
   final List<_Enemy> enemies;
   final List<_Projectile> projectiles;
   final List<_DamageText> damageTexts;
@@ -5103,7 +5140,8 @@ class _GamePainter extends CustomPainter {
   final List<_LightningEffect> lightnings;
   final double wallX;
   final Offset towerPosition;
-  final double towerSize;
+  final double towerWidth;
+  final double towerHeight;
   final List<HeroDef> heroes;
   final List<Offset> heroPositions;
   final List<double> heroAttackRanges;
@@ -5113,6 +5151,7 @@ class _GamePainter extends CustomPainter {
   final double time;
   final ui.Image? grassBackground;
   final ui.Image? wallSprite;
+  final ui.Image? towerSprite;
   final ui.Image? enemySpriteSheet;
   final int enemySpriteFrameCount;
   final Offset? targetIndicator;
@@ -5174,6 +5213,8 @@ class _GamePainter extends CustomPainter {
       }
     }
 
+    final wallEffectStrength =
+        (wallHitEffectRemaining / _GameViewState.wallHitEffectDuration).clamp(0.0, 1.0);
     if (wallSprite != null) {
       final sourceRect = Rect.fromLTWH(
         0,
@@ -5182,9 +5223,13 @@ class _GamePainter extends CustomPainter {
         wallSprite!.height.toDouble(),
       );
       final wallWidth = max(28.0, size.width * 0.03);
+      final shakeOffset = Offset(
+        sin(time * 85) * 2.2 * wallEffectStrength,
+        cos(time * 57) * 1.1 * wallEffectStrength,
+      );
       final destRect = Rect.fromLTWH(
-        wallX - wallWidth / 2,
-        0,
+        wallX - wallWidth / 2 + shakeOffset.dx,
+        shakeOffset.dy,
         wallWidth,
         size.height,
       );
@@ -5194,6 +5239,16 @@ class _GamePainter extends CustomPainter {
         destRect,
         Paint(),
       );
+      if (wallEffectStrength > 0) {
+        final flashOpacity =
+            (0.14 + 0.28 * (0.5 + 0.5 * sin(time * 48))) * wallEffectStrength;
+        canvas.drawRect(
+          destRect,
+          Paint()
+            ..color = Colors.white.withOpacity(flashOpacity)
+            ..blendMode = BlendMode.srcATop,
+        );
+      }
     } else {
       final wall = Paint()..color = const Color(0xFF8B7D5A);
       canvas.drawRect(Rect.fromLTWH(wallX, 0, 4, size.height), wall);
@@ -5290,9 +5345,23 @@ class _GamePainter extends CustomPainter {
   void _drawDefenseTower(Canvas canvas) {
     final towerRect = Rect.fromCenter(
       center: towerPosition,
-      width: towerSize,
-      height: towerSize,
+      width: towerWidth,
+      height: towerHeight,
     );
+    if (towerSprite != null) {
+      canvas.drawImageRect(
+        towerSprite!,
+        Rect.fromLTWH(
+          0,
+          0,
+          towerSprite!.width.toDouble(),
+          towerSprite!.height.toDouble(),
+        ),
+        towerRect,
+        Paint(),
+      );
+      return;
+    }
     final basePaint = Paint()..color = const Color(0xFF284B57);
     final borderPaint = Paint()
       ..color = const Color(0xFF8FE9FF)
