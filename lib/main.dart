@@ -370,6 +370,14 @@ class _VillageScreenState extends State<VillageScreen> {
     );
   }
 
+  void _openExplorationFlow() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const ExplorationChapterSelectScreen(),
+      ),
+    );
+  }
+
   void _showPlaceholderMessage() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -457,6 +465,13 @@ class _VillageScreenState extends State<VillageScreen> {
                               icon: Icons.shield_rounded,
                               color: const Color(0xFFE57373),
                               onPressed: _openDefenseFlow,
+                            ),
+                            _VillageMenuButton(
+                              title: 'Pruzkum',
+                              subtitle: 'Vyber kapitolu a lokaci k prozkoumani',
+                              icon: Icons.explore_rounded,
+                              color: const Color(0xFF64B5F6),
+                              onPressed: _openExplorationFlow,
                             ),
                             _VillageMenuButton(
                               title: 'Samanova chyse',
@@ -570,6 +585,436 @@ class ChapterSelectScreen extends StatefulWidget {
 
   @override
   State<ChapterSelectScreen> createState() => _ChapterSelectScreenState();
+}
+
+class ExplorationChapterSelectScreen extends StatefulWidget {
+  const ExplorationChapterSelectScreen({super.key});
+
+  @override
+  State<ExplorationChapterSelectScreen> createState() =>
+      _ExplorationChapterSelectScreenState();
+}
+
+class _ExplorationChapterSelectScreenState
+    extends State<ExplorationChapterSelectScreen> {
+  static const List<_ChapterChoice> _chapters = [
+    _ChapterChoice(
+      number: 1,
+      title: 'Kapitola I',
+      subtitle: 'Pruzkum pohranici',
+      unlocked: true,
+    ),
+    _ChapterChoice(
+      number: 2,
+      title: 'Kapitola II',
+      subtitle: 'Pruzkum hlubin',
+      unlocked: true,
+    ),
+  ];
+
+  late final PageController _pageController;
+  int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _enableFullscreenMode();
+    _pageController = PageController(viewportFraction: 0.42);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _goBackToVillage() {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(
+        builder: (_) => const VillageScreen(),
+      ),
+    );
+  }
+
+  Future<void> _goToChapter(int index) async {
+    await _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 240),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  void _selectCurrentChapter() {
+    final chapter = _chapters[_currentIndex];
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ExplorationLevelSelectScreen(
+          chapterNumber: chapter.number,
+          chapterTitle: chapter.title,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final chapter = _chapters[_currentIndex];
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (!didPop) {
+          _goBackToVillage();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFF070909),
+        body: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final compactCards =
+                  constraints.maxWidth < 760 || constraints.maxHeight < 520;
+              final carouselHeight = compactCards ? 280.0 : 320.0;
+              return SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(0, 20, 0, 24),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight - 44),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'Pruzkum Kapitol',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          'Vyber kapitolu a pokracuj do nabidky lokaci.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.75),
+                            fontSize: 14,
+                          ),
+                        ),
+                        SizedBox(height: compactCards ? 16 : 24),
+                        SizedBox(
+                          height: carouselHeight,
+                          child: Stack(
+                            children: [
+                              Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: compactCards ? 34 : 44,
+                                ),
+                                child: PageView.builder(
+                                  controller: _pageController,
+                                  itemCount: _chapters.length,
+                                  onPageChanged: (index) {
+                                    setState(() {
+                                      _currentIndex = index;
+                                    });
+                                  },
+                                  itemBuilder: (context, index) {
+                                    final item = _chapters[index];
+                                    final isActive = index == _currentIndex;
+                                    return AnimatedPadding(
+                                      duration: const Duration(milliseconds: 180),
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: compactCards ? 8 : 12,
+                                        vertical: isActive ? 0 : (compactCards ? 8 : 16),
+                                      ),
+                                      child: _SelectionCard(
+                                        title: item.title,
+                                        subtitle: item.subtitle,
+                                        icon: Icons.explore_rounded,
+                                        accentColor: const Color(0xFF64B5F6),
+                                        compact: compactCards,
+                                        buttonLabel: 'Vybrat kapitolu',
+                                        onPressed: isActive ? _selectCurrentChapter : null,
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                              if (_currentIndex > 0)
+                                Positioned(
+                                  left: 0,
+                                  top: 0,
+                                  bottom: 0,
+                                  child: Center(
+                                    child: IconButton.filledTonal(
+                                      onPressed: () => _goToChapter(_currentIndex - 1),
+                                      iconSize: 32,
+                                      icon: const Icon(Icons.chevron_left),
+                                    ),
+                                  ),
+                                ),
+                              if (_currentIndex < _chapters.length - 1)
+                                Positioned(
+                                  right: 0,
+                                  top: 0,
+                                  bottom: 0,
+                                  child: Center(
+                                    child: IconButton.filledTonal(
+                                      onPressed: () => _goToChapter(_currentIndex + 1),
+                                      iconSize: 32,
+                                      icon: const Icon(Icons.chevron_right),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: _goBackToVillage,
+                                child: const Text('Zpet'),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: FilledButton(
+                                onPressed: _selectCurrentChapter,
+                                child: Text('Pokracovat do ${chapter.title}'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class ExplorationLevelSelectScreen extends StatefulWidget {
+  const ExplorationLevelSelectScreen({
+    super.key,
+    required this.chapterNumber,
+    required this.chapterTitle,
+  });
+
+  final int chapterNumber;
+  final String chapterTitle;
+
+  @override
+  State<ExplorationLevelSelectScreen> createState() =>
+      _ExplorationLevelSelectScreenState();
+}
+
+class _ExplorationLevelSelectScreenState extends State<ExplorationLevelSelectScreen> {
+  static const int _levelCount = 2;
+
+  late final PageController _pageController;
+  int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _enableFullscreenMode();
+    _pageController = PageController(viewportFraction: 0.42);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _goBackToChapters() {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(
+        builder: (_) => const ExplorationChapterSelectScreen(),
+      ),
+    );
+  }
+
+  Future<void> _goToLevel(int index) async {
+    await _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 240),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  Future<void> _openSelectedLocation() async {
+    final levelNumber = _currentIndex + 1;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Pruzkum'),
+          content: Text(
+            'Kapitola ${widget.chapterNumber}, lokace $levelNumber je pripravena v nabidce. Samotny gameplay pruzkumu doplnime pozdeji.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Zavrit'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final levelNumber = _currentIndex + 1;
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (!didPop) {
+          _goBackToChapters();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFF070909),
+        body: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final compactCards =
+                  constraints.maxWidth < 760 || constraints.maxHeight < 520;
+              final carouselHeight = compactCards ? 280.0 : 320.0;
+              return SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(0, 20, 0, 24),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight - 44),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '${widget.chapterTitle}  Lokace $levelNumber',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          'Vyber lokaci pro pruzkum. Zatim je pripraveny jen navigacni placeholder flow.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.75),
+                            fontSize: 14,
+                          ),
+                        ),
+                        SizedBox(height: compactCards ? 16 : 24),
+                        SizedBox(
+                          height: carouselHeight,
+                          child: Stack(
+                            children: [
+                              Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: compactCards ? 34 : 44,
+                                ),
+                                child: PageView.builder(
+                                  controller: _pageController,
+                                  itemCount: _levelCount,
+                                  onPageChanged: (index) {
+                                    setState(() {
+                                      _currentIndex = index;
+                                    });
+                                  },
+                                  itemBuilder: (context, index) {
+                                    final currentLevel = index + 1;
+                                    final isActive = index == _currentIndex;
+                                    return AnimatedPadding(
+                                      duration: const Duration(milliseconds: 180),
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: compactCards ? 8 : 12,
+                                        vertical: isActive ? 0 : (compactCards ? 8 : 16),
+                                      ),
+                                      child: _SelectionCard(
+                                        title: 'Lokace $currentLevel',
+                                        subtitle: currentLevel == 1
+                                            ? 'Prvni misto k prozkoumani'
+                                            : 'Druhe misto k prozkoumani',
+                                        icon: Icons.travel_explore_rounded,
+                                        accentColor: const Color(0xFF64B5F6),
+                                        compact: compactCards,
+                                        buttonLabel: 'Otevrit lokaci',
+                                        onPressed: isActive ? _openSelectedLocation : null,
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                              if (_currentIndex > 0)
+                                Positioned(
+                                  left: 0,
+                                  top: 0,
+                                  bottom: 0,
+                                  child: Center(
+                                    child: IconButton.filledTonal(
+                                      onPressed: () => _goToLevel(_currentIndex - 1),
+                                      iconSize: 32,
+                                      icon: const Icon(Icons.chevron_left),
+                                    ),
+                                  ),
+                                ),
+                              if (_currentIndex < _levelCount - 1)
+                                Positioned(
+                                  right: 0,
+                                  top: 0,
+                                  bottom: 0,
+                                  child: Center(
+                                    child: IconButton.filledTonal(
+                                      onPressed: () => _goToLevel(_currentIndex + 1),
+                                      iconSize: 32,
+                                      icon: const Icon(Icons.chevron_right),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: _goBackToChapters,
+                                child: const Text('Zpet'),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: FilledButton(
+                                onPressed: _openSelectedLocation,
+                                child: const Text('Pokracovat'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
@@ -803,18 +1248,34 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
 
   late final PageController _pageController;
   int _currentIndex = 0;
+  PlayerProgress? _progress;
 
   @override
   void initState() {
     super.initState();
     _enableFullscreenMode();
     _pageController = PageController(viewportFraction: 0.42);
+    _loadProgress();
   }
 
   @override
   void dispose() {
     _pageController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadProgress() async {
+    final progress = await RpgSystem.getProgress();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _progress = progress;
+    });
+  }
+
+  bool _isLevelCompleted(int levelNumber) {
+    return _progress?.isLevelCompleted(widget.chapterNumber, levelNumber) ?? false;
   }
 
   Future<void> _goToLevel(int index) async {
@@ -865,6 +1326,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
     final levelNumber = _currentIndex + 1;
     final levelMultiplier = pow(1.2, _currentIndex).toDouble();
     final hpBonusPercent = ((levelMultiplier - 1) * 100).round();
+    final selectedLevelCompleted = _isLevelCompleted(levelNumber);
     return Scaffold(
       backgroundColor: const Color(0xFF070909),
       body: SafeArea(
@@ -893,9 +1355,13 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        hpBonusPercent <= 0
-                            ? 'Vychozi obtiznost.'
-                            : 'Nepratele maji o $hpBonusPercent % vice HP nez v levelu 1.',
+                        selectedLevelCompleted
+                            ? (hpBonusPercent <= 0
+                                ? 'Vychozi obtiznost. Level uz je dokonceny.'
+                                : 'Nepratele maji o $hpBonusPercent % vice HP nez v levelu 1. Level uz je dokonceny.')
+                            : (hpBonusPercent <= 0
+                                ? 'Vychozi obtiznost.'
+                                : 'Nepratele maji o $hpBonusPercent % vice HP nez v levelu 1.'),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.75),
@@ -925,6 +1391,7 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
                                   final currentBonusPercent =
                                       ((currentMultiplier - 1) * 100).round();
                                   final isActive = index == _currentIndex;
+                                  final isCompleted = _isLevelCompleted(currentLevel);
                                   return AnimatedPadding(
                                     duration: const Duration(milliseconds: 180),
                                     padding: EdgeInsets.symmetric(
@@ -933,13 +1400,18 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
                                     ),
                                     child: _SelectionCard(
                                       title: 'Level $currentLevel',
-                                      subtitle: currentBonusPercent <= 0
-                                          ? 'Vychozi HP nepratel'
-                                          : '+$currentBonusPercent % HP nepratel',
-                                      icon: Icons.flag_rounded,
+                                      subtitle: isCompleted
+                                          ? (currentBonusPercent <= 0
+                                              ? 'Vychozi HP nepratel\nDokonceno'
+                                              : '+$currentBonusPercent % HP nepratel\nDokonceno')
+                                          : (currentBonusPercent <= 0
+                                              ? 'Vychozi HP nepratel'
+                                              : '+$currentBonusPercent % HP nepratel'),
+                                      icon: isCompleted ? Icons.task_alt_rounded : Icons.flag_rounded,
                                       accentColor: const Color(0xFF64B5F6),
                                       compact: compactLevelCards,
-                                      buttonLabel: 'Spustit level',
+                                      buttonLabel: isCompleted ? 'Spustit znovu' : 'Spustit level',
+                                      completed: isCompleted,
                                       onPressed: isActive ? _startSelectedLevel : null,
                                     ),
                                   );
@@ -1020,6 +1492,7 @@ class _SelectionCard extends StatelessWidget {
     required this.accentColor,
     required this.buttonLabel,
     this.locked = false,
+    this.completed = false,
     this.compact = false,
     this.onPressed,
   });
@@ -1030,6 +1503,7 @@ class _SelectionCard extends StatelessWidget {
   final Color accentColor;
   final String buttonLabel;
   final bool locked;
+  final bool completed;
   final bool compact;
   final VoidCallback? onPressed;
 
@@ -1084,6 +1558,28 @@ class _SelectionCard extends StatelessWidget {
                     size: iconSize,
                   ),
                 ),
+                if (completed && !locked) ...[
+                  SizedBox(height: dense ? 10 : 12),
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: dense ? 10 : 12,
+                      vertical: dense ? 4 : 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1D6F42),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: const Color(0xFF6BFA9D).withOpacity(0.45)),
+                    ),
+                    child: Text(
+                      'Dokonceno',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: ultraDense ? 10 : 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
                 SizedBox(height: titleSpacing),
                 Text(
                   title,
@@ -1198,7 +1694,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   static const double spellSendingDuration = 2; // seconds
   static const double spellCooldownDuration = 10; // seconds
   static const double cooldownScale = 0.25;
-  static const double defaultHeroAttackRange = mapWidth / 3;
+  static const double defaultHeroAttackRange = mapWidth / 6;
   static const double enemyTapRadius = 18;
   static const double heroTapRadius = 48;
   static const double heroUnitSize = 96;
@@ -1230,7 +1726,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   static const double towerDamage = 10.0;
   static const double towerWidth = 88.0;
   static const double towerHeight = 136.0;
-  static const double towerRange = defaultHeroAttackRange;
+  static const double towerRange = mapWidth / 3;
   static const Offset towerPosition = Offset(44, 72);
 
   final Random _rng = Random();
@@ -1249,8 +1745,11 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   late final List<int> _heroSlotIndices;
   late final List<_HeroUnit> _heroUnits;
   late final List<_HeroBehaviorMode> _heroBehaviors;
+  late final List<double> _heroAttackAnimationRemainingTimes;
   bool _gameOver = false;
   bool _gameOverDialogShown = false;
+  bool _levelCompleted = false;
+  bool _levelCompleteDialogShown = false;
   double _gameSpeed = 2;
   bool _speedPanelOpen = false;
   bool _autoMode = true;
@@ -1301,7 +1800,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   Offset? _holdPosition;
   int? _selectedHeroIndex;
   final Set<int> _multiSelectedHeroIndices = <int>{};
-  int? _rangeIndicatorHeroIndex;
+  final Set<int> _rangeIndicatorHeroIndices = <int>{};
   double? _rangeIndicatorShownAt;
   Offset? _pointerDownScenePosition;
   int? _pointerDownHeroIndex;
@@ -1359,6 +1858,10 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     _heroBehaviors = List<_HeroBehaviorMode>.filled(
       widget.heroes.length,
       _HeroBehaviorMode.holdPosition,
+    );
+    _heroAttackAnimationRemainingTimes = List<double>.filled(
+      widget.heroes.length,
+      0,
     );
     _aerinMenuController = AnimationController(
       vsync: this,
@@ -1893,12 +2396,22 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   }
 
   void _showHeroRangeIndicator(int heroIndex) {
-    _rangeIndicatorHeroIndex = heroIndex;
+    _showHeroRangeIndicators(<int>{heroIndex});
+  }
+
+  void _showHeroRangeIndicators(Set<int> heroIndices) {
+    _rangeIndicatorHeroIndices
+      ..clear()
+      ..addAll(heroIndices.where(_isHeroAlive));
+    if (_rangeIndicatorHeroIndices.isEmpty) {
+      _rangeIndicatorShownAt = null;
+      return;
+    }
     _rangeIndicatorShownAt = _lastTime;
   }
 
   void _clearHeroRangeIndicator() {
-    _rangeIndicatorHeroIndex = null;
+    _rangeIndicatorHeroIndices.clear();
     _rangeIndicatorShownAt = null;
   }
 
@@ -2022,14 +2535,13 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       _multiSelectedHeroIndices
         ..clear()
         ..addAll(selected);
-      _clearHeroRangeIndicator();
+      _showHeroRangeIndicators(selected);
     });
   }
 
   double _heroRangeIndicatorOpacity() {
-    final heroIndex = _rangeIndicatorHeroIndex;
     final shownAt = _rangeIndicatorShownAt;
-    if (heroIndex == null || shownAt == null || !_isHeroAlive(heroIndex)) {
+    if (shownAt == null || _rangeIndicatorHeroIndices.every((heroIndex) => !_isHeroAlive(heroIndex))) {
       return 0;
     }
     final elapsed = _lastTime - shownAt;
@@ -2045,6 +2557,13 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       return 0;
     }
     return 1 - fadeProgress;
+  }
+
+  List<int> _activeRangeIndicatorHeroIndices() {
+    if (_heroRangeIndicatorOpacity() <= 0) {
+      return const <int>[];
+    }
+    return _rangeIndicatorHeroIndices.where(_isHeroAlive).toList()..sort();
   }
 
   void _selectHero(int heroIndex) {
@@ -2152,7 +2671,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     final rawDt = (seconds - _lastTime).clamp(0.0, 0.05);
     final dt = rawDt * _gameSpeed;
     _lastTime = seconds;
-    if (dt <= 0 || _gameOver) {
+    if (dt <= 0 || _gameOver || _levelCompleted) {
       setState(() {});
       return;
     }
@@ -2161,6 +2680,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     _updateEnemies(dt);
     _updateProjectiles(dt);
     _updateTower(dt);
+    _updateHeroAttackAnimations(dt);
     _updateHeroBehaviorTargets();
     _updateHeroMovement(dt);
     _updateHero(dt);
@@ -2170,6 +2690,11 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       _wallHp = 0;
       _gameOver = true;
       SoundManager().playGameOver();
+    }
+
+    if (_didCompleteLevel) {
+      _levelCompleted = true;
+      _markLevelCompleted();
     }
 
     setState(() {});
@@ -2182,6 +2707,23 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
         }
       });
     }
+    if (_levelCompleted && !_levelCompleteDialogShown) {
+      _levelCompleteDialogShown = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _showLevelCompleteDialog();
+        }
+      });
+    }
+  }
+
+  bool get _didCompleteLevel {
+    if (!_levelDataReady || _levelDef.waves.isEmpty) {
+      return false;
+    }
+    final isFinalWave = _currentWave >= _levelDef.waves.length;
+    final allSpawnsConsumed = _nextWaveSpawnIndex >= _scheduledWaveSpawns.length;
+    return isFinalWave && allSpawnsConsumed && !_hasTargetableEnemies;
   }
 
   void _updateSpawning(double dt) {
@@ -2377,6 +2919,16 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     }
     final direction = delta / delta.distance;
     return _clampHeroTarget(enemy.position + direction * safeDistance);
+  }
+
+  void _updateHeroAttackAnimations(double dt) {
+    for (int i = 0; i < _heroAttackAnimationRemainingTimes.length; i++) {
+      final remaining = _heroAttackAnimationRemainingTimes[i];
+      if (remaining <= 0) {
+        continue;
+      }
+      _heroAttackAnimationRemainingTimes[i] = max(0.0, remaining - dt);
+    }
   }
 
   void _updateHeroMovement(double dt) {
@@ -2615,7 +3167,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
         _selectedHeroIndex = null;
       }
       _multiSelectedHeroIndices.remove(heroIndex);
-      if (_rangeIndicatorHeroIndex == heroIndex) {
+      if (_rangeIndicatorHeroIndices.remove(heroIndex) &&
+          _rangeIndicatorHeroIndices.isEmpty) {
         _clearHeroRangeIndicator();
       }
     }
@@ -2926,6 +3479,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       _scheduledWaveSpawns = <_ScheduledSpawn>[];
       _gameOver = false;
       _gameOverDialogShown = false;
+      _levelCompleted = false;
+      _levelCompleteDialogShown = false;
       _gameSpeed = 2;
       _speedPanelOpen = false;
       _autoMode = true;
@@ -2955,6 +3510,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       for (int i = 0; i < _heroUnits.length; i++) {
         _heroUnits[i] = _initialHeroUnit(i);
         _heroBehaviors[i] = _HeroBehaviorMode.holdPosition;
+        _heroAttackAnimationRemainingTimes[i] = 0;
       }
       for (final state in _heroStates) {
         state.phase = _HeroPhase.cooldown;
@@ -3255,18 +3811,34 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     if (!_isHeroAlive(heroIndex)) {
       return;
     }
+    if (_isVeyra(heroIndex)) {
+      _heroAttackAnimationRemainingTimes[heroIndex] =
+          _HeroUnitWidget.veyraAttackAnimationDurationSeconds;
+    }
     final attackType = widget.heroes[heroIndex].attackType;
 
     if (_isMyris(heroIndex)) {
       switch (_myrisMode) {
         case _MyrisMode.normal:
-          _fireProjectile(heroIndex, target: target);
+          _castVeyraLightning(heroIndex, target: target);
           break;
         case _MyrisMode.ice:
           _castMyrisIce(heroIndex, target: target);
           break;
         case _MyrisMode.freeze:
           _castMyrisFreeze(heroIndex);
+          break;
+      }
+    } else if (_isNyxra(heroIndex)) {
+      switch (_nyxraMode) {
+        case _NyxraMode.normal:
+          _castVeyraLightning(heroIndex, target: target);
+          break;
+        case _NyxraMode.lightning:
+          _castNyxraLightning(heroIndex, target: target);
+          break;
+        case _NyxraMode.voidchain:
+          _castNyxraVoidChain(heroIndex, target: target);
           break;
       }
     } else if (_isKaelen(heroIndex)) {
@@ -3355,7 +3927,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     } else if (_isNyxra(heroIndex)) {
       switch (_nyxraMode) {
         case _NyxraMode.normal:
-          _fireProjectile(heroIndex, target: target);
+          _castVeyraLightning(heroIndex, target: target);
           break;
         case _NyxraMode.lightning:
           _castNyxraLightning(heroIndex, target: target);
@@ -3404,6 +3976,53 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       return;
     }
     _triggerManualAttack(hit);
+  }
+
+  Future<void> _markLevelCompleted() async {
+    await _saveProgress();
+    final progress = await RpgSystem.getProgress();
+    progress.markLevelCompleted(widget.chapterNumber, widget.levelNumber);
+    await RpgSystem.saveProgress();
+  }
+
+  Future<void> _showLevelCompleteDialog() {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Vesnice ubranená'),
+          content: const Text(
+            'Ubranil jsi vesnici a dokoncil tento level.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                Navigator.of(dialogContext).pop();
+                await _resetGame();
+              },
+              child: const Text('Hrat znovu'),
+            ),
+            TextButton(
+              onPressed: () async {
+                await _saveProgress();
+                Navigator.of(dialogContext).pop();
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute<void>(
+                    builder: (_) => LevelSelectScreen(
+                      heroes: widget.heroes,
+                      chapterNumber: widget.chapterNumber,
+                    ),
+                  ),
+                  (route) => false,
+                );
+              },
+              child: const Text('Vyber levelu'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _triggerManualPositionAttack(Offset screenPosition) {
@@ -3560,6 +4179,9 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   bool _isEldrin(int heroIndex) => widget.heroes[heroIndex].name == 'Eldrin';
 
   double _effectiveSending(int heroIndex) {
+    if (_isNyxra(heroIndex) && _nyxraMode == _NyxraMode.normal) {
+      return 1;
+    }
     if (_isNyxra(heroIndex) && _nyxraMode == _NyxraMode.lightning) {
       return 2;
     }
@@ -3585,7 +4207,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     if (_isMyris(heroIndex)) {
       switch (_myrisMode) {
         case _MyrisMode.normal:
-          return spellSendingDuration;
+          return 1;
         case _MyrisMode.ice:
           return 1;
         case _MyrisMode.freeze:
@@ -3681,7 +4303,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   IconData _nyxraModeIcon(_NyxraMode mode) {
     switch (mode) {
       case _NyxraMode.normal:
-        return Icons.auto_awesome;
+        return Icons.bolt;
       case _NyxraMode.lightning:
         return Icons.bolt;
       case _NyxraMode.voidchain:
@@ -3692,7 +4314,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   IconData _myrisModeIcon(_MyrisMode mode) {
     switch (mode) {
       case _MyrisMode.normal:
-        return Icons.auto_awesome;
+        return Icons.bolt;
       case _MyrisMode.ice:
         return Icons.ac_unit;
       case _MyrisMode.freeze:
@@ -3756,6 +4378,9 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   }
 
   double _effectiveCooldown(int heroIndex) {
+    if (_isNyxra(heroIndex) && _nyxraMode == _NyxraMode.normal) {
+      return _scaleCooldown(2);
+    }
     if (_isNyxra(heroIndex) && _nyxraMode == _NyxraMode.lightning) {
       return _scaleCooldown(10);
     }
@@ -3791,7 +4416,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     if (_isMyris(heroIndex)) {
       switch (_myrisMode) {
         case _MyrisMode.normal:
-          return _scaleCooldown(widget.heroes[heroIndex].cooldownDuration);
+          return _scaleCooldown(2);
         case _MyrisMode.ice:
           return _scaleCooldown(8);
         case _MyrisMode.freeze:
@@ -3891,7 +4516,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     } else if (_isMyris(heroIndex)) {
       switch (_myrisMode) {
         case _MyrisMode.normal:
-          baseDamage = widget.heroes[heroIndex].damage;
+          baseDamage = 30;
           break;
         case _MyrisMode.ice:
           baseDamage = 3;
@@ -4411,6 +5036,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       (i) => _effectiveCooldown(i),
     );
     final selectionSquare = _activeSelectionSquare();
+    final rangeIndicatorOpacity = _heroRangeIndicatorOpacity();
+    final rangeIndicatorHeroIndices = _activeRangeIndicatorHeroIndices();
     return PopScope(
       canPop: true,
       onPopInvoked: (didPop) async {
@@ -4508,28 +5135,26 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                                 targetIndicator: _targetIndicator,
                               ),
                             ),
-                            if (_rangeIndicatorHeroIndex != null &&
-                                _isHeroAlive(_rangeIndicatorHeroIndex!) &&
-                                _heroRangeIndicatorOpacity() > 0)
+                            for (final heroIndex in rangeIndicatorHeroIndices)
                               Positioned(
-                                left: _heroPosition(_rangeIndicatorHeroIndex!).dx -
-                                    _heroCurrentAttackRange(_rangeIndicatorHeroIndex!),
-                                top: _heroPosition(_rangeIndicatorHeroIndex!).dy -
-                                    _heroCurrentAttackRange(_rangeIndicatorHeroIndex!),
+                                left: _heroPosition(heroIndex).dx -
+                                    _heroCurrentAttackRange(heroIndex),
+                                top: _heroPosition(heroIndex).dy -
+                                    _heroCurrentAttackRange(heroIndex),
                                 child: IgnorePointer(
                                   child: Container(
-                                    width: _heroCurrentAttackRange(_rangeIndicatorHeroIndex!) * 2,
-                                    height: _heroCurrentAttackRange(_rangeIndicatorHeroIndex!) * 2,
+                                    width: _heroCurrentAttackRange(heroIndex) * 2,
+                                    height: _heroCurrentAttackRange(heroIndex) * 2,
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: widget.heroes[_rangeIndicatorHeroIndex!]
+                                      color: widget.heroes[heroIndex]
                                           .color
-                                          .withOpacity(0.08 * _heroRangeIndicatorOpacity()),
+                                          .withOpacity(0.14 * rangeIndicatorOpacity),
                                       border: Border.all(
-                                        color: widget.heroes[_rangeIndicatorHeroIndex!]
+                                        color: widget.heroes[heroIndex]
                                             .color
-                                            .withOpacity(0.3 * _heroRangeIndicatorOpacity()),
-                                        width: 2,
+                                            .withOpacity(0.58 * rangeIndicatorOpacity),
+                                        width: 3,
                                       ),
                                     ),
                                   ),
@@ -4770,6 +5395,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                                         hp: _heroUnits[i].hp,
                                         maxHp: _heroUnits[i].maxHp,
                                         cooldownDuration: heroCooldowns[i],
+                                        attackAnimationRemainingTime:
+                                            _heroAttackAnimationRemainingTimes[i],
                                         size: heroUnitSize,
                                         time: _lastTime,
                                       ),
@@ -4874,6 +5501,7 @@ class _HeroUnitWidget extends StatelessWidget {
     required this.hp,
     required this.maxHp,
     required this.cooldownDuration,
+    required this.attackAnimationRemainingTime,
     required this.size,
     required this.time,
   });
@@ -4885,6 +5513,7 @@ class _HeroUnitWidget extends StatelessWidget {
   final double hp;
   final double maxHp;
   final double cooldownDuration;
+  final double attackAnimationRemainingTime;
   final double size;
   final double time;
 
@@ -4903,6 +5532,19 @@ class _HeroUnitWidget extends StatelessWidget {
   static final Future<ui.Image?> _veyraSpriteSheetFuture = _loadSpriteSheet(
     _veyraSpriteSheetAsset,
   );
+  static const String _veyraAttackSpriteSheetAsset =
+      'assets/heroes/Veyra/attack/Veyra_attack_sheet_grid.png';
+  static const int _veyraAttackFrameCount = 29;
+  static const int _veyraAttackFrameColumns = 6;
+  static const double _veyraAttackFrameWidth = 512;
+  static const double _veyraAttackFrameHeight = 345;
+  static ui.Image? _veyraAttackSpriteSheetCache;
+  static final Future<ui.Image?> _veyraAttackSpriteSheetFuture = _loadSpriteSheet(
+    _veyraAttackSpriteSheetAsset,
+  );
+  static const double _veyraAttackAnimationDurationSeconds = 2.9;
+  static double get veyraAttackAnimationDurationSeconds =>
+      _veyraAttackAnimationDurationSeconds;
 
   static Future<ui.Image?> _loadSpriteSheet(String assetPath) async {
     try {
@@ -4914,6 +5556,8 @@ class _HeroUnitWidget extends StatelessWidget {
         _aerinSpriteSheetCache = image;
       } else if (assetPath == _veyraSpriteSheetAsset) {
         _veyraSpriteSheetCache = image;
+      } else if (assetPath == _veyraAttackSpriteSheetAsset) {
+        _veyraAttackSpriteSheetCache = image;
       }
       return image;
     } catch (_) {
@@ -4980,7 +5624,7 @@ class _HeroUnitWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildVeyraFrame(int frameIndex) {
+  Widget _buildVeyraIdleFrame(int frameIndex) {
     return FutureBuilder<ui.Image?>(
       future: _veyraSpriteSheetFuture,
       initialData: _veyraSpriteSheetCache,
@@ -5000,6 +5644,44 @@ class _HeroUnitWidget extends StatelessWidget {
               frameCount: _veyraFrameCount,
               frameWidth: _veyraFrameWidth,
               frameHeight: _veyraFrameHeight,
+              flipHorizontally: true,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildVeyraFrame({
+    required int idleFrameIndex,
+    required double attackAnimationRemainingTime,
+  }) {
+    if (attackAnimationRemainingTime <= 0) {
+      return _buildVeyraIdleFrame(idleFrameIndex);
+    }
+    final attackAnimationElapsed =
+        _veyraAttackAnimationDurationSeconds - attackAnimationRemainingTime;
+    final attackFrameIndex = min(
+      _veyraAttackFrameCount - 1,
+      (attackAnimationElapsed * 10).floor(),
+    );
+    return FutureBuilder<ui.Image?>(
+      future: _veyraAttackSpriteSheetFuture,
+      initialData: _veyraAttackSpriteSheetCache,
+      builder: (context, snapshot) {
+        final spriteSheet = snapshot.data ?? _veyraAttackSpriteSheetCache;
+        if (spriteSheet == null) {
+          return _buildVeyraIdleFrame(idleFrameIndex);
+        }
+        return SizedBox.expand(
+          child: CustomPaint(
+            painter: _SpriteFramePainter(
+              spriteSheet: spriteSheet,
+              frameIndex: attackFrameIndex,
+              frameCount: _veyraAttackFrameCount,
+              frameColumns: _veyraAttackFrameColumns,
+              frameWidth: _veyraAttackFrameWidth,
+              frameHeight: _veyraAttackFrameHeight,
               flipHorizontally: true,
             ),
           ),
@@ -5076,7 +5758,10 @@ class _HeroUnitWidget extends StatelessWidget {
                         if (isAerinInGameSprite)
                           _buildAerinFrame((time * 12).floor() % _aerinFrameCount)
                         else if (isVeyraInGameSprite)
-                          _buildVeyraFrame((time * 12).floor() % _veyraFrameCount)
+                          _buildVeyraFrame(
+                            idleFrameIndex: (time * 12).floor() % _veyraFrameCount,
+                            attackAnimationRemainingTime: attackAnimationRemainingTime,
+                          )
                         else if (hero.imageAsset.isNotEmpty)
                           _buildHeroImage(
                             imageAsset: hero.imageAsset,
@@ -5304,6 +5989,7 @@ class _SpriteFramePainter extends CustomPainter {
     required this.frameCount,
     required this.frameWidth,
     required this.frameHeight,
+    this.frameColumns,
     this.flipHorizontally = false,
   });
 
@@ -5312,6 +5998,7 @@ class _SpriteFramePainter extends CustomPainter {
   final int frameCount;
   final double frameWidth;
   final double frameHeight;
+  final int? frameColumns;
   final bool flipHorizontally;
 
   @override
@@ -5320,9 +6007,12 @@ class _SpriteFramePainter extends CustomPainter {
       return;
     }
     final clampedFrameIndex = frameIndex.clamp(0, frameCount - 1);
+    final columns = frameColumns == null || frameColumns! <= 0
+        ? frameCount
+        : frameColumns!;
     final src = Rect.fromLTWH(
-      clampedFrameIndex * frameWidth,
-      0,
+      (clampedFrameIndex % columns) * frameWidth,
+      (clampedFrameIndex ~/ columns) * frameHeight,
       frameWidth,
       frameHeight,
     );
@@ -5366,6 +6056,7 @@ class _SpriteFramePainter extends CustomPainter {
         oldDelegate.frameCount != frameCount ||
         oldDelegate.frameWidth != frameWidth ||
         oldDelegate.frameHeight != frameHeight ||
+        oldDelegate.frameColumns != frameColumns ||
         oldDelegate.flipHorizontally != flipHorizontally;
   }
 }
@@ -6860,7 +7551,7 @@ class _NyxraModeMenu extends StatelessWidget {
       Offset(center.dx + spacing, endY),
     ];
     final modes = [_NyxraMode.normal, _NyxraMode.lightning];
-    final icons = [Icons.auto_awesome, Icons.bolt];
+    final icons = [Icons.bolt, Icons.bolt];
 
     return Opacity(
       opacity: t.clamp(0.0, 1.0),
@@ -7337,7 +8028,7 @@ class _MyrisModeMenu extends StatelessWidget {
       Offset(center.dx + spacing, endY),
     ];
     final modes = [_MyrisMode.normal, _MyrisMode.ice, _MyrisMode.freeze];
-    final icons = [Icons.auto_awesome, Icons.ac_unit, Icons.grain];
+    final icons = [Icons.bolt, Icons.ac_unit, Icons.grain];
 
     return Opacity(
       opacity: t.clamp(0.0, 1.0),

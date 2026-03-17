@@ -30,6 +30,7 @@
 - Selected chapter currently only gates access; selected level also multiplies enemy HP by `1.2^(level-1)`.
 - Level spawn composition is now driven by per-level `LevelDef` JSON data (`waves` with timed spawn `events`).
 - If a level does not yet have JSON data or a local editor override, the game falls back to a deterministic generated legacy template so existing levels remain playable.
+- Completing all waves in a level now counts as defending the village: gameplay shows a victory dialog and the active save slot marks that chapter/level pair as completed.
 - Enemy move speed is `16`.
 - Enemy damage to both wall and heroes is currently `5 DPS`.
 - Enemy touch targeting uses a tolerant tap radius.
@@ -60,12 +61,13 @@
 
 - Heroes now have HP and can die.
 - Current baseline hero HP is `20`, stored per hero definition as `HeroDef.maxHp`.
-- Current baseline hero attack range is about one third of the screen width, stored per hero definition as `HeroDef.attackRange`.
+- Current baseline hero attack range is about one sixth of the screen width, stored per hero definition as `HeroDef.attackRange`.
 - Dead heroes disappear from the map, stop attacking, stop being selectable, and are ignored by enemy targeting.
 - Selecting a hero on the map now also shows a context mode menu next to that hero.
 - The context menu uses the same attack-mode icons that were previously shown in the old slot/card UI.
 - Selecting or re-clicking a hero also shows a translucent circle for that hero's current attack range.
 - The attack-range circle stays fully visible for `5` seconds and then fades out smoothly.
+- The same attack-range circle now also appears for all heroes selected through multi-select, sharing the same unchanged visibility/fade timing.
 - Selecting a hero now also shows a second horizontal context menu above the hero for behavior selection.
 - In multi-select mode, hero context menus are hidden.
 - Behavior menu now actively controls hero movement AI.
@@ -78,11 +80,13 @@
 - Veyra: projectile; modes `rapid`, `explosive`, `lightning`.
 - Thalor: modes `projectile`, `sword`, `energy`.
 - Myris: modes `normal`, `ice`, `freeze`.
+- Myris `normal` now reuses Veyra's old third attack behavior: a single-target lightning strike with the same fast timing and high damage profile.
 - Kaelen: modes `normal`, `vine`, `spore`.
 - Solenne: beam during sending; modes `normal`, `sunburst`, `radiant`.
 - Ravik: modes `normal`, `voidburst`, `soul`.
 - Brann: modes `normal`, `earthquake`, `boulder`.
 - Nyxra: modes `normal`, `lightning`, `voidchain`.
+- Nyxra `normal` now also reuses Veyra's old third attack behavior: a single-target lightning strike with the same fast timing and high damage profile.
 - Eldrin: modes `normal`, `cosmic`, `nova`.
 
 Detailed balance values are documented in `INFO.txt` and `project_info.txt`.
@@ -134,8 +138,10 @@ Detailed balance values are documented in `INFO.txt` and `project_info.txt`.
 
 - The game uses slot-based save data.
 - Coins, XP, unlocks, and other RPG progress are stored per save slot.
+- Hero unlock gating is temporarily disabled: all heroes are now forced unlocked for both new and already existing save slots until the unlock economy is tuned again.
 - After hero selection, the player now goes through a chapter-selection screen and then a level-selection screen before gameplay starts.
 - After save-slot selection, the player now first enters a village hub screen that serves as the main crossroads for heroes/upgrades and the battle flow.
+- The village hub now also contains a separate `Pruzkum` entry point with its own chapter/level placeholder flow, independent from village defense.
 - There are currently 2 chapters in the selector, but only chapter 1 is unlocked.
 - Chapter 1 currently contains 19 selectable levels.
 
@@ -172,7 +178,7 @@ Detailed balance values are documented in `INFO.txt` and `project_info.txt`.
 - 2026-03-13: Zoom `+` and `-` controls were moved from their own second bar into the main top HUD bar, positioned immediately left of the menu button to give the map more vertical space.
 - 2026-03-13: Fullscreen handling was hardened across the app: immersive sticky mode is now reapplied at startup and when the app resumes, and screen disposes no longer switch back to edge-to-edge, reducing Android status-bar bleed-through.
 - 2026-03-13: The Flutter debug banner in the top-right corner was disabled in `MaterialApp`.
-- 2026-03-13: Added a simple fixed defense tower in the upper-left area left of the wall; it auto-fires every 5 seconds at the nearest enemy within hero-range distance and deals 10 projectile damage per hit.
+- 2026-03-13: Added a simple fixed defense tower in the upper-left area left of the wall; it auto-fires every 5 seconds at the nearest enemy within its own long range and deals 10 projectile damage per hit.
 - 2026-03-13: `Restart` now fully resets the run to its initial state: wave/stat counters, game timer, hero positions, hero behavior/mode settings, zoom, selection state, and game speed all return to startup defaults.
 - 2026-03-13: The gameplay map background now uses `assets/backgrounds/grass.png` stretched over the whole map area, with the old flat-color fill kept only as a fallback.
 - 2026-03-15: The gameplay wall now uses `assets/backgrounds/palisade.png` as its visual representation, with the former simple painted wall kept as a fallback if the sprite fails to load.
@@ -243,6 +249,22 @@ Detailed balance values are documented in `INFO.txt` and `project_info.txt`.
 - 2026-03-17: Transparent sprite-sheet heroes now keep a cached `ui.Image` copy of their loaded sheet and feed it back into `FutureBuilder.initialData`, which prevents Aerin/Veyra from briefly flashing the portrait fallback during multi-select drag rebuilds.
 - 2026-03-17: The remaining multi-select flicker was addressed by giving each in-map hero widget a stable key; adding/removing the selection-square overlay in the shared `Stack` no longer causes hero elements to be re-mapped on pointer down/up.
 - 2026-03-17: `_HeroUnitWidget` now explicitly accepts `super.key`, so the new stable hero keys compile correctly instead of failing on the named `key` parameter.
+- 2026-03-17: Level completion is now persisted inside `PlayerProgress.completedLevels`; clearing the final wave triggers a victory dialog (`Ubranil jsi vesnici...`) and the level-selection cards show completed levels with a check-style state and `Dokonceno` label.
+- 2026-03-17: The shared baseline attack range for all heroes was reduced by 50% (`mapWidth / 3 -> mapWidth / 6`), while the defense tower kept its previous longer range so only hero balance changed.
+- 2026-03-17: Hero range indicators were made visually stronger (higher fill/border opacity and thicker outline) and now render for every hero in the current multi-selection, while keeping the same 5-second visibility and fade timing.
+- 2026-03-17: All 10 heroes are now force-unlocked in `RpgSystem` for both default progress and loaded save slots, so hero purchase/access tuning can be revisited later without blocking selection or upgrades.
+- 2026-03-17: Myris's first mode was changed to use the same single-target lightning cast that Veyra previously had in her third mode, including the same 1s sending, 2s cooldown, 30 damage, and bolt-style mode icon.
+- 2026-03-17: Nyxra's first mode was also changed to that same single-target lightning cast, with 1s sending, 2s cooldown, 30 damage, and a bolt icon in the mode selector.
+- 2026-03-17: Added a placeholder `Pruzkum` flow accessible from `VillageScreen`, with its own chapter selection (2 chapters) and level/location selection (2 per chapter); choosing a location currently ends in a placeholder dialog because exploration gameplay will be implemented later.
+- 2026-03-17: Fixed a compile-time regression in `_performAttack` where Nyxra's branch had accidentally been overwritten with `_effectiveDamage` assignments; the attack branch now correctly calls lightning / voidchain casts again.
+- 2026-03-17: Veyra now switches from her idle standing sheet to the animated APNG `assets/heroes/Veyra/attack/veyra_attack_1.png` exactly when she fires; all 29 attack frames play once and then the render automatically returns to the standing sprite.
+- 2026-03-17: Veyra's attack render was then simplified for better web compatibility: during the attack window the game now shows the APNG asset directly for one full animation length (~2.9s) instead of trying to step APNG frames manually through `instantiateImageCodec`.
+- 2026-03-17: Because the APNG still did not animate reliably in the web build, its 29 frames were extracted into `assets/heroes/Veyra/attack/Veyra_attack_sheet.png`; Veyra's attack now uses that real sprite sheet with one-shot frame playback and then returns to the standing sheet.
+- 2026-03-17: Veyra's attack-playback trigger was then changed from a `_lastTime` timestamp to an explicit per-hero remaining-duration timer that is decremented in the main tick loop, so the attack sheet stays visible for the full intended playback window instead of depending on time-delta comparisons inside the widget.
+- 2026-03-17: The extracted Veyra attack frames were then rearranged into a smaller grid sheet `assets/heroes/Veyra/attack/Veyra_attack_sheet_grid.png` and `_SpriteFramePainter` was extended with optional multi-row frame addressing, because the earlier single-row `14848px`-wide attack sheet was likely too wide for reliable web rendering.
+- 2026-03-17: For debugging, Veyra's normal standing render was temporarily switched to the attack-frame grid derived from `assets/heroes/Veyra/attack/veyra_attack_1.png`, so the project can verify whether those frames render and animate at all before wiring them back only to the attack window.
+- 2026-03-17: The root cause of Veyra's portrait fallback was then identified in `pubspec.yaml`: `assets/heroes/Veyra/attack/` had not been declared as a Flutter asset directory, so the new attack files were unavailable at runtime and the widget fell back to `hero_veyra.png`.
+- 2026-03-17: After confirming the attack-frame asset now loads correctly, the temporary diagnostic standing override was removed; Veyra's idle render was restored to `assets/heroes/Veyra/standing/Veyra_sheet.png`, while the extracted attack sheet remains used only for the attack playback path.
 
 ## Legacy Historical Notes
 

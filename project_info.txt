@@ -4,7 +4,7 @@ Shrnuti projektu
 - Jednoducha arkadova/tower-defense minihra ve Flutteru s vlastnim hernim loopem a vykreslovanim pres CustomPainter.
 - Aplikace je uzamcena na landscape orientaci a hlavni hra i vyber hrdinu bezi ve fullscreenu (immersive).
 - Fullscreen rezim je pri startu aplikace i po navratu znovu vynucen pres `SystemUiMode.immersiveSticky`, aby se na Androidu nevracela horni systemova lista.
-- Flow: Intro obrazovka -> vyber save slotu -> vesnice -> vyber hrdinu -> vyber kapitoly -> vyber levelu -> herni scena.
+- Flow: Intro obrazovka -> vyber save slotu -> vesnice -> bud obrana vesnice (vyber hrdinu -> vyber kapitoly -> vyber levelu -> herni scena), nebo samostatny flow `Pruzkum`.
 - Herni logika a UI jsou soustredeny v jedinem souboru `lib/main.dart`.
 - JSON model levelu a jednoduchy editor jsou rozdeleny do `lib/level_data.dart`, `lib/level_repository.dart` a `lib/level_editor_screen.dart`.
 
@@ -15,7 +15,7 @@ Jak to funguje (gameplay)
 - Nepratele se pro kazdy level spawnuji z JSON definice vln (`waves`) a spawn eventu (`events`) s casovanim, poctem kusu, lane a multiplikatory; kdyz pro level neni JSON ani lokalni override, hra pouzije deterministicky vygenerovanou legacy sablonu.
 - Pokud nepritel dojde k hradbe (x <= heroAreaWidth + 4), zacne utocit do zdi.
 - Hrdinove se uz nemohou dostat nalevo od zdi; vsechny jejich move targety se clampuji tesne napravo od ni a stejne napravo od zdi se i spawnuji pri startu levelu.
-- V horni leve casti mapy vlevo od zdi je jednoducha staticka obranna vez; hrac ji neovlada, nehybe se a automaticky kazdych 5 sekund vystreli projektil za 10 damage na nejblizsiho nepritele v dosahu stejnem jako hrdinove.
+- V horni leve casti mapy vlevo od zdi je jednoducha staticka obranna vez; hrac ji neovlada, nehybe se a automaticky kazdych 5 sekund vystreli projektil za 10 damage na nejblizsiho nepritele ve svem vlastnim delsim dosahu.
 - Jeji vizual ve hre se nyni nacita ze sprite `assets/backgrounds/tower.png`; pri chybe nacitani zustava zachovany puvodni kresleny fallback.
 - Sprite veze byl nasledne znovu zvetsen na dvojnasobek tehdejsi velikosti a cela vez byla posunuta o kus niz.
 - Na desktopu je nyni mozne mapu ovladat i mysi: kolecko meni zoom, prostredni tlacitko + tah posouva mapu a jako fallback funguje i `Space` + levy drag; na dotykovych zarizenich zustava beze zmen dvouprsty pan/pinch.
@@ -36,11 +36,17 @@ Jak to funguje (gameplay)
 - Cerny obdelnik pozadi ve Veyra sprite sheetu byl odstraneny primo v assetu; herni render ted ukazuje jen postavu s pruhlednym pozadim.
 - Stin pod Veyrou byl nasledne posunut o kus vys nez je sdileny hero default, aby sedel bliz pod jeji transparentni sprite.
 - Veyra se nyni ve hre vykresluje zrcadlove otocena horizontalne oproti puvodnimu sprite sheetu.
+- Myrisin prvni utok byl nahrazen stejnym single-target bleskem, ktery predtim pouzivala Veyra jako treti mod.
+- Nyxrin prvni utok byl nasledne prepojen na stejny single-target blesk, ktery predtim pouzivala Veyra jako treti mod.
 - Vsechny herni jednotky hrdinu byly nasledne znovu zvetseny; tomu odpovida i lehce zvetseny tap radius pro pohodlnejsi vybirani.
 - Hrdinove byli pak jeste jednou vyrazne zvetseni zhruba o dalsi polovinu, a tomu byl znovu prizpusoben i tap radius.
 - Pro transparentni sprite-sheet hrdiny (Aerin, Veyra) byla opravena kratka vizualni bliknuti fallback portretu pri multi-select dragu; po prvnim nacteni se sheet drzi v cache a pri rebuildu uz neskace zpet na portret.
 - Zbyvajici multi-select probliknuti bylo nasledne opraveno stabilnimi `ValueKey` na mapovych hero widgetech, aby vlozeni/odebrani selection overlaye v tomtez `Stack`u neprehazovalo jejich elementy pri kliknuti a pusteni.
 - ` _HeroUnitWidget` byl nasledne dodelan o prijem `super.key`, aby se nove stabilni klice opravdu daly predavat bez compile chyby.
+- Po zniceni vsech vln v levelu se ted zobrazi vitezne hlaseni o ubranene vesnici a aktualni chapter/level se ulozi do save slotu jako dokonceny.
+- Sdileny zakladni dosah vsech hrdinu byl snizen na polovinu; automaticka obranna vez si ponechala puvodni delsi dostrel.
+- Kruh znazornujici dostrel hrdiny je ted vizualne vyraznejsi a pri multi-selectu se zobrazi pro vsechny oznacene hrdiny najednou; doba zobrazeni a fade timing zustaly stejne.
+- Odemceni a nakup hrdinu jsou docasne vypnute z hlediska pristupu: vsech 10 hrdinu je ted povazovano za odemcenych i ve stavajicich save slotech.
 - Zed ma HP 300. Nepritel udeluje wallDps = 5 damage za sekundu. Konec hry pri HP <= 0.
 - Rychlost hry lze prepnut v panelu na 1x/2x/4x/8x, default je 2x.
 - Restart hry ted vraci cely run na vychozi startovni stav: znovu zacina od 1. vlny, resetuje cas/statistiky, vraci hrdiny na startovni pozice, jejich behavior a attack mody na default a rychlost hry zpet na `2x`.
@@ -64,6 +70,7 @@ Herni konstanty (GameView)
 - explosionDuration = 0.35s
 - swordRadius = 140
 - enemyTapRadius = 18 (tolerantnejsi tap na nepritele)
+- baseline hero attack range = mapWidth / 6
 - Spawn nepratel: casovani se ted bere z aktualni `WaveDef.startDelay` a `SpawnEventDef.time/spacing`; fallback generator stale vytvari uvodni wave se startem po 4s.
 
 Struktura projektu
@@ -71,6 +78,8 @@ Struktura projektu
 - `lib/level_data.dart`: datovy model JSON levelu (`LevelDef`, `WaveDef`, `SpawnEventDef`, `EnemyTypeDef`).
 - `lib/level_repository.dart`: nacitani asset JSONu, SharedPreferences override a fallback generace legacy levelu.
 - `lib/level_editor_screen.dart`: interni editor wave/spawn eventu s ulozenim override a preview.
+- `lib/rpg_system.dart`: save-slot progress, hero RPG data a nyni i persistentni seznam dokoncenych levelu.
+- `lib/rpg_system.dart` navic ted pri nacitani normalizuje vsechny hrdiny do stavu `unlocked = true`, aby hero gating docasne neblokoval vyber ani upgrade flow.
 - `pubspec.yaml`: Flutter konfigurace a dependencies.
 - `INFO.txt`: designove hodnoty utoku hrdinu (Czech notes).
 - `README.md`: defaultni Flutter README.
@@ -98,7 +107,14 @@ Obrazovky a UI
   - Cela obrazovka je scrollovatelna a na uzsich nebo nizsich displejich sklada menu do jednoho sloupce, aby nepretikala.
   - Tlacitko `Hrdinove` otevre `HeroUpgradeScreen`.
   - Tlacitko `Branit vesnici` otevre stavajici bojovy flow pres `HeroSelectScreen`.
+  - Tlacitko `Pruzkum` otevre samostatny placeholder flow pro chapter/level vyber pruzkumu.
   - Tlacitka `Samanova chyse` a `Management vesnice` zatim pouze zobrazi placeholder zpravu.
+- ExplorationChapterSelectScreen:
+  - Samostatna chapter nabidka pro `Pruzkum` zatim obsahuje 2 kapitoly.
+  - Obe kapitoly jsou zatim jen navigacni placeholder bez vlastni gameplay logiky.
+- ExplorationLevelSelectScreen:
+  - Pro kazdou chapter jsou zatim pripraveny 2 lokace/levely pruzkumu.
+  - Vyber lokace zatim zobrazi jen placeholder dialog; samotny gameplay pruzkumu se doda pozdeji.
 - ChapterSelectScreen:
   - Zobrazuje se po vyberu hrdinu a pred vyberem levelu.
   - Uprostred je velka karta kapitoly, mezi kapitolami jde prepinat sipkami i swipem.
@@ -111,6 +127,7 @@ Obrazovky a UI
   - Pouziva stejny scrollovatelny a responsivni layout jako vyber kapitol, aby se karty ani spodni tlacitka na uzsich displejich neorezavaly.
   - Aktualne je v kapitole 1 pripraveno 19 levelu.
   - Dole obsahuje i tlacitko `Editor`, ktere otevre interni editor JSON definice prave vybraneho levelu.
+  - Dokoncene levely se nyni nacitaji z aktivniho save slotu a v kartach jsou oznacene stavem `Dokonceno`.
 - LevelEditorScreen:
   - Umoznuje upravovat seznam wave, `startDelay`, `completeWhenNoEnemies` a spawn eventy s poli `time`, `enemyType`, `count`, `lane`, `spacing`, `hpMultiplier` a `speedMultiplier`.
   - Umi ulozit lokalni override, resetovat ho na asset/default data, zkopirovat JSON do schranky a spustit preview levelu primo do hry.
@@ -139,6 +156,7 @@ Obrazovky a UI
   - Prepinac "Automode" vedle panelu rychlosti.
   - Menu tlacitko vpravo nahore (dialog s navratem do hlavniho menu).
   - Game Over: modalni dialog s tlacitky Restart / Navrat do vyberu / Navrat do hlavniho menu.
+  - Po vycisteni posledni wave se misto dalsiho spawnovani otevre vitezny dialog s hlaskou o ubranene vesnici a s moznosti hrat level znovu nebo se vratit do vyberu levelu.
 
 Herni cyklus hrdinu
 - Hrdinove maji pouze dve faze: sending -> cooldown (casting zrusen).
@@ -189,15 +207,17 @@ Modi a statistiky hrdinu (bez castingu)
   - Sword se aktivuje jen pokud je nepritel v dosahu (jinak ceka)
   - Energy zatim nema implementovanou specialni logiku (placeholder v kodu)
 - Nyxra (_NyxraMode: normal/lightning/voidchain)
-  - Sending: normal 2s, lightning 2s, voidchain 2.5s
-  - Cooldown: normal 10s, lightning 10s, voidchain 14s
-  - Damage: normal 5
+  - Sending: normal 1s, lightning 2s, voidchain 2.5s
+  - Cooldown: normal 2s, lightning 10s, voidchain 14s
+  - Damage: normal 30
+  - Normal: blesk do jednoho cile (stejny typ utoku jako puvodni Veyra lightning)
   - Lightning: chain 3 cile s dmg 10/8/5 + lightning VFX
   - Voidchain: chain 4 cile s dmg 8/6/4/2 + lightning VFX
 - Myris (_MyrisMode: normal/ice/freeze)
-  - Sending: 2s / 1s / 0.5s
-  - Cooldown: 10s / 8s / 12s
-  - Damage: normal 5, ice 3, freeze 8
+  - Sending: 1s / 1s / 0.5s
+  - Cooldown: 2s / 8s / 12s
+  - Damage: normal 30, ice 3, freeze 8
+  - Normal: blesk do jednoho cile (stejny typ utoku jako puvodni Veyra lightning)
   - Ice: projektil s AoE 50
   - Freeze: AoE kolem hrdiny radius 200
 - Kaelen (_KaelenMode: normal/vine/spore)
@@ -474,3 +494,39 @@ Spusteni
 - Hero jednotky v mapovem `Stack`u dostaly stabilni `ValueKey`, aby se pri objeveni a zmizeni selection square overlaye uz nerecyklovaly na jiny element a neproblikly pri `pointer down/up`.
 2026-03-17:
 - Konstruktor `_HeroUnitWidget` byl rozsireny o `super.key`, aby nove stabilni klice pro hero widgety prosly i kompilaci.
+2026-03-17:
+- `PlayerProgress` nyni uklada i persistentni seznam dokoncenych levelu po chapter/level dvojicich, ulozeny v aktivnim save slotu.
+2026-03-17:
+- Po vycisteni posledni wave v levelu se ted zobrazi vitezny dialog s hlaskou o ubranene vesnici a level se ulozi jako dokonceny.
+2026-03-17:
+- `LevelSelectScreen` nyni nacita completion stav z `RpgSystem` a dokoncene levely zobrazuje s check ikonou a stitkem `Dokonceno`.
+2026-03-17:
+- Sdileny zakladni dostrel vsech hrdinu byl snizen na polovinu (`defaultHeroAttackRange` z `mapWidth / 3` na `mapWidth / 6`), zatimco automaticka obranna vez si ponechala puvodni delsi dostrel.
+2026-03-17:
+- Kruh dostrelu hrdinu byl zvyraznen silnejsim fill/border vykreslenim a nove se zobrazuje i pro vsechny hrdiny v aktualnim multi-selectu, bez zmeny casu zobrazeni.
+2026-03-17:
+- Vsech 10 hrdinu je ted docasne force-unlocked jak v defaultnim progresu, tak i pri nacitani existujicich save slotu, aby se pristupy a nakupy mohly ladit pozdeji bez blokace obsahu.
+2026-03-17:
+- Myrisin prvni mod byl prepojen na stejny single-target lightning utok, ktery mela Veyra jako treti mod, vcetne casovani 1s sending / 2s cooldown a damage 30.
+2026-03-17:
+- Nyxrin prvni mod byl take prepojen na stejny single-target lightning utok po Veyre, s casovanim 1s sending / 2s cooldown a damage 30.
+2026-03-17:
+- Do `VillageScreen` pribyl samostatny flow `Pruzkum` s vlastni chapter obrazovkou a nabidkou 2 lokaci na chapter; zatim konci placeholder dialogem bez gameplaye.
+2026-03-17:
+- Byla opravena compile chyba v `_performAttack`, kde se Nyxre omylem propsal blok s `baseDamage`; vetveni Nyxry znovu spravne vola sve attack casty.
+2026-03-17:
+- Veyra pri samotnem odpalu utoku docasne prepina render ze standing sheetu na APNG `assets/heroes/Veyra/attack/veyra_attack_1.png`, prehraje vsech 29 framu a po dokonceni se automaticky vrati na puvodni idle sprite.
+2026-03-17:
+- Veyrin attack render byl pak zjednodusen kvuli lepsi kompatibilite na webu: behem attack okna se ted zobrazuje primo APNG asset po dobu jedne cele animace (~2.9 s) misto rucniho dekodovani jednotlivych framu pres codec.
+2026-03-17:
+- Protoze APNG se ve web buildu porad neprehravalo spolehlive, bylo jeho 29 framu extrahovano do `assets/heroes/Veyra/attack/Veyra_attack_sheet.png`; Veyrin utok se ted prehrava jako klasicky one-shot sprite sheet a po dojeti se vraci na standing sheet.
+2026-03-17:
+- Trigger prehrani Veyrina attack sheetu byl pak zmenen z porovnani timestampu na explicitni `remaining` cas animace snizovany v hlavnim tick loopu, aby attack sprite vydrzel zobrazeny po celou zamyslenou delku prehrani.
+2026-03-17:
+- Extrahovane framy Veyrina utoku byly pak preskladany do mensi grid textury `assets/heroes/Veyra/attack/Veyra_attack_sheet_grid.png` a `_SpriteFramePainter` byl rozsiren o cteni vice radku, protoze predchozi jednoradkovy attack sheet o sirce `14848 px` byl pro web render podezrele siroky.
+2026-03-17:
+- Pro diagnostiku byl Veyrin bezny standing render docasne prepojen primo na attack framy odvozene z `assets/heroes/Veyra/attack/veyra_attack_1.png`, aby se overilo, zda se tyto framy ve hre vubec korektne vykresluji a animuji.
+2026-03-17:
+- Hlavni pricina fallbacku na portret `hero_veyra` byla pak dohledana v `pubspec.yaml`: slozka `assets/heroes/Veyra/attack/` dosud nebyla zaregistrovana mezi Flutter assets, takze se nove attack soubory za behu vubec nenacetly.
+2026-03-17:
+- Po overeni, ze se attack framy uz spravne nacitaji, byl docasny diagnosticky override odebran a Veyra se v idle stavu vratila zpet na `assets/heroes/Veyra/standing/Veyra_sheet.png`; attack sheet zustava vyhrazeny jen pro attack render.

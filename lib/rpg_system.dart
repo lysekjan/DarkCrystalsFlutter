@@ -204,11 +204,14 @@ class HeroData {
 class PlayerProgress {
   int coins;
   Map<String, HeroData> heroes; // heroName -> HeroData
+  Set<String> completedLevels;
 
   PlayerProgress({
     this.coins = 0,
     Map<String, HeroData>? heroes,
-  }) : heroes = heroes ?? {};
+    Set<String>? completedLevels,
+  })  : heroes = heroes ?? {},
+        completedLevels = completedLevels ?? <String>{};
 
   int get totalGamesPlayed => heroes.values.fold(0, (sum, h) => sum + h.level);
 
@@ -224,9 +227,22 @@ class PlayerProgress {
     coins -= amount;
   }
 
+  static String levelCompletionKey(int chapterNumber, int levelNumber) {
+    return 'c${chapterNumber}_l${levelNumber}';
+  }
+
+  bool isLevelCompleted(int chapterNumber, int levelNumber) {
+    return completedLevels.contains(levelCompletionKey(chapterNumber, levelNumber));
+  }
+
+  void markLevelCompleted(int chapterNumber, int levelNumber) {
+    completedLevels.add(levelCompletionKey(chapterNumber, levelNumber));
+  }
+
   Map<String, dynamic> toJson() => {
     'coins': coins,
     'heroes': heroes.map((k, v) => MapEntry(k, v.toJson())),
+    'completedLevels': completedLevels.toList()..sort(),
   };
 
   factory PlayerProgress.fromJson(Map<String, dynamic> json) => PlayerProgress(
@@ -235,6 +251,9 @@ class PlayerProgress {
           (k, v) => MapEntry(k, HeroData.fromJson(v as Map<String, dynamic>)),
         ) ??
         {},
+    completedLevels: ((json['completedLevels'] as List<dynamic>?) ?? const <dynamic>[])
+        .map((entry) => entry.toString())
+        .toSet(),
   );
 }
 
@@ -247,6 +266,18 @@ class RpgSystem {
   static const int maxSlot = 3;
   static PlayerProgress? _cachedProgress;
   static int? _cachedActiveSlot;
+  static const List<String> _allHeroNames = <String>[
+    'Aerin',
+    'Veyra',
+    'Thalor',
+    'Myris',
+    'Kaelen',
+    'Solenne',
+    'Ravik',
+    'Brann',
+    'Nyxra',
+    'Eldrin',
+  ];
 
   static int _normalizeSlot(int slot) {
     if (slot < minSlot) return minSlot;
@@ -282,7 +313,7 @@ class RpgSystem {
     if (jsonStr != null && jsonStr.isNotEmpty) {
       try {
         final json = jsonDecode(jsonStr) as Map<String, dynamic>;
-        return PlayerProgress.fromJson(json);
+        return _normalizeUnlockedHeroes(PlayerProgress.fromJson(json));
       } catch (_) {}
     }
     return PlayerProgress(
@@ -303,7 +334,7 @@ class RpgSystem {
     if (jsonStr != null && jsonStr.isNotEmpty) {
       try {
         final json = jsonDecode(jsonStr) as Map<String, dynamic>;
-        _cachedProgress = PlayerProgress.fromJson(json);
+        _cachedProgress = _normalizeUnlockedHeroes(PlayerProgress.fromJson(json));
         return _cachedProgress!;
       } catch (e) {
         print('Error loading progress: $e');
@@ -316,8 +347,8 @@ class RpgSystem {
       if (legacyJson != null && legacyJson.isNotEmpty) {
         try {
           final json = jsonDecode(legacyJson) as Map<String, dynamic>;
-          _cachedProgress = PlayerProgress.fromJson(json);
-          await prefs.setString(slotKey, legacyJson);
+          _cachedProgress = _normalizeUnlockedHeroes(PlayerProgress.fromJson(json));
+          await prefs.setString(slotKey, jsonEncode(_cachedProgress!.toJson()));
           await prefs.remove(_legacySaveKey);
           return _cachedProgress!;
         } catch (_) {}
@@ -352,23 +383,27 @@ class RpgSystem {
 
   // Create default hero data for all 10 heroes
   static Map<String, HeroData> _createDefaultHeroData() {
-    final heroNames = [
-      'Aerin', 'Veyra', 'Thalor', 'Myris', 'Kaelen',
-      'Solenne', 'Ravik', 'Brann', 'Nyxra', 'Eldrin'
-    ];
-
     final heroes = <String, HeroData>{};
 
-    for (int i = 0; i < heroNames.length; i++) {
-      final name = heroNames[i];
-      // First 4 heroes are unlocked by default
+    for (final name in _allHeroNames) {
       heroes[name] = HeroData(
         name: name,
-        unlocked: i < 4,
+        unlocked: true,
       );
     }
 
     return heroes;
+  }
+
+  static PlayerProgress _normalizeUnlockedHeroes(PlayerProgress progress) {
+    for (final heroName in _allHeroNames) {
+      final hero = progress.heroes.putIfAbsent(
+        heroName,
+        () => HeroData(name: heroName, unlocked: true),
+      );
+      hero.unlocked = true;
+    }
+    return progress;
   }
 
   // Get hero data
