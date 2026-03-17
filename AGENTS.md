@@ -28,6 +28,8 @@
 - The wall has `300 HP`.
 - Enemy base HP is `20`, scaled by wave.
 - Selected chapter currently only gates access; selected level also multiplies enemy HP by `1.2^(level-1)`.
+- Level spawn composition is now driven by per-level `LevelDef` JSON data (`waves` with timed spawn `events`).
+- If a level does not yet have JSON data or a local editor override, the game falls back to a deterministic generated legacy template so existing levels remain playable.
 - Enemy move speed is `16`.
 - Enemy damage to both wall and heroes is currently `5 DPS`.
 - Enemy touch targeting uses a tolerant tap radius.
@@ -211,6 +213,36 @@ Detailed balance values are documented in `INFO.txt` and `project_info.txt`.
 - 2026-03-16: The defense tower sprite width was kept unchanged, while its on-map height was increased slightly for a taller silhouette.
 - 2026-03-16: The defense tower height was nudged up once more while keeping the same width.
 - 2026-03-16: The defense tower sprite was then doubled again in both dimensions and moved lower on the map.
+- 2026-03-16: Gameplay map controls now also support desktop input: mouse wheel zoom, middle-mouse drag panning, and `Space` + left-drag panning as a fallback, while touch devices keep the existing two-finger pan/pinch behavior.
+- 2026-03-16: Desktop mouse-pan button detection was adjusted to use raw button bitmasks compatible with the current Flutter SDK, fixing undefined button constant compile errors.
+- 2026-03-16: Desktop wheel-zoom handling was also switched to the `ui.PointerScrollEvent` type to match the file's aliased `dart:ui` imports and avoid compile errors.
+- 2026-03-16: The desktop wheel-zoom fix was finalized by importing `PointerScrollEvent` explicitly from `package:flutter/gestures.dart`, because this SDK does not expose that type through the existing imports used in `main.dart`.
+- 2026-03-16: The wall hit-flash overlay was refined to re-draw the palisade sprite with a white color filter, so only the non-transparent pixels flash instead of the entire wall rectangle.
+- 2026-03-16: The defense tower now has a simple soft oval shadow drawn under it to ground the sprite visually on the map.
+- 2026-03-16: The in-game defense tower sprite was scaled down slightly again while keeping the same map position.
+- 2026-03-16: The defense tower width was reduced a bit more while its height and map position stayed unchanged.
+- 2026-03-16: The defense tower width was trimmed once more by a small amount, with height and position still unchanged.
+- 2026-03-16: The defense tower width was narrowed a little further again, while height and position remained unchanged.
+- 2026-03-16: All in-game hero units now render with the same simple oval ground shadow used by the defense tower, including transparent-sprite heroes like Aerin.
+- 2026-03-16: Enemies now also render with a simple oval ground shadow under their bodies/sprites, with a slightly softer fade while dying.
+- 2026-03-16: Enemy ground shadows were shifted a bit upward so they sit closer under the enemy bodies.
+- 2026-03-16: Enemy ground shadows were moved up once more because the previous offset still left them looking too detached from the bodies.
+- 2026-03-16: Enemy ground shadows were raised again for a tighter contact feel under the sprites.
+- 2026-03-16: Enemy ground shadows were lifted further again to sit noticeably tighter under the enemy sprites.
+- 2026-03-16: Enemy ground shadows were nudged a final small step higher for tighter visual grounding.
+- 2026-03-16: Created `assets/heroes/Veyra_sheet.png` as a single transparent sprite sheet from the 16 standing frames in `assets/heroes/Veyra/standing/`; the asset is prepared for later in-game animation wiring.
+- 2026-03-16: Veyra now uses `assets/heroes/Veyra/standing/Veyra_sheet.png` as her animated in-game unit sprite, while menu/select views still keep the existing portrait asset.
+- 2026-03-16: Added JSON-backed level definitions via `lib/level_data.dart` and `lib/level_repository.dart`; gameplay wave spawning now reads timed wave/event data per level instead of relying only on the old procedural spawn cadence.
+- 2026-03-16: Added an internal `LevelEditorScreen`, opened from the level selection flow, which edits wave timing/spawn events, stores local SharedPreferences overrides, can reset them back to asset/default data, and can preview the selected level directly in-game.
+- 2026-03-16: Added the first asset level definition at `assets/levels/chapter_1/level_01.json`; levels without explicit JSON assets still auto-generate a deterministic fallback template.
+- 2026-03-16: Cleaned the black background out of `assets/heroes/Veyra/standing/Veyra_sheet.png` by converting the border-connected near-black background pixels to transparency, so Veyra now renders without a black rectangle around the sprite.
+- 2026-03-17: Veyra's in-game ground shadow was moved a bit higher than the shared hero default so it sits closer under her transparent sprite.
+- 2026-03-17: Veyra's in-game sprite-sheet render is now mirrored horizontally, without affecting other heroes that reuse the shared `_SpriteFramePainter`.
+- 2026-03-17: All in-game hero units were enlarged again by increasing the shared `heroUnitSize`, and the hero tap radius was also raised slightly so direct selection remains comfortable.
+- 2026-03-17: Hero unit size was then increased by roughly another 50% (`64 -> 96`), with the shared tap radius raised again to match the much larger on-map silhouettes.
+- 2026-03-17: Transparent sprite-sheet heroes now keep a cached `ui.Image` copy of their loaded sheet and feed it back into `FutureBuilder.initialData`, which prevents Aerin/Veyra from briefly flashing the portrait fallback during multi-select drag rebuilds.
+- 2026-03-17: The remaining multi-select flicker was addressed by giving each in-map hero widget a stable key; adding/removing the selection-square overlay in the shared `Stack` no longer causes hero elements to be re-mapped on pointer down/up.
+- 2026-03-17: `_HeroUnitWidget` now explicitly accepts `super.key`, so the new stable hero keys compile correctly instead of failing on the named `key` parameter.
 
 ## Legacy Historical Notes
 

@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart' show PointerScrollEvent;
 import 'package:flutter/services.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'dart:math';
 import 'dart:ui' as ui;
+import 'level_data.dart';
+import 'level_editor_screen.dart';
+import 'level_repository.dart';
 import 'rpg_system.dart';
 import 'hero_upgrade_screen.dart';
 import 'sound_manager.dart';
@@ -833,6 +837,29 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
     );
   }
 
+  void _openLevelEditor() {
+    final levelNumber = _currentIndex + 1;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => LevelEditorScreen(
+          chapterNumber: widget.chapterNumber,
+          levelNumber: levelNumber,
+          onPreviewLevel: (editorContext) async {
+            Navigator.of(editorContext).pushReplacement(
+              MaterialPageRoute<void>(
+                builder: (_) => GameHomeScreen(
+                  heroes: widget.heroes,
+                  chapterNumber: widget.chapterNumber,
+                  levelNumber: levelNumber,
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final levelNumber = _currentIndex + 1;
@@ -955,6 +982,13 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
                             child: OutlinedButton(
                               onPressed: () => Navigator.of(context).pop(),
                               child: const Text('Zpet'),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: _openLevelEditor,
+                              child: const Text('Editor'),
                             ),
                           ),
                           const SizedBox(width: 16),
@@ -1159,17 +1193,15 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   static const double wallHpMax = 300;
   static const double enemyHpMax = 20;
   static const double enemySize = 40;
-  static const double enemySpeed = 16; // units per second
   static const double projectileSpeed = 160; // units per second
   static const double heroMoveSpeed = 110; // units per second
-  static const double enemyHeroDps = 5; // damage per second
   static const double spellSendingDuration = 2; // seconds
   static const double spellCooldownDuration = 10; // seconds
   static const double cooldownScale = 0.25;
   static const double defaultHeroAttackRange = mapWidth / 3;
   static const double enemyTapRadius = 18;
-  static const double heroTapRadius = 30;
-  static const double heroUnitSize = 56;
+  static const double heroTapRadius = 48;
+  static const double heroUnitSize = 96;
   static const double heroWallStopPadding = heroUnitSize * 0.6;
   static const double wallDps = 5; // damage per second
   static const double hitFlashDuration = 0.12; // seconds
@@ -1196,8 +1228,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   static const double defensiveRetreatMinDuration = 2.0;
   static const double towerCooldownDuration = 5.0;
   static const double towerDamage = 10.0;
-  static const double towerWidth = 136.0;
-  static const double towerHeight = 160.0;
+  static const double towerWidth = 88.0;
+  static const double towerHeight = 136.0;
   static const double towerRange = defaultHeroAttackRange;
   static const Offset towerPosition = Offset(44, 72);
 
@@ -1207,7 +1239,6 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   double _lastTime = 0;
   double _wallHp = wallHpMax;
   double _wallHitEffectRemaining = 0;
-  double _timeUntilNextSpawn = 0;
   // Wave and statistics tracking
   int _currentWave = 1;
   int _enemiesKilled = 0;
@@ -1225,6 +1256,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   bool _autoMode = true;
   int? _readyHeroIndex;
   final _interactiveViewerKey = GlobalKey();
+  final FocusNode _gameFocusNode = FocusNode(debugLabel: 'game_view_input');
   final TransformationController _mapTransformController = TransformationController();
   _HeroMode _aerinMode = _HeroMode.normal;
   bool _aerinMenuOpen = false;
@@ -1294,12 +1326,23 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   double _towerCooldownRemaining = 0.0;
   Offset _mapViewportOffset = Offset.zero;
   final Map<int, Offset> _activeViewportPointers = <int, Offset>{};
+  int? _desktopPanPointer;
+  Offset? _desktopPanLastViewportPosition;
+  bool _spacePanModifierPressed = false;
+  late LevelDef _levelDef;
+  bool _levelDataReady = false;
+  double _waveElapsedTime = 0.0;
+  int _nextWaveSpawnIndex = 0;
+  List<_ScheduledSpawn> _scheduledWaveSpawns = <_ScheduledSpawn>[];
 
   @override
   void initState() {
     super.initState();
     _enableFullscreenMode();
-    _timeUntilNextSpawn = 4;
+    _levelDef = LevelRepository.buildLegacyTemplate(
+      chapterNumber: widget.chapterNumber,
+      levelNumber: widget.levelNumber,
+    );
     _heroSlotIndices = List<int>.generate(widget.heroes.length, (index) => index);
     _heroStates = List<_HeroState>.generate(
       widget.heroes.length,
@@ -1363,7 +1406,9 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       vsync: this,
       duration: const Duration(milliseconds: 180),
     );
-    _ticker = createTicker(_onTick)..start();
+    _prepareWaveRuntime();
+    _ticker = createTicker(_onTick);
+    _loadLevelDefinitionAndStartTicker();
   }
 
   @override
@@ -1372,6 +1417,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     _grassBackground?.dispose();
     _wallSprite?.dispose();
     _towerSprite?.dispose();
+    _gameFocusNode.dispose();
     _mapTransformController.dispose();
     _aerinMenuController.dispose();
     _veyraMenuController.dispose();
@@ -1483,6 +1529,58 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     }
   }
 
+  Future<void> _loadLevelDefinitionAndStartTicker() async {
+    final loadedLevel = await LevelRepository.loadLevel(
+      chapterNumber: widget.chapterNumber,
+      levelNumber: widget.levelNumber,
+    );
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _levelDef = loadedLevel;
+      _levelDataReady = true;
+      _currentWave = 1;
+      _totalWaves = max(1, _levelDef.waves.length);
+      _prepareWaveRuntime();
+    });
+    _ticker.start();
+  }
+
+  void _prepareWaveRuntime() {
+    _waveElapsedTime = 0;
+    _nextWaveSpawnIndex = 0;
+    _enemiesSpawnedInWave = 0;
+    if (_levelDef.waves.isEmpty) {
+      _scheduledWaveSpawns = <_ScheduledSpawn>[];
+      _enemiesInWave = 0;
+      _totalWaves = 0;
+      return;
+    }
+    _totalWaves = _levelDef.waves.length;
+    final waveIndex = (_currentWave - 1).clamp(0, _levelDef.waves.length - 1).toInt();
+    final wave = _levelDef.waves[waveIndex];
+    final scheduled = <_ScheduledSpawn>[];
+    for (final event in wave.events) {
+      final enemyType = enemyTypeRegistry[event.enemyType] ?? enemyTypeRegistry.values.first;
+      for (int i = 0; i < event.count; i++) {
+        scheduled.add(
+          _ScheduledSpawn(
+            time: wave.startDelay + event.time + i * event.spacing,
+            enemyType: enemyType,
+            lane: event.lane,
+            hpMultiplier: event.hpMultiplier,
+            speedMultiplier: event.speedMultiplier,
+            seedOffset: i * 17.0 + event.time,
+          ),
+        );
+      }
+    }
+    scheduled.sort((a, b) => a.time.compareTo(b.time));
+    _scheduledWaveSpawns = scheduled;
+    _enemiesInWave = scheduled.length;
+  }
+
   void _updateMapScale(double baseScale) {
     if ((_baseMapScale - baseScale).abs() < 0.0001) {
       return;
@@ -1503,28 +1601,89 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       minZoomMultiplier,
       maxZoomMultiplier,
     );
-    if ((nextZoom - _zoomMultiplier).abs() < 0.0001) {
-      return;
-    }
     final viewportSize = _interactiveViewportSize();
     final viewportCenter = viewportSize == null
         ? null
         : Offset(viewportSize.width / 2, viewportSize.height / 2);
-    final centerScenePosition = viewportCenter == null
+    _setZoomAroundViewportPoint(nextZoom.toDouble(), viewportCenter);
+  }
+
+  void _setZoomAroundViewportPoint(double nextZoom, Offset? viewportPoint) {
+    if ((nextZoom - _zoomMultiplier).abs() < 0.0001) {
+      return;
+    }
+    final anchorScenePosition = viewportPoint == null
         ? null
-        : _mapTransformController.toScene(viewportCenter);
+        : _mapTransformController.toScene(viewportPoint);
     setState(() {
       _zoomMultiplier = nextZoom;
-      if (viewportCenter != null && centerScenePosition != null) {
+      if (viewportPoint != null && anchorScenePosition != null) {
         final nextScale = _baseMapScale * _zoomMultiplier;
         _mapViewportOffset = Offset(
-          viewportCenter.dx - centerScenePosition.dx * nextScale,
-          viewportCenter.dy - centerScenePosition.dy * nextScale,
+          viewportPoint.dx - anchorScenePosition.dx * nextScale,
+          viewportPoint.dy - anchorScenePosition.dy * nextScale,
         );
       }
       _mapViewportOffset = _clampMapViewportOffset(_mapViewportOffset);
       _applyMapTransform();
     });
+  }
+
+  bool _isDesktopPanTrigger(PointerEvent event) {
+    if (event.kind != ui.PointerDeviceKind.mouse) {
+      return false;
+    }
+    final isMiddleDrag = (event.buttons & 0x04) != 0;
+    final isSpaceModifiedPrimaryDrag =
+        _spacePanModifierPressed && (event.buttons & 0x01) != 0;
+    return isMiddleDrag || isSpaceModifiedPrimaryDrag;
+  }
+
+  bool _isDesktopPanActiveForPointer(PointerEvent event) {
+    return _desktopPanPointer != null && _desktopPanPointer == event.pointer;
+  }
+
+  void _startDesktopPan(PointerDownEvent event) {
+    _desktopPanPointer = event.pointer;
+    _desktopPanLastViewportPosition = _pointerEventToViewportPosition(event);
+  }
+
+  void _updateDesktopPan(PointerMoveEvent event) {
+    final previousViewportPosition = _desktopPanLastViewportPosition;
+    if (previousViewportPosition == null) {
+      return;
+    }
+    final viewportPosition = _pointerEventToViewportPosition(event);
+    final delta = viewportPosition - previousViewportPosition;
+    if (delta.distanceSquared <= 0) {
+      _desktopPanLastViewportPosition = viewportPosition;
+      return;
+    }
+    _desktopPanLastViewportPosition = viewportPosition;
+    _mapViewportOffset = _clampMapViewportOffset(_mapViewportOffset + delta);
+    _applyMapTransform();
+  }
+
+  void _stopDesktopPan() {
+    _desktopPanPointer = null;
+    _desktopPanLastViewportPosition = null;
+  }
+
+  KeyEventResult _handleGameKeyEvent(FocusNode node, KeyEvent event) {
+    if (event.logicalKey != LogicalKeyboardKey.space) {
+      return KeyEventResult.ignored;
+    }
+    final isPressed = event is! KeyUpEvent;
+    if (_spacePanModifierPressed == isPressed) {
+      return KeyEventResult.handled;
+    }
+    setState(() {
+      _spacePanModifierPressed = isPressed;
+      if (!isPressed) {
+        _stopDesktopPan();
+      }
+    });
+    return KeyEventResult.handled;
   }
 
   Size? _interactiveViewportSize() {
@@ -1944,8 +2103,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     });
   }
 
-  double _nextSpawnDelay() => max(0.5, (1.0 - (_currentWave * 0.05)) + _rng.nextDouble() * 8);
-  int _enemiesForWave(int wave) => 5 + wave * 2; // More enemies in later waves
+  int _totalEnemiesForCurrentWave() => _enemiesInWave;
 
   _HeroUnit _initialHeroUnit(int index) {
     final count = max(1, widget.heroes.length);
@@ -2027,31 +2185,55 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   }
 
   void _updateSpawning(double dt) {
-    _timeUntilNextSpawn -= dt;
-    if (_timeUntilNextSpawn <= 0 && _enemiesSpawnedInWave < _enemiesForWave(_currentWave)) {
-      final lane = _rng.nextInt(enemyLanes);
+    if (!_levelDataReady) {
+      return;
+    }
+
+    if (_scheduledWaveSpawns.isEmpty) {
+      if (_currentWave < _levelDef.waves.length && !_hasTargetableEnemies) {
+        _currentWave++;
+        _prepareWaveRuntime();
+      }
+      return;
+    }
+
+    _waveElapsedTime += dt;
+    while (_nextWaveSpawnIndex < _scheduledWaveSpawns.length &&
+        _scheduledWaveSpawns[_nextWaveSpawnIndex].time <= _waveElapsedTime) {
+      final spawn = _scheduledWaveSpawns[_nextWaveSpawnIndex];
+      final lane = (spawn.lane - 1).clamp(0, enemyLanes - 1).toInt();
       final y = _enemyLaneCenterY(lane);
-      final waveHpMultiplier = 1.0 + (_currentWave - 1) * 0.1;
-      final hpMultiplier = waveHpMultiplier * _levelEnemyHpMultiplier;
-      final spawnedHp = enemyHpMax * hpMultiplier;
+      final spawnedHp =
+          spawn.enemyType.baseHp * spawn.hpMultiplier * _levelEnemyHpMultiplier;
       _enemies.add(
         _Enemy(
           position: Offset(mapWidth, y),
           hp: spawnedHp,
           maxHp: spawnedHp,
-          seed: _rng.nextDouble() * 1000,
+          seed: (_rng.nextDouble() * 1000) + spawn.seedOffset,
+          speed: spawn.enemyType.baseSpeed * spawn.speedMultiplier,
+          damagePerSecond: spawn.enemyType.baseDamagePerSecond,
+          typeId: spawn.enemyType.id,
         ),
       );
       _enemiesSpawnedInWave++;
-      _timeUntilNextSpawn = _nextSpawnDelay();
+      _nextWaveSpawnIndex++;
     }
 
-    // Check if wave is complete (all enemies spawned and killed)
-    if (_enemiesSpawnedInWave >= _enemiesForWave(_currentWave) && !_hasTargetableEnemies) {
-      _currentWave++;
-      _enemiesSpawnedInWave = 0;
-      _enemiesInWave = 0;
-      SoundManager().playWaveComplete();
+    final currentWaveIndex = _currentWave - 1;
+    final waveCompleteCondition = currentWaveIndex < _levelDef.waves.length
+        ? (_levelDef.waves[currentWaveIndex].completeWhenNoEnemies
+            ? !_hasTargetableEnemies
+            : true)
+        : false;
+    if (currentWaveIndex < _levelDef.waves.length &&
+        _nextWaveSpawnIndex >= _scheduledWaveSpawns.length &&
+        waveCompleteCondition) {
+      if (_currentWave < _levelDef.waves.length) {
+        _currentWave++;
+        _prepareWaveRuntime();
+        SoundManager().playWaveComplete();
+      }
     }
   }
 
@@ -2074,17 +2256,17 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
         final attackRange = enemySize / 2 + heroUnitSize / 2;
         if (distance <= attackRange) {
           enemy.attacking = true;
-          _applyHeroDamage(targetHeroIndex, enemyHeroDps * dt);
+          _applyHeroDamage(targetHeroIndex, enemy.damagePerSecond * dt);
         } else {
           enemy.attacking = false;
-          final step = min(enemySpeed * dt, distance);
+          final step = min(enemy.speed * dt, distance);
           enemy.position = enemy.position.translate(
             delta.dx / distance * step,
             delta.dy / distance * step,
           );
         }
       } else if (enemy.position.dx > heroAreaWidth + 4) {
-        enemy.position = enemy.position.translate(-enemySpeed * dt, 0);
+        enemy.position = enemy.position.translate(-enemy.speed * dt, 0);
         enemy.attacking = false;
       }
     }
@@ -2733,13 +2915,15 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     setState(() {
       _gameStartTime = DateTime.now();
       _lastTime = 0;
-      _timeUntilNextSpawn = 4;
       _wallHp = wallHpMax;
       _wallHitEffectRemaining = 0;
       _currentWave = 1;
       _enemiesKilled = 0;
       _enemiesInWave = 0;
       _enemiesSpawnedInWave = 0;
+      _waveElapsedTime = 0;
+      _nextWaveSpawnIndex = 0;
+      _scheduledWaveSpawns = <_ScheduledSpawn>[];
       _gameOver = false;
       _gameOverDialogShown = false;
       _gameSpeed = 2;
@@ -2787,6 +2971,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       _activeViewportPointers.clear();
       _mapViewportOffset = Offset.zero;
       _clearHeroRangeIndicator();
+      _prepareWaveRuntime();
       _applyMapTransform();
     });
   }
@@ -4244,7 +4429,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                 coinsEarned: _coinsEarned,
                 gameDurationText: _gameDurationText,
                 enemiesInWave: _enemiesSpawnedInWave,
-                totalEnemiesInWave: _enemiesForWave(_currentWave),
+                totalEnemiesInWave: _totalEnemiesForCurrentWave(),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -4272,21 +4457,25 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                     final fitToHeightScale = constraints.maxHeight / mapHeight;
                     _updateMapScale(fitToHeightScale);
 
-                    return InteractiveViewer(
-                      key: _interactiveViewerKey,
-                      transformationController: _mapTransformController,
-                      constrained: false,
-                      panEnabled: false,
-                      scaleEnabled: false,
-                      boundaryMargin: EdgeInsets.zero,
-                      minScale: fitToHeightScale,
-                      maxScale: fitToHeightScale * maxZoomMultiplier,
-                      alignment: Alignment.topLeft,
-                      child: SizedBox(
-                        width: mapWidth,
-                        height: mapHeight,
-                        child: Stack(
-                          children: [
+                    return Focus(
+                      focusNode: _gameFocusNode,
+                      autofocus: true,
+                      onKeyEvent: _handleGameKeyEvent,
+                      child: InteractiveViewer(
+                        key: _interactiveViewerKey,
+                        transformationController: _mapTransformController,
+                        constrained: false,
+                        panEnabled: false,
+                        scaleEnabled: false,
+                        boundaryMargin: EdgeInsets.zero,
+                        minScale: fitToHeightScale,
+                        maxScale: fitToHeightScale * maxZoomMultiplier,
+                        alignment: Alignment.topLeft,
+                        child: SizedBox(
+                          width: mapWidth,
+                          height: mapHeight,
+                          child: Stack(
+                            children: [
                             CustomPaint(
                               size: const Size(mapWidth, mapHeight),
                               painter: _GamePainter(
@@ -4348,7 +4537,38 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                               ),
                             Positioned.fill(
                               child: Listener(
+                                onPointerSignal: (event) {
+                                  if (event is! PointerScrollEvent ||
+                                      event.kind != ui.PointerDeviceKind.mouse) {
+                                    return;
+                                  }
+                                  _gameFocusNode.requestFocus();
+                                  final nextZoom = (_zoomMultiplier +
+                                          (event.scrollDelta.dy < 0
+                                              ? zoomStep
+                                              : -zoomStep))
+                                      .clamp(
+                                        minZoomMultiplier,
+                                        maxZoomMultiplier,
+                                      )
+                                      .toDouble();
+                                  _setZoomAroundViewportPoint(
+                                    nextZoom,
+                                    _pointerEventToViewportPosition(event),
+                                  );
+                                },
                                 onPointerDown: (event) {
+                                  _gameFocusNode.requestFocus();
+                                  if (event is PointerDownEvent &&
+                                      _isDesktopPanTrigger(event)) {
+                                    setState(() {
+                                      _startDesktopPan(event);
+                                      _pointerDownScenePosition = null;
+                                      _pointerDownHeroIndex = null;
+                                      _selectionDragCurrent = null;
+                                    });
+                                    return;
+                                  }
                                   final viewportPosition = _pointerEventToViewportPosition(event);
                                   final scenePosition = _pointerEventToScenePosition(event);
                                   final nextPointerCount = _activePointerCount + 1;
@@ -4367,6 +4587,11 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                                   });
                                 },
                                 onPointerMove: (event) {
+                                  if (event is PointerMoveEvent &&
+                                      _isDesktopPanActiveForPointer(event)) {
+                                    _updateDesktopPan(event);
+                                    return;
+                                  }
                                   final previousViewportPosition = _activeViewportPointers[event.pointer];
                                   final viewportPosition = _pointerEventToViewportPosition(event);
                                   if (previousViewportPosition != null) {
@@ -4438,6 +4663,15 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                                   });
                                 },
                                 onPointerUp: (event) {
+                                  if (_isDesktopPanActiveForPointer(event)) {
+                                    setState(() {
+                                      _stopDesktopPan();
+                                      _pointerDownScenePosition = null;
+                                      _pointerDownHeroIndex = null;
+                                      _selectionDragCurrent = null;
+                                    });
+                                    return;
+                                  }
                                   final scenePosition = _pointerEventToScenePosition(event);
                                   final start = _pointerDownScenePosition;
                                   final pointerDownHeroIndex = _pointerDownHeroIndex;
@@ -4475,6 +4709,15 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                                   _handleMapTap(scenePosition);
                                 },
                                 onPointerCancel: (event) {
+                                  if (_isDesktopPanActiveForPointer(event)) {
+                                    setState(() {
+                                      _stopDesktopPan();
+                                      _pointerDownScenePosition = null;
+                                      _pointerDownHeroIndex = null;
+                                      _selectionDragCurrent = null;
+                                    });
+                                    return;
+                                  }
                                   setState(() {
                                     _activeViewportPointers.remove(event.pointer);
                                     _activePointerCount = max(0, _activePointerCount - 1);
@@ -4505,6 +4748,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                             for (int i = 0; i < widget.heroes.length; i++)
                               if (_heroUnits[i].isAlive)
                               Positioned(
+                                key: ValueKey<String>('hero-unit-$i'),
                                 left: _heroPosition(i).dx - (heroUnitSize + 18) / 2,
                                 top: _heroPosition(i).dy - (heroUnitSize + 22) / 2,
                                 child: GestureDetector(
@@ -4517,6 +4761,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                                     height: heroUnitSize + 22,
                                     child: Center(
                                       child: _HeroUnitWidget(
+                                        key: ValueKey<String>('hero-unit-widget-$i'),
                                         hero: widget.heroes[i],
                                         state: _heroStates[i],
                                         isSelected: _selectedHeroIndex == i ||
@@ -4534,7 +4779,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                               ),
                             _buildSelectedHeroBehaviorMenu(),
                             _buildSelectedHeroModeMenu(),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     );
@@ -4620,6 +4866,7 @@ class _HeroCardsPanel extends StatelessWidget {
 
 class _HeroUnitWidget extends StatelessWidget {
   const _HeroUnitWidget({
+    super.key,
     required this.hero,
     required this.state,
     required this.isSelected,
@@ -4646,17 +4893,36 @@ class _HeroUnitWidget extends StatelessWidget {
   static const int _aerinFrameCount = 31;
   static const double _aerinFrameWidth = 479;
   static const double _aerinFrameHeight = 404;
+  static ui.Image? _aerinSpriteSheetCache;
   static final Future<ui.Image?> _aerinSpriteSheetFuture = _loadAerinSpriteSheet();
+  static const String _veyraSpriteSheetAsset = 'assets/heroes/Veyra/standing/Veyra_sheet.png';
+  static const int _veyraFrameCount = 16;
+  static const double _veyraFrameWidth = 688;
+  static const double _veyraFrameHeight = 464;
+  static ui.Image? _veyraSpriteSheetCache;
+  static final Future<ui.Image?> _veyraSpriteSheetFuture = _loadSpriteSheet(
+    _veyraSpriteSheetAsset,
+  );
 
-  static Future<ui.Image?> _loadAerinSpriteSheet() async {
+  static Future<ui.Image?> _loadSpriteSheet(String assetPath) async {
     try {
-      final data = await rootBundle.load(_aerinSpriteSheetAsset);
+      final data = await rootBundle.load(assetPath);
       final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
       final frame = await codec.getNextFrame();
-      return frame.image;
+      final image = frame.image;
+      if (assetPath == _aerinSpriteSheetAsset) {
+        _aerinSpriteSheetCache = image;
+      } else if (assetPath == _veyraSpriteSheetAsset) {
+        _veyraSpriteSheetCache = image;
+      }
+      return image;
     } catch (_) {
       return null;
     }
+  }
+
+  static Future<ui.Image?> _loadAerinSpriteSheet() async {
+    return _loadSpriteSheet(_aerinSpriteSheetAsset);
   }
 
   Widget _buildHeroImage({
@@ -4690,8 +4956,9 @@ class _HeroUnitWidget extends StatelessWidget {
   Widget _buildAerinFrame(int frameIndex) {
     return FutureBuilder<ui.Image?>(
       future: _aerinSpriteSheetFuture,
+      initialData: _aerinSpriteSheetCache,
       builder: (context, snapshot) {
-        final spriteSheet = snapshot.data;
+        final spriteSheet = snapshot.data ?? _aerinSpriteSheetCache;
         if (spriteSheet == null) {
           return _buildHeroImage(
             imageAsset: _aerinFallbackAsset,
@@ -4713,10 +4980,41 @@ class _HeroUnitWidget extends StatelessWidget {
     );
   }
 
+  Widget _buildVeyraFrame(int frameIndex) {
+    return FutureBuilder<ui.Image?>(
+      future: _veyraSpriteSheetFuture,
+      initialData: _veyraSpriteSheetCache,
+      builder: (context, snapshot) {
+        final spriteSheet = snapshot.data ?? _veyraSpriteSheetCache;
+        if (spriteSheet == null) {
+          return _buildHeroImage(
+            imageAsset: hero.imageAsset,
+            isAerinInGameSprite: false,
+          );
+        }
+        return SizedBox.expand(
+          child: CustomPaint(
+            painter: _SpriteFramePainter(
+              spriteSheet: spriteSheet,
+              frameIndex: frameIndex,
+              frameCount: _veyraFrameCount,
+              frameWidth: _veyraFrameWidth,
+              frameHeight: _veyraFrameHeight,
+              flipHorizontally: true,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final pulse = sin(time * 6) * 0.5 + 0.5;
     final isAerinInGameSprite = hero.name == 'Aerin';
+    final isVeyraInGameSprite = hero.name == 'Veyra';
+    final usesTransparentInGameSprite = isAerinInGameSprite || isVeyraInGameSprite;
+    final shadowBottomOffset = isVeyraInGameSprite ? size * 0.10 : size * 0.04;
     final cooldownFraction =
         (state.phase == _HeroPhase.cooldown && cooldownDuration > 0)
             ? (state.timeRemaining / cooldownDuration).clamp(0.0, 1.0)
@@ -4728,52 +5026,75 @@ class _HeroUnitWidget extends StatelessWidget {
       height: size + 16,
       child: Column(
         children: [
-          Container(
+          SizedBox(
             width: size,
             height: size,
-            decoration: BoxDecoration(
-              color: isAerinInGameSprite
-                  ? Colors.transparent
-                  : hero.color.withOpacity(isMoving ? 0.75 : 0.9),
-              borderRadius: BorderRadius.circular(isAerinInGameSprite ? 0 : 10),
-              border: isAerinInGameSprite
-                  ? null
-                  : Border.all(
-                      color: isSelected ? const Color(0xFFFFE08A) : Colors.white24,
-                      width: isSelected ? 2.5 : 1,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Positioned(
+                  left: size * 0.15,
+                  right: size * 0.15,
+                  bottom: shadowBottomOffset,
+                  child: Container(
+                    height: size * 0.14,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(999),
                     ),
-              boxShadow: isSelected && !isAerinInGameSprite
-                  ? [
-                      BoxShadow(
-                        color: const Color(0xFFFFE08A).withOpacity(0.5 + pulse * 0.35),
-                        blurRadius: 14 + pulse * 6,
-                        spreadRadius: 1.5,
-                      ),
-                    ]
-                  : null,
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(isAerinInGameSprite ? 0 : 9),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  if (isAerinInGameSprite)
-                    _buildAerinFrame((time * 12).floor() % _aerinFrameCount)
-                  else if (hero.imageAsset.isNotEmpty)
-                    _buildHeroImage(
-                      imageAsset: hero.imageAsset,
-                      isAerinInGameSprite: false,
-                    )
-                  else
-                    const Icon(Icons.person, color: Colors.white70, size: 20),
-                  if (isMoving && !isAerinInGameSprite)
-                    Container(
-                      color: const Color(0x66000000),
-                      alignment: Alignment.center,
-                      child: const Icon(Icons.directions_run, color: Colors.white, size: 16),
+                  ),
+                ),
+                Container(
+                  width: size,
+                  height: size,
+                  decoration: BoxDecoration(
+                    color: usesTransparentInGameSprite
+                        ? Colors.transparent
+                        : hero.color.withOpacity(isMoving ? 0.75 : 0.9),
+                    borderRadius: BorderRadius.circular(usesTransparentInGameSprite ? 0 : 10),
+                    border: usesTransparentInGameSprite
+                        ? null
+                        : Border.all(
+                            color: isSelected ? const Color(0xFFFFE08A) : Colors.white24,
+                            width: isSelected ? 2.5 : 1,
+                          ),
+                    boxShadow: isSelected && !usesTransparentInGameSprite
+                        ? [
+                            BoxShadow(
+                              color: const Color(0xFFFFE08A).withOpacity(0.5 + pulse * 0.35),
+                              blurRadius: 14 + pulse * 6,
+                              spreadRadius: 1.5,
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(usesTransparentInGameSprite ? 0 : 9),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        if (isAerinInGameSprite)
+                          _buildAerinFrame((time * 12).floor() % _aerinFrameCount)
+                        else if (isVeyraInGameSprite)
+                          _buildVeyraFrame((time * 12).floor() % _veyraFrameCount)
+                        else if (hero.imageAsset.isNotEmpty)
+                          _buildHeroImage(
+                            imageAsset: hero.imageAsset,
+                            isAerinInGameSprite: false,
+                          )
+                        else
+                          const Icon(Icons.person, color: Colors.white70, size: 20),
+                        if (isMoving && !usesTransparentInGameSprite)
+                          Container(
+                            color: const Color(0x66000000),
+                            alignment: Alignment.center,
+                            child: const Icon(Icons.directions_run, color: Colors.white, size: 16),
+                          ),
+                      ],
                     ),
-                ],
-              ),
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 2),
@@ -4983,6 +5304,7 @@ class _SpriteFramePainter extends CustomPainter {
     required this.frameCount,
     required this.frameWidth,
     required this.frameHeight,
+    this.flipHorizontally = false,
   });
 
   final ui.Image spriteSheet;
@@ -4990,6 +5312,7 @@ class _SpriteFramePainter extends CustomPainter {
   final int frameCount;
   final double frameWidth;
   final double frameHeight;
+  final bool flipHorizontally;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -5012,14 +5335,28 @@ class _SpriteFramePainter extends CustomPainter {
       drawWidth,
       drawHeight,
     );
-    canvas.drawImageRect(
-      spriteSheet,
-      src,
-      dst,
-      Paint()
-        ..isAntiAlias = false
-        ..filterQuality = FilterQuality.none,
-    );
+    final paint = Paint()
+      ..isAntiAlias = false
+      ..filterQuality = FilterQuality.none;
+    if (flipHorizontally) {
+      canvas.save();
+      canvas.translate(size.width, 0);
+      canvas.scale(-1, 1);
+      canvas.drawImageRect(
+        spriteSheet,
+        src,
+        dst,
+        paint,
+      );
+      canvas.restore();
+    } else {
+      canvas.drawImageRect(
+        spriteSheet,
+        src,
+        dst,
+        paint,
+      );
+    }
   }
 
   @override
@@ -5028,7 +5365,8 @@ class _SpriteFramePainter extends CustomPainter {
         oldDelegate.frameIndex != frameIndex ||
         oldDelegate.frameCount != frameCount ||
         oldDelegate.frameWidth != frameWidth ||
-        oldDelegate.frameHeight != frameHeight;
+        oldDelegate.frameHeight != frameHeight ||
+        oldDelegate.flipHorizontally != flipHorizontally;
   }
 }
 
@@ -5059,12 +5397,18 @@ class _Enemy {
     required this.hp,
     required this.maxHp,
     required this.seed,
+    required this.speed,
+    required this.damagePerSecond,
+    required this.typeId,
   });
 
   Offset position;
   double hp;
   final double maxHp;
   final double seed;
+  final double speed;
+  final double damagePerSecond;
+  final String typeId;
   bool attacking = false;
   double flashRemaining = 0;
   double damageTextCooldown = 0;
@@ -5079,6 +5423,24 @@ class _Enemy {
   static const double deathDuration = deathFrameCount * deathFrameDuration;
 
   bool get canRemove => isDying && corpseFadeTime >= _GameViewState.enemyCorpseFadeDuration;
+}
+
+class _ScheduledSpawn {
+  const _ScheduledSpawn({
+    required this.time,
+    required this.enemyType,
+    required this.lane,
+    required this.hpMultiplier,
+    required this.speedMultiplier,
+    required this.seedOffset,
+  });
+
+  final double time;
+  final EnemyTypeDef enemyType;
+  final int lane;
+  final double hpMultiplier;
+  final double speedMultiplier;
+  final double seedOffset;
 }
 
 class _Projectile {
@@ -5242,11 +5604,15 @@ class _GamePainter extends CustomPainter {
       if (wallEffectStrength > 0) {
         final flashOpacity =
             (0.14 + 0.28 * (0.5 + 0.5 * sin(time * 48))) * wallEffectStrength;
-        canvas.drawRect(
+        canvas.drawImageRect(
+          wallSprite!,
+          sourceRect,
           destRect,
           Paint()
-            ..color = Colors.white.withOpacity(flashOpacity)
-            ..blendMode = BlendMode.srcATop,
+            ..colorFilter = ui.ColorFilter.mode(
+              Colors.white.withOpacity(flashOpacity),
+              BlendMode.srcATop,
+            ),
         );
       }
     } else {
@@ -5268,6 +5634,15 @@ class _GamePainter extends CustomPainter {
     final enemyHpBack = Paint()..color = const Color(0xFF2A2A2A);
     final enemyHpFill = Paint()..color = const Color(0xFF6BFA9D);
     for (final enemy in enemies) {
+      final shadowRect = Rect.fromCenter(
+        center: enemy.position.translate(0, _GameViewState.enemySize * 0.10),
+        width: _GameViewState.enemySize * 0.9,
+        height: _GameViewState.enemySize * 0.22,
+      );
+      canvas.drawOval(
+        shadowRect,
+        Paint()..color = Colors.black.withOpacity(enemy.isDying ? 0.12 : 0.18),
+      );
       if (enemySpriteSheet != null && enemySpriteFrameCount > 0) {
         _drawEnemySprite(canvas, enemy);
       } else {
@@ -5347,6 +5722,15 @@ class _GamePainter extends CustomPainter {
       center: towerPosition,
       width: towerWidth,
       height: towerHeight,
+    );
+    final shadowRect = Rect.fromCenter(
+      center: towerPosition.translate(0, towerHeight * 0.44),
+      width: towerWidth * 0.7,
+      height: towerHeight * 0.14,
+    );
+    canvas.drawOval(
+      shadowRect,
+      Paint()..color = Colors.black.withOpacity(0.22),
     );
     if (towerSprite != null) {
       canvas.drawImageRect(

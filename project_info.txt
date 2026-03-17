@@ -6,20 +6,45 @@ Shrnuti projektu
 - Fullscreen rezim je pri startu aplikace i po navratu znovu vynucen pres `SystemUiMode.immersiveSticky`, aby se na Androidu nevracela horni systemova lista.
 - Flow: Intro obrazovka -> vyber save slotu -> vesnice -> vyber hrdinu -> vyber kapitoly -> vyber levelu -> herni scena.
 - Herni logika a UI jsou soustredeny v jedinem souboru `lib/main.dart`.
+- JSON model levelu a jednoduchy editor jsou rozdeleny do `lib/level_data.dart`, `lib/level_repository.dart` a `lib/level_editor_screen.dart`.
 
 Jak to funguje (gameplay)
 - Mapa ma logicke rozmery 1600 x 640.
 - Na leve strane je hero area (sirka 150) se 5 sloty, vyska slotu vyplnuje celou mapu (heroLaneHeight = mapHeight / heroSlots).
 - Hrac vybere 1-5 hrdinu; hrdinove utoci ve dvoufazovem cyklu: sending -> cooldown (casting faze byla zrusena).
-- Nepratele spawnuji nahodne po lanech na pravem okraji mapy a pohybuji se doleva.
+- Nepratele se pro kazdy level spawnuji z JSON definice vln (`waves`) a spawn eventu (`events`) s casovanim, poctem kusu, lane a multiplikatory; kdyz pro level neni JSON ani lokalni override, hra pouzije deterministicky vygenerovanou legacy sablonu.
 - Pokud nepritel dojde k hradbe (x <= heroAreaWidth + 4), zacne utocit do zdi.
 - Hrdinove se uz nemohou dostat nalevo od zdi; vsechny jejich move targety se clampuji tesne napravo od ni a stejne napravo od zdi se i spawnuji pri startu levelu.
 - V horni leve casti mapy vlevo od zdi je jednoducha staticka obranna vez; hrac ji neovlada, nehybe se a automaticky kazdych 5 sekund vystreli projektil za 10 damage na nejblizsiho nepritele v dosahu stejnem jako hrdinove.
 - Jeji vizual ve hre se nyni nacita ze sprite `assets/backgrounds/tower.png`; pri chybe nacitani zustava zachovany puvodni kresleny fallback.
 - Sprite veze byl nasledne znovu zvetsen na dvojnasobek tehdejsi velikosti a cela vez byla posunuta o kus niz.
+- Na desktopu je nyni mozne mapu ovladat i mysi: kolecko meni zoom, prostredni tlacitko + tah posouva mapu a jako fallback funguje i `Space` + levy drag; na dotykovych zarizenich zustava beze zmen dvouprsty pan/pinch.
+- Kdyz nepratele utoci do palisady, bily flash se ted aplikuje jen na samotne nepruhledne pixely sprite, ne na cely obdelnik jeho textury.
+- Pod obranou vezi je nyni jednoduchy tmavy oval, ktery funguje jako jemny stin pod spritem.
+- Vez byla nasledne zase o kus zmensena, ale jeji pozice na mape zustala stejna.
+- Sirka veze byla nasledne jeste trochu zmensena, ale vyska i pozice zustaly beze zmeny.
+- Sirka veze byla pak jeste o neco vic stazena, vyska i pozice zustaly stejne.
+- Sirka veze byla pak jeste o maly krok stazena, ale vyska i pozice zustaly stejne.
+- Vsechny herni jednotky hrdinu maji nyni pod sebou jednoduchy tmavy oval jako jemny stin na mape.
+- Vsichni nepratele maji nyni pod sebou jednoduchy tmavy oval jako jemny stin na mape.
+- Stin pod neprateli byl nasledne posunut o trochu vys, aby sedel blize pod jejich telo.
+- Stin pod neprateli byl pote posunut jeste vys, aby nepusobili jako by se vznaseli nad mapou.
+- Stin pod neprateli byl pak zvednut jeste vice, aby pusobil tesneji pod spritem.
+- Stin pod neprateli byl pak zvednut jeste vyrazneji, aby sedel viditelne bliz pod jejich telo.
+- Stin pod neprateli byl nakonec posunut jeste o maly kousek vys pro jemnejsi dosazeni pod sprite.
+- Veyra nyni ve hre pouziva vlastni animovany sprite sheet `assets/heroes/Veyra/standing/Veyra_sheet.png`; v menu a vyberovych portretech zustava puvodni staticky obrazek.
+- Cerny obdelnik pozadi ve Veyra sprite sheetu byl odstraneny primo v assetu; herni render ted ukazuje jen postavu s pruhlednym pozadim.
+- Stin pod Veyrou byl nasledne posunut o kus vys nez je sdileny hero default, aby sedel bliz pod jeji transparentni sprite.
+- Veyra se nyni ve hre vykresluje zrcadlove otocena horizontalne oproti puvodnimu sprite sheetu.
+- Vsechny herni jednotky hrdinu byly nasledne znovu zvetseny; tomu odpovida i lehce zvetseny tap radius pro pohodlnejsi vybirani.
+- Hrdinove byli pak jeste jednou vyrazne zvetseni zhruba o dalsi polovinu, a tomu byl znovu prizpusoben i tap radius.
+- Pro transparentni sprite-sheet hrdiny (Aerin, Veyra) byla opravena kratka vizualni bliknuti fallback portretu pri multi-select dragu; po prvnim nacteni se sheet drzi v cache a pri rebuildu uz neskace zpet na portret.
+- Zbyvajici multi-select probliknuti bylo nasledne opraveno stabilnimi `ValueKey` na mapovych hero widgetech, aby vlozeni/odebrani selection overlaye v tomtez `Stack`u neprehazovalo jejich elementy pri kliknuti a pusteni.
+- ` _HeroUnitWidget` byl nasledne dodelan o prijem `super.key`, aby se nove stabilni klice opravdu daly predavat bez compile chyby.
 - Zed ma HP 300. Nepritel udeluje wallDps = 5 damage za sekundu. Konec hry pri HP <= 0.
 - Rychlost hry lze prepnut v panelu na 1x/2x/4x/8x, default je 2x.
 - Restart hry ted vraci cely run na vychozi startovni stav: znovu zacina od 1. vlny, resetuje cas/statistiky, vraci hrdiny na startovni pozice, jejich behavior a attack mody na default a rychlost hry zpet na `2x`.
+- Editor levelu uklada lokalni override JSONu do `SharedPreferences`, umi reset na asset/default definici a umi okamzite preview aktualne editovaneho levelu.
 
 Herni konstanty (GameView)
 - mapWidth = 1600, mapHeight = 640
@@ -39,10 +64,13 @@ Herni konstanty (GameView)
 - explosionDuration = 0.35s
 - swordRadius = 140
 - enemyTapRadius = 18 (tolerantnejsi tap na nepritele)
-- Spawn nepratel: nahodny delay 1-10s, prvni spawn po 4s.
+- Spawn nepratel: casovani se ted bere z aktualni `WaveDef.startDelay` a `SpawnEventDef.time/spacing`; fallback generator stale vytvari uvodni wave se startem po 4s.
 
 Struktura projektu
 - `lib/main.dart`: kompletni herni logika, UI obrazovky, herni smycka, vykreslovani, efekty a definice hrdinu.
+- `lib/level_data.dart`: datovy model JSON levelu (`LevelDef`, `WaveDef`, `SpawnEventDef`, `EnemyTypeDef`).
+- `lib/level_repository.dart`: nacitani asset JSONu, SharedPreferences override a fallback generace legacy levelu.
+- `lib/level_editor_screen.dart`: interni editor wave/spawn eventu s ulozenim override a preview.
 - `pubspec.yaml`: Flutter konfigurace a dependencies.
 - `INFO.txt`: designove hodnoty utoku hrdinu (Czech notes).
 - `README.md`: defaultni Flutter README.
@@ -53,6 +81,7 @@ Zavislosti
 - Flutter SDK
 - `cupertino_icons`
 - `flame` (v kodu aktualne nepouzito)
+- `shared_preferences`
 
 Obrazovky a UI
 - IntroScreen: gradientni pozadi, nadpis "Dark Crystals", tlacitko Play.
@@ -81,6 +110,10 @@ Obrazovky a UI
   - Uprostred je velka karta levelu, mezi levely jde prepinat sipkami i swipem.
   - Pouziva stejny scrollovatelny a responsivni layout jako vyber kapitol, aby se karty ani spodni tlacitka na uzsich displejich neorezavaly.
   - Aktualne je v kapitole 1 pripraveno 19 levelu.
+  - Dole obsahuje i tlacitko `Editor`, ktere otevre interni editor JSON definice prave vybraneho levelu.
+- LevelEditorScreen:
+  - Umoznuje upravovat seznam wave, `startDelay`, `completeWhenNoEnemies` a spawn eventy s poli `time`, `enemyType`, `count`, `lane`, `spacing`, `hpMultiplier` a `speedMultiplier`.
+  - Umi ulozit lokalni override, resetovat ho na asset/default data, zkopirovat JSON do schranky a spustit preview levelu primo do hry.
 - GameView:
   - Fullscreen (immersive) s cerne pozadi, bez systemoveho panelu.
   - Herni plocha kreslena CustomPainterem.
@@ -389,3 +422,55 @@ Spusteni
 - Vyska obranne veze byla jeste jednou lehce navysena, sirka zustava beze zmeny.
 2026-03-16:
 - Obranna vez byla nasledne znovu zvetsena 2x v obou rozmrech a jeji pozice se posunula niz v horni leve casti mapy.
+2026-03-16:
+- Herni mapa nyni rozlisuje desktop a touch input podle typu pointeru: mys podporuje wheel zoom, middle-drag pan a `Space` + levy drag, zatimco touch zachovava stavajici dvouprsty pan a pinch zoom.
+2026-03-16:
+- Hit reakce palisady byla zpresnena tak, aby bily flash zasahoval jen nepruhledny obsah sprite a ne jeho cely obdelnik.
+2026-03-16:
+- Obranna vez dostala jednoduchy ovalny stin pod sprite, aby pusobila vice usazene na mape.
+2026-03-16:
+- Obranna vez byla nasledne o neco zmensena, ale bez dalsi zmeny jeji mapove pozice.
+2026-03-16:
+- Sirka obranne veze byla jeste lehce stazena, zatimco vyska i mapova pozice zustaly stejne.
+2026-03-16:
+- Sirka obranne veze byla jeste jednou mirne zmensena, vyska i mapova pozice zustaly stejne.
+2026-03-16:
+- Sirka obranne veze byla nasledne jeste trochu vic stazena, vyska i mapova pozice zustaly stejne.
+2026-03-16:
+- Vsechny herni jednotky hrdinu dostaly jednoduchy ovalny stin pod sprite, aby pusobily vice usazene na mape.
+2026-03-16:
+- Vsichni nepratele dostali jednoduchy ovalny stin pod sprite/telo, aby take pusobili vice usazene na mape.
+2026-03-16:
+- Ovalny stin nepratel byl nasledne posunut o trochu vys, aby sedel tesneji pod jejich telo.
+2026-03-16:
+- Ovalny stin nepratel byl posunut jeste vys, aby uz vizualne nepusobili jako by levitovali nad zemi.
+2026-03-16:
+- Ovalny stin nepratel byl zvednut jeste vice, aby vizualne sedel tesneji primo pod jejich telo.
+2026-03-16:
+- Ovalny stin nepratel byl zvednut jeste vyse, aby byl pod sprite viditelne tesneji pritazeny.
+2026-03-16:
+- Ovalny stin nepratel byl jemne posunut jeste o trochu vys jako finalni doladeni kontaktu se zemi.
+2026-03-16:
+- Veyra dostala ve hre vlastni animovany sprite sheet `assets/heroes/Veyra/standing/Veyra_sheet.png`; menu a vyber hrdinu dal pouzivaji puvodni portret.
+2026-03-16:
+- Spawn vln byl preveden na JSON model levelu (`LevelDef` / `WaveDef` / `SpawnEventDef`), ktery se nacita z `assets/levels/...` nebo z lokalniho editor override; kdyz data chybi, hra spadne do deterministicke legacy sablony.
+2026-03-16:
+- Do flow vyberu levelu pribyl interni `LevelEditorScreen`, ktery umi upravovat wave a spawn eventy, ulozit override do `SharedPreferences`, zkopirovat JSON a spustit preview vybraneho levelu.
+2026-03-16:
+- Byl pridan prvni asset level JSON `assets/levels/chapter_1/level_01.json` a registry enemy typu v `lib/level_data.dart`; runtime spawnovani nepratel uz nebezi na puvodnim nahodnem delay modelu.
+2026-03-16:
+- V `assets/heroes/Veyra/standing/Veyra_sheet.png` bylo odstraneno cerne pozadi prevedenim okrajoveho temneho podkladu na transparentni alpha, takze Veyra se ve hre uz nekresli s cernym obdelnikem okolo sprite.
+2026-03-17:
+- Stin pod in-game Veyrou byl posunut vys nez u ostatnich hrdinu, aby opticky lepe sedel pod jeji postavu.
+2026-03-17:
+- In-game vykresleni Veyry bylo zrcadlove otoceno horizontalne primo v `_SpriteFramePainter`, aniz by se to dotklo ostatnich hrdinu.
+2026-03-17:
+- Sdilena velikost hernich jednotek hrdinu byla zvetsena zvednutim `heroUnitSize`, a soucasne se mirne zvetsil i `heroTapRadius`, aby vyber jednotek zustal pohodlny.
+2026-03-17:
+- Velikost hernich jednotek hrdinu byla nasledne zvetsena jeste zhruba o dalsich 50 % (`heroUnitSize` z `64` na `96`) a sdileny `heroTapRadius` byl zvednut na `48`.
+2026-03-17:
+- Aerin a Veyra si po prvnim nacteni drzi sprite sheet v interni cache a `FutureBuilder` ho dostava jako `initialData`, takze pri `setState` behem selection dragu uz neproblikne fallback portret.
+2026-03-17:
+- Hero jednotky v mapovem `Stack`u dostaly stabilni `ValueKey`, aby se pri objeveni a zmizeni selection square overlaye uz nerecyklovaly na jiny element a neproblikly pri `pointer down/up`.
+2026-03-17:
+- Konstruktor `_HeroUnitWidget` byl rozsireny o `super.key`, aby nove stabilni klice pro hero widgety prosly i kompilaci.
