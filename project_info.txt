@@ -566,3 +566,5 @@ Spusteni
 - Obrazovka `Vesnice` nyní podporuje i zoom podobně jako herní mapa: výchozí stav je maximálně oddálený contain-fit celé mapy do viewportu, na dotykových zařízeních funguje pinch zoom a na desktopu/webu zoom kolečkem myši kolem kurzoru.
 2026-03-18:
 - Vychozi zoom obrazovky `Vesnice` byl nasledne zmenen z contain-fit na fit podle sirky displeje v landscape, takze startovni pohled vyplni sirku a zbytek vysky mapy se prohlizi posunem.
+2026-03-19:
+- Dvouprsty pan a pinch v herni mape ted funguje i v pripade, kdy jeden z prstu dopadne primo na hrdinu; stejna surova pointer logika jako na prazdne mape se ted zpracovava i na hero hitboxech, takze uz nedochazi ke kolizi s hero tap akcemi.

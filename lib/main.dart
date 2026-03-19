@@ -4412,6 +4412,164 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     return event.localPosition;
   }
 
+  void _handleGameplayPointerDown(PointerDownEvent event) {
+    _gameFocusNode.requestFocus();
+    if (_isDesktopPanTrigger(event)) {
+      setState(() {
+        _startDesktopPan(event);
+        _pointerDownScenePosition = null;
+        _pointerDownHeroIndex = null;
+        _selectionDragCurrent = null;
+      });
+      return;
+    }
+    final viewportPosition = _pointerEventToViewportPosition(event);
+    final scenePosition = _pointerEventToScenePosition(event);
+    final nextPointerCount = _activePointerCount + 1;
+    setState(() {
+      _activeViewportPointers[event.pointer] = viewportPosition;
+      _activePointerCount = nextPointerCount;
+      if (_activePointerCount >= 2) {
+        _pointerDownScenePosition = null;
+        _pointerDownHeroIndex = null;
+        _selectionDragCurrent = null;
+      } else {
+        _pointerDownScenePosition = scenePosition;
+        _pointerDownHeroIndex = _hitTestHero(scenePosition);
+        _selectionDragCurrent = null;
+      }
+    });
+  }
+
+  void _handleGameplayPointerMove(PointerMoveEvent event) {
+    if (_isDesktopPanActiveForPointer(event)) {
+      _updateDesktopPan(event);
+      return;
+    }
+    final previousViewportPosition = _activeViewportPointers[event.pointer];
+    final viewportPosition = _pointerEventToViewportPosition(event);
+    if (previousViewportPosition != null) {
+      _activeViewportPointers[event.pointer] = viewportPosition;
+    }
+    if (_activeViewportPointers.length >= 2 && previousViewportPosition != null) {
+      final previousCentroid = _viewportCentroid(
+        _activeViewportPointers.entries.map(
+          (entry) => entry.key == event.pointer ? previousViewportPosition : entry.value,
+        ),
+      );
+      final previousSpread = _viewportPointerSpread(
+        _activeViewportPointers.entries.map(
+          (entry) => entry.key == event.pointer ? previousViewportPosition : entry.value,
+        ),
+      );
+      final currentCentroid = _viewportCentroid(_activeViewportPointers.values);
+      final currentSpread = _viewportPointerSpread(_activeViewportPointers.values);
+      final centroidDelta = currentCentroid - previousCentroid;
+      final zoomRatio = previousSpread > 0 && currentSpread > 0
+          ? currentSpread / previousSpread
+          : 1.0;
+      final nextZoom = (_zoomMultiplier * zoomRatio)
+          .clamp(
+            minZoomMultiplier,
+            maxZoomMultiplier,
+          )
+          .toDouble();
+      final sceneAnchor = _mapTransformController.toScene(previousCentroid);
+      if (centroidDelta.distanceSquared > 0 ||
+          (nextZoom - _zoomMultiplier).abs() > 0.0001) {
+        setState(() {
+          _zoomMultiplier = nextZoom;
+          final nextScale = _baseMapScale * _zoomMultiplier;
+          _mapViewportOffset = _clampMapViewportOffset(
+            Offset(
+              currentCentroid.dx - sceneAnchor.dx * nextScale,
+              currentCentroid.dy - sceneAnchor.dy * nextScale,
+            ),
+          );
+          _pointerDownScenePosition = null;
+          _pointerDownHeroIndex = null;
+          _selectionDragCurrent = null;
+          _applyMapTransform();
+        });
+      }
+      return;
+    }
+    final start = _pointerDownScenePosition;
+    if (_activePointerCount != 1 || start == null || _pointerDownHeroIndex != null) {
+      return;
+    }
+    final scenePosition = _pointerEventToScenePosition(event);
+    if ((scenePosition - start).distance < multiSelectDragThreshold) {
+      return;
+    }
+    setState(() {
+      _selectionDragCurrent = scenePosition;
+    });
+  }
+
+  void _handleGameplayPointerUp(PointerEvent event) {
+    if (_isDesktopPanActiveForPointer(event)) {
+      setState(() {
+        _stopDesktopPan();
+        _pointerDownScenePosition = null;
+        _pointerDownHeroIndex = null;
+        _selectionDragCurrent = null;
+      });
+      return;
+    }
+    final scenePosition = _pointerEventToScenePosition(event);
+    final start = _pointerDownScenePosition;
+    final pointerDownHeroIndex = _pointerDownHeroIndex;
+    final wasMultiTouchGesture = _activePointerCount >= 2;
+    final dragDistance = start == null ? 0.0 : (scenePosition - start).distance;
+    setState(() {
+      _activeViewportPointers.remove(event.pointer);
+      _activePointerCount = max(0, _activePointerCount - 1);
+      _pointerDownScenePosition = null;
+      _pointerDownHeroIndex = null;
+      _selectionDragCurrent = null;
+    });
+    if (wasMultiTouchGesture) {
+      return;
+    }
+    if (start == null) {
+      return;
+    }
+    if (pointerDownHeroIndex == null && dragDistance >= multiSelectDragThreshold) {
+      _selectHeroesInSquare(
+        _selectionSquareFromPoints(start, scenePosition),
+      );
+      return;
+    }
+    if (dragDistance > 12) {
+      return;
+    }
+    if (pointerDownHeroIndex != null) {
+      _selectHero(pointerDownHeroIndex);
+      return;
+    }
+    _handleMapTap(scenePosition);
+  }
+
+  void _handleGameplayPointerCancel(PointerEvent event) {
+    if (_isDesktopPanActiveForPointer(event)) {
+      setState(() {
+        _stopDesktopPan();
+        _pointerDownScenePosition = null;
+        _pointerDownHeroIndex = null;
+        _selectionDragCurrent = null;
+      });
+      return;
+    }
+    setState(() {
+      _activeViewportPointers.remove(event.pointer);
+      _activePointerCount = max(0, _activePointerCount - 1);
+      _pointerDownScenePosition = null;
+      _pointerDownHeroIndex = null;
+      _selectionDragCurrent = null;
+    });
+  }
+
   bool _isHeroReady(int heroIndex) {
     final state = _heroStates[heroIndex];
     if (_autoMode) {
@@ -5489,173 +5647,16 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                                   );
                                 },
                                 onPointerDown: (event) {
-                                  _gameFocusNode.requestFocus();
-                                  if (event is PointerDownEvent &&
-                                      _isDesktopPanTrigger(event)) {
-                                    setState(() {
-                                      _startDesktopPan(event);
-                                      _pointerDownScenePosition = null;
-                                      _pointerDownHeroIndex = null;
-                                      _selectionDragCurrent = null;
-                                    });
-                                    return;
-                                  }
-                                  final viewportPosition = _pointerEventToViewportPosition(event);
-                                  final scenePosition = _pointerEventToScenePosition(event);
-                                  final nextPointerCount = _activePointerCount + 1;
-                                  setState(() {
-                                    _activeViewportPointers[event.pointer] = viewportPosition;
-                                    _activePointerCount = nextPointerCount;
-                                    if (_activePointerCount >= 2) {
-                                      _pointerDownScenePosition = null;
-                                      _pointerDownHeroIndex = null;
-                                      _selectionDragCurrent = null;
-                                    } else {
-                                      _pointerDownScenePosition = scenePosition;
-                                      _pointerDownHeroIndex = _hitTestHero(scenePosition);
-                                      _selectionDragCurrent = null;
-                                    }
-                                  });
+                                  _handleGameplayPointerDown(event);
                                 },
                                 onPointerMove: (event) {
-                                  if (event is PointerMoveEvent &&
-                                      _isDesktopPanActiveForPointer(event)) {
-                                    _updateDesktopPan(event);
-                                    return;
-                                  }
-                                  final previousViewportPosition = _activeViewportPointers[event.pointer];
-                                  final viewportPosition = _pointerEventToViewportPosition(event);
-                                  if (previousViewportPosition != null) {
-                                    _activeViewportPointers[event.pointer] = viewportPosition;
-                                  }
-                                  if (_activeViewportPointers.length >= 2 &&
-                                      previousViewportPosition != null) {
-                                    final previousCentroid = _viewportCentroid(
-                                      _activeViewportPointers.entries.map(
-                                        (entry) => entry.key == event.pointer
-                                            ? previousViewportPosition
-                                            : entry.value,
-                                      ),
-                                    );
-                                    final previousSpread = _viewportPointerSpread(
-                                      _activeViewportPointers.entries.map(
-                                        (entry) => entry.key == event.pointer
-                                            ? previousViewportPosition
-                                            : entry.value,
-                                      ),
-                                    );
-                                    final currentCentroid =
-                                        _viewportCentroid(_activeViewportPointers.values);
-                                    final currentSpread =
-                                        _viewportPointerSpread(_activeViewportPointers.values);
-                                    final centroidDelta = currentCentroid - previousCentroid;
-                                    final zoomRatio = previousSpread > 0 && currentSpread > 0
-                                        ? currentSpread / previousSpread
-                                        : 1.0;
-                                    final nextZoom = (_zoomMultiplier * zoomRatio)
-                                        .clamp(
-                                          minZoomMultiplier,
-                                          maxZoomMultiplier,
-                                        )
-                                        .toDouble();
-                                    final sceneAnchor =
-                                        _mapTransformController.toScene(previousCentroid);
-                                    if (centroidDelta.distanceSquared > 0 ||
-                                        (nextZoom - _zoomMultiplier).abs() > 0.0001) {
-                                      setState(() {
-                                        _zoomMultiplier = nextZoom;
-                                        final nextScale = _baseMapScale * _zoomMultiplier;
-                                        _mapViewportOffset = _clampMapViewportOffset(
-                                          Offset(
-                                            currentCentroid.dx - sceneAnchor.dx * nextScale,
-                                            currentCentroid.dy - sceneAnchor.dy * nextScale,
-                                          ),
-                                        );
-                                        _pointerDownScenePosition = null;
-                                        _pointerDownHeroIndex = null;
-                                        _selectionDragCurrent = null;
-                                        _applyMapTransform();
-                                      });
-                                    }
-                                    return;
-                                  }
-                                  final start = _pointerDownScenePosition;
-                                  if (_activePointerCount != 1 ||
-                                      start == null ||
-                                      _pointerDownHeroIndex != null) {
-                                    return;
-                                  }
-                                  final scenePosition = _pointerEventToScenePosition(event);
-                                  if ((scenePosition - start).distance < multiSelectDragThreshold) {
-                                    return;
-                                  }
-                                  setState(() {
-                                    _selectionDragCurrent = scenePosition;
-                                  });
+                                  _handleGameplayPointerMove(event);
                                 },
                                 onPointerUp: (event) {
-                                  if (_isDesktopPanActiveForPointer(event)) {
-                                    setState(() {
-                                      _stopDesktopPan();
-                                      _pointerDownScenePosition = null;
-                                      _pointerDownHeroIndex = null;
-                                      _selectionDragCurrent = null;
-                                    });
-                                    return;
-                                  }
-                                  final scenePosition = _pointerEventToScenePosition(event);
-                                  final start = _pointerDownScenePosition;
-                                  final pointerDownHeroIndex = _pointerDownHeroIndex;
-                                  final wasMultiTouchGesture = _activePointerCount >= 2;
-                                  final dragDistance = start == null
-                                      ? 0.0
-                                      : (scenePosition - start).distance;
-                                  setState(() {
-                                    _activeViewportPointers.remove(event.pointer);
-                                    _activePointerCount = max(0, _activePointerCount - 1);
-                                    _pointerDownScenePosition = null;
-                                    _pointerDownHeroIndex = null;
-                                    _selectionDragCurrent = null;
-                                  });
-                                  if (wasMultiTouchGesture) {
-                                    return;
-                                  }
-                                  if (start == null) {
-                                    return;
-                                  }
-                                  if (pointerDownHeroIndex == null &&
-                                      dragDistance >= multiSelectDragThreshold) {
-                                    _selectHeroesInSquare(
-                                      _selectionSquareFromPoints(start, scenePosition),
-                                    );
-                                    return;
-                                  }
-                                  if (dragDistance > 12) {
-                                    return;
-                                  }
-                                  if (pointerDownHeroIndex != null) {
-                                    _selectHero(pointerDownHeroIndex);
-                                    return;
-                                  }
-                                  _handleMapTap(scenePosition);
+                                  _handleGameplayPointerUp(event);
                                 },
                                 onPointerCancel: (event) {
-                                  if (_isDesktopPanActiveForPointer(event)) {
-                                    setState(() {
-                                      _stopDesktopPan();
-                                      _pointerDownScenePosition = null;
-                                      _pointerDownHeroIndex = null;
-                                      _selectionDragCurrent = null;
-                                    });
-                                    return;
-                                  }
-                                  setState(() {
-                                    _activeViewportPointers.remove(event.pointer);
-                                    _activePointerCount = max(0, _activePointerCount - 1);
-                                    _pointerDownScenePosition = null;
-                                    _pointerDownHeroIndex = null;
-                                    _selectionDragCurrent = null;
-                                  });
+                                  _handleGameplayPointerCancel(event);
                                 },
                                 behavior: HitTestBehavior.opaque,
                                 child: const SizedBox.expand(),
@@ -5682,11 +5683,12 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                                 key: ValueKey<String>('hero-unit-$i'),
                                 left: _heroPosition(i).dx - (heroUnitSize + 18) / 2,
                                 top: _heroPosition(i).dy - (heroUnitSize + 22) / 2,
-                                child: GestureDetector(
+                                child: Listener(
                                   behavior: HitTestBehavior.opaque,
-                                  onTap: () {
-                                    _selectHero(i);
-                                  },
+                                  onPointerDown: _handleGameplayPointerDown,
+                                  onPointerMove: _handleGameplayPointerMove,
+                                  onPointerUp: _handleGameplayPointerUp,
+                                  onPointerCancel: _handleGameplayPointerCancel,
                                   child: SizedBox(
                                     width: heroUnitSize + 18,
                                     height: heroUnitSize + 22,

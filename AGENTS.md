@@ -281,6 +281,7 @@ Detailed balance values are documented in `INFO.txt` and `project_info.txt`.
 - 2026-03-18: `VillageScreen` map movement was then changed from nested axis-locked scroll views to free panning via `InteractiveViewer` with scaling disabled, so the player can drag the village smoothly in any direction, including diagonally.
 - 2026-03-18: `VillageScreen` now also supports camera zoom: the map starts fully zoomed out to a contain-style fit of the viewport, touch devices can pinch to zoom, and desktop/web mouse users can zoom with the wheel around the cursor while keeping free panning.
 - 2026-03-18: The default `VillageScreen` camera fit was then changed from contain-fit to width-fit in landscape, so the initial view fills the screen width and any extra map height remains available through panning.
+- 2026-03-19: Gameplay map touch input was hardened so two-finger pan/pinch still works even if one finger lands directly on a hero unit; the shared raw pointer handling now also runs on the hero hitboxes instead of only on the empty-map overlay listener.
 
 ## Legacy Historical Notes
 
