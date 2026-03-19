@@ -24,6 +24,27 @@ const Map<String, EnemyTypeDef> enemyTypeRegistry = <String, EnemyTypeDef>{
     baseSpeed: 16,
     baseDamagePerSecond: 5,
   ),
+  'fat_goblin': EnemyTypeDef(
+    id: 'fat_goblin',
+    name: 'Fat Goblin',
+    baseHp: 20,
+    baseSpeed: 16,
+    baseDamagePerSecond: 5,
+  ),
+  'zombie_female': EnemyTypeDef(
+    id: 'zombie_female',
+    name: 'Zombie Female',
+    baseHp: 20,
+    baseSpeed: 16,
+    baseDamagePerSecond: 5,
+  ),
+  'skull_mage': EnemyTypeDef(
+    id: 'skull_mage',
+    name: 'Skull Mage',
+    baseHp: 20,
+    baseSpeed: 16,
+    baseDamagePerSecond: 5,
+  ),
 };
 
 class SpawnEventDef {

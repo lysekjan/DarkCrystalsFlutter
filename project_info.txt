@@ -530,3 +530,39 @@ Spusteni
 - Hlavni pricina fallbacku na portret `hero_veyra` byla pak dohledana v `pubspec.yaml`: slozka `assets/heroes/Veyra/attack/` dosud nebyla zaregistrovana mezi Flutter assets, takze se nove attack soubory za behu vubec nenacetly.
 2026-03-17:
 - Po overeni, ze se attack framy uz spravne nacitaji, byl docasny diagnosticky override odebran a Veyra se v idle stavu vratila zpet na `assets/heroes/Veyra/standing/Veyra_sheet.png`; attack sheet zustava vyhrazeny jen pro attack render.
+2026-03-17:
+- Pribyl novy enemy type `zombie_female` se sprite `assets/enemies/ZombieFemale.png`; ma stejne zakladni statistiky jako `FatGoblin` (`20 HP`, `speed 16`, `5 DPS`) a render uz umi vybirat sprite sheet podle `enemy.typeId`.
+2026-03-17:
+- Chapter 1 level 2 uz ma vlastni asset `assets/levels/chapter_1/level_02.json` a jeho vlny rovnou kombinuji `fat_zombie` a `zombie_female`, takze novy typ jde okamzite potkat ve hre i v editoru levelu.
+2026-03-17:
+- Pribyl dalsi enemy type `skull_mage` se sprite `assets/enemies/Skull_mage_sprite_sheet.png`; pro prvni implementaci ma stejne zakladni statistiky jako `FatGoblin` a render pouziva rozsahy `walk 0..17`, `attack 18..24`, `death 25..29`.
+2026-03-17:
+- `skull_mage` byl rovnou pridany i do chapter 1 level 2, aby sel okamzite otestovat primo ve hre bez dalsich editor override kroku.
+2026-03-17:
+- Render `zombie_female` byl opraven: sprite sheet ma skutecne `35` framu o velikosti `62x37`, ne ctvercove framy `37x37`; pouzite rozsahy jsou `walk 0..14`, `attack 15..21` a `death 22..28`, coz opravuje predchozi rozhozene/problikavajici animace.
+2026-03-17:
+- `zombie_female` byla pak jeste vizualne snizena jen na vysku; sirka renderu zustava stejna jako u ostatnich nepratel, ale vyska se vykresluje zhruba o tretinu mensi, aby sprite nepusobila pretazene.
+2026-03-17:
+- Animation windows `zombie_female` byly doladeny na spravne rozsahy: pohyb `8..15`, utok `16..23` a smrt poslednich `9` framu sheetu.
+2026-03-17:
+- Kdyz zed klesne na `0 HP` a hra skonci, vizual palisady se ted uplne skryje; stejne tak se v tomto stavu neskresli ani fallback cara zdi a jeji HP linka, aby pusobilo, ze zed opravdu padla.
+2026-03-18:
+- Obrazovka `Vesnice` ted pouziva jako plnoplosne pozadi `assets/backgrounds/village_basic.png`; pres obrazek zustava tmavy overlay kvuli citelnosti titulku a menu tlacitek.
+2026-03-18:
+- `Vesnice` byla prestavena smerem k mapovemu layoutu: pozadi je soucasti scrollovatelneho obsahu, takze se pri scrollu posouva spolu s mapou, a puvodni tlacitko `Hrdinove` bylo nahrazeno klikaci budovou `assets/buildings/heroesAtrium.png` umistenou priblizne doprostred obrazovky.
+2026-03-18:
+- Dalsi akce ve `Vesnice` uz take pouzivaji budovy primo na mape: `Branit vesnici` pouziva `assets/buildings/tower.png`, `Samanova chyse` pouziva `assets/buildings/shamanTent.png` a `Management vesnice` pouziva `assets/buildings/atrium.png`; pouze `Pruzkum` zatim zustava jako samostatna karta dole.
+2026-03-18:
+- Scroll obrazovky `Vesnice` byl rozsiren i do strany: mapa je ted obalena do kombinace horizontalniho a verticalniho scroll view a ma vetsi logickou sirku, takze hrac muze prohlizet vesnici i vodorovne.
+2026-03-18:
+- Vsechny klikaci budovy na obrazovce `Vesnice` ted maji pod sprite jednoduchy mekky ovalny stin, aby lepe sedely na mapovem pozadi.
+2026-03-18:
+- Sdileny stin pod budovami ve `Vesnice` byl nasledne zvetsen a posunut vys blize ke spritum, aby budovy pusobily usazeneji na zemi.
+2026-03-18:
+- Stin pod budovami ve `Vesnice` byl pak jeste jednou posunut vys a dale zvetsen, aby byl pod vetsimi sprity citelnejsi.
+2026-03-18:
+- Ovládání mapy na obrazovce `Vesnice` bylo změněno z dvojice osově zamčených scroll view na volný pan přes `InteractiveViewer` bez zoomu, takže hráč může táhnout mapu plynule i do šikma.
+2026-03-18:
+- Obrazovka `Vesnice` nyní podporuje i zoom podobně jako herní mapa: výchozí stav je maximálně oddálený contain-fit celé mapy do viewportu, na dotykových zařízeních funguje pinch zoom a na desktopu/webu zoom kolečkem myši kolem kurzoru.
+2026-03-18:
+- Vychozi zoom obrazovky `Vesnice` byl nasledne zmenen z contain-fit na fit podle sirky displeje v landscape, takze startovni pohled vyplni sirku a zbytek vysky mapy se prohlizi posunem.

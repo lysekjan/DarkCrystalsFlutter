@@ -340,6 +340,18 @@ class VillageScreen extends StatefulWidget {
 }
 
 class _VillageScreenState extends State<VillageScreen> {
+  static const String _villageBackgroundAsset = 'assets/backgrounds/village_basic.png';
+  static const String _heroesAtriumAsset = 'assets/buildings/heroesAtrium.png';
+  static const String _shamanTentAsset = 'assets/buildings/shamanTent.png';
+  static const String _villageTowerAsset = 'assets/buildings/tower.png';
+  static const String _villageAtriumAsset = 'assets/buildings/atrium.png';
+  static const double _villageMaxZoomMultiplier = 3.0;
+  static const double _villageWheelZoomStep = 0.12;
+  final TransformationController _villageMapController =
+      TransformationController();
+  Size? _villageConfiguredViewportSize;
+  Size? _villageConfiguredContentSize;
+
   @override
   void initState() {
     super.initState();
@@ -386,6 +398,105 @@ class _VillageScreenState extends State<VillageScreen> {
     );
   }
 
+  void _configureVillageMapViewport({
+    required Size viewportSize,
+    required Size contentSize,
+    bool force = false,
+  }) {
+    final sameViewport = _villageConfiguredViewportSize == viewportSize;
+    final sameContent = _villageConfiguredContentSize == contentSize;
+    if (!force && sameViewport && sameContent) {
+      return;
+    }
+    _villageConfiguredViewportSize = viewportSize;
+    _villageConfiguredContentSize = contentSize;
+    final fitScale = _villageFitScale(viewportSize, contentSize);
+    final defaultOffset = _defaultVillageOffset(
+      viewportSize: viewportSize,
+      contentSize: contentSize,
+      scale: fitScale,
+    );
+    final matrix = Matrix4.identity()..scale(fitScale);
+    matrix.setTranslationRaw(defaultOffset.dx, defaultOffset.dy, 0);
+    _villageMapController.value = matrix;
+  }
+
+  double _villageFitScale(Size viewportSize, Size contentSize) {
+    return viewportSize.width / contentSize.width;
+  }
+
+  Offset _defaultVillageOffset({
+    required Size viewportSize,
+    required Size contentSize,
+    required double scale,
+  }) {
+    final scaledHeight = contentSize.height * scale;
+    return Offset(
+      0,
+      scaledHeight <= viewportSize.height
+          ? (viewportSize.height - scaledHeight) / 2
+          : 0,
+    );
+  }
+
+  Offset _clampVillageOffset({
+    required Offset offset,
+    required Size viewportSize,
+    required Size contentSize,
+    required double scale,
+  }) {
+    final scaledWidth = contentSize.width * scale;
+    final scaledHeight = contentSize.height * scale;
+    final defaultOffset = _defaultVillageOffset(
+      viewportSize: viewportSize,
+      contentSize: contentSize,
+      scale: scale,
+    );
+    final minDx = min(defaultOffset.dx, viewportSize.width - scaledWidth);
+    final maxDx = max(defaultOffset.dx, 0.0);
+    final minDy = min(defaultOffset.dy, viewportSize.height - scaledHeight);
+    final maxDy = max(defaultOffset.dy, 0.0);
+    return Offset(
+      offset.dx.clamp(minDx, maxDx),
+      offset.dy.clamp(minDy, maxDy),
+    );
+  }
+
+  void _setVillageZoomAroundViewportPoint({
+    required double nextScale,
+    required Offset viewportPoint,
+    required Size viewportSize,
+    required Size contentSize,
+    required double minScale,
+    required double maxScale,
+  }) {
+    final clampedScale = nextScale.clamp(minScale, maxScale).toDouble();
+    final currentScale = _villageMapController.value.getMaxScaleOnAxis();
+    if ((clampedScale - currentScale).abs() < 0.0001) {
+      return;
+    }
+    final anchorScenePosition = _villageMapController.toScene(viewportPoint);
+    final unclampedOffset = Offset(
+      viewportPoint.dx - anchorScenePosition.dx * clampedScale,
+      viewportPoint.dy - anchorScenePosition.dy * clampedScale,
+    );
+    final clampedOffset = _clampVillageOffset(
+      offset: unclampedOffset,
+      viewportSize: viewportSize,
+      contentSize: contentSize,
+      scale: clampedScale,
+    );
+    final matrix = Matrix4.identity()..scale(clampedScale);
+    matrix.setTranslationRaw(clampedOffset.dx, clampedOffset.dy, 0);
+    _villageMapController.value = matrix;
+  }
+
+  @override
+  void dispose() {
+    _villageMapController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -400,101 +511,186 @@ class _VillageScreenState extends State<VillageScreen> {
         body: LayoutBuilder(
           builder: (context, constraints) {
             final compact = constraints.maxHeight < 520 || constraints.maxWidth < 820;
-            return Container(
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0xFF13211B), Color(0xFF2B4232)],
-                ),
-              ),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight - 48),
-                  child: Column(
-                    children: [
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: OutlinedButton(
-                          onPressed: _goBackToSaveSlots,
-                          child: const Text('Zpet'),
-                        ),
-                      ),
-                      SizedBox(height: compact ? 20 : 36),
-                      const Text(
-                        'Vesnice',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 34,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        'Hlavni rozcestnik po vyberu herniho slotu.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.72),
-                          fontSize: 15,
-                        ),
-                      ),
-                      SizedBox(height: compact ? 20 : 28),
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 760),
-                        child: GridView.count(
-                          crossAxisCount: compact ? 1 : 2,
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          mainAxisSpacing: 18,
-                          crossAxisSpacing: 18,
-                          childAspectRatio: compact ? 3.2 : 2.5,
+            final mapWidth = max(constraints.maxWidth * 1.35, 1500.0);
+            final mapHeight = max(constraints.maxHeight * 1.45, 980.0);
+            final contentPadding = compact ? 18.0 : 24.0;
+            final viewportSize = Size(
+              constraints.maxWidth,
+              constraints.maxHeight,
+            );
+            final contentSize = Size(mapWidth, mapHeight);
+            final minScale = _villageFitScale(viewportSize, contentSize);
+            final maxScale = minScale * _villageMaxZoomMultiplier;
+            _configureVillageMapViewport(
+              viewportSize: viewportSize,
+              contentSize: contentSize,
+            );
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                ClipRect(
+                  child: Listener(
+                    onPointerSignal: (event) {
+                      if (event is! PointerScrollEvent ||
+                          event.kind != ui.PointerDeviceKind.mouse) {
+                        return;
+                      }
+                      final currentScale =
+                          _villageMapController.value.getMaxScaleOnAxis();
+                      final nextScale = currentScale +
+                          (event.scrollDelta.dy < 0
+                              ? _villageWheelZoomStep
+                              : -_villageWheelZoomStep);
+                      _setVillageZoomAroundViewportPoint(
+                        nextScale: nextScale,
+                        viewportPoint: event.localPosition,
+                        viewportSize: viewportSize,
+                        contentSize: contentSize,
+                        minScale: minScale,
+                        maxScale: maxScale,
+                      );
+                    },
+                    child: InteractiveViewer(
+                      transformationController: _villageMapController,
+                      panEnabled: true,
+                      scaleEnabled: true,
+                      constrained: false,
+                      alignment: Alignment.topLeft,
+                      boundaryMargin: EdgeInsets.zero,
+                      minScale: minScale,
+                      maxScale: maxScale,
+                      child: SizedBox(
+                        width: mapWidth,
+                        height: mapHeight,
+                        child: Stack(
                           children: [
-                            _VillageMenuButton(
-                              title: 'Hrdinove',
-                              subtitle: 'Vylepsovani a odemykani',
-                              icon: Icons.groups_rounded,
-                              color: const Color(0xFF4DB6AC),
-                              onPressed: _openHeroes,
+                            Positioned.fill(
+                              child: Image.asset(
+                                _villageBackgroundAsset,
+                                fit: BoxFit.cover,
+                                alignment: Alignment.topCenter,
+                              ),
                             ),
-                            _VillageMenuButton(
-                              title: 'Branit vesnici',
-                              subtitle: 'Vyber hrdiny a vyraz do boje',
-                              icon: Icons.shield_rounded,
-                              color: const Color(0xFFE57373),
-                              onPressed: _openDefenseFlow,
+                            Positioned.fill(
+                              child: Container(
+                                decoration: const BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [Color(0x55101713), Color(0x99101713)],
+                                  ),
+                                ),
+                              ),
                             ),
-                            _VillageMenuButton(
-                              title: 'Pruzkum',
-                              subtitle: 'Vyber kapitolu a lokaci k prozkoumani',
-                              icon: Icons.explore_rounded,
-                              color: const Color(0xFF64B5F6),
-                              onPressed: _openExplorationFlow,
+                            Positioned(
+                              left: contentPadding,
+                              top: contentPadding,
+                              child: OutlinedButton(
+                                onPressed: _goBackToSaveSlots,
+                                child: const Text('Zpet'),
+                              ),
                             ),
-                            _VillageMenuButton(
-                              title: 'Samanova chyse',
-                              subtitle: 'Zatim prazdne',
-                              icon: Icons.auto_fix_high_rounded,
-                              color: const Color(0xFF9575CD),
-                              onPressed: _showPlaceholderMessage,
+                            Positioned(
+                              left: 0,
+                              right: 0,
+                              top: compact ? 26 : 36,
+                              child: Column(
+                                children: [
+                                  const Text(
+                                    'Vesnice',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 34,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    'Prozkoumej budovy primo na mape vesnice.',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: Colors.white.withOpacity(0.78),
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                            _VillageMenuButton(
-                              title: 'Management vesnice',
-                              subtitle: 'Zatim prazdne',
-                              icon: Icons.account_balance_rounded,
-                              color: const Color(0xFFFFB74D),
-                              onPressed: _showPlaceholderMessage,
+                            Positioned(
+                              left: mapWidth * 0.5 - (compact ? 130 : 170),
+                              top: mapHeight * 0.36,
+                              child: _VillageMapBuilding(
+                                label: 'Hrdinove',
+                                assetPath: _heroesAtriumAsset,
+                                width: compact ? 260 : 340,
+                                onTap: _openHeroes,
+                              ),
+                            ),
+                            Positioned(
+                              left: mapWidth * 0.12,
+                              top: mapHeight * 0.48,
+                              child: _VillageMapBuilding(
+                                label: 'Branit vesnici',
+                                assetPath: _villageTowerAsset,
+                                width: compact ? 180 : 230,
+                                onTap: _openDefenseFlow,
+                              ),
+                            ),
+                            Positioned(
+                              left: mapWidth * 0.68,
+                              top: mapHeight * 0.24,
+                              child: _VillageMapBuilding(
+                                label: 'Samanova chyse',
+                                assetPath: _shamanTentAsset,
+                                width: compact ? 220 : 280,
+                                onTap: _showPlaceholderMessage,
+                              ),
+                            ),
+                            Positioned(
+                              left: mapWidth * 0.64,
+                              top: mapHeight * 0.67,
+                              child: _VillageMapBuilding(
+                                label: 'Management vesnice',
+                                assetPath: _villageAtriumAsset,
+                                width: compact ? 220 : 280,
+                                onTap: _showPlaceholderMessage,
+                              ),
+                            ),
+                            Positioned(
+                              left: contentPadding,
+                              right: contentPadding,
+                              bottom: contentPadding,
+                              child: Center(
+                                child: ConstrainedBox(
+                                  constraints: const BoxConstraints(maxWidth: 420),
+                                  child: GridView.count(
+                                    crossAxisCount: 1,
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
+                                    mainAxisSpacing: 18,
+                                    crossAxisSpacing: 18,
+                                    childAspectRatio: compact ? 3.2 : 2.9,
+                                    children: [
+                                      _VillageMenuButton(
+                                        title: 'Pruzkum',
+                                        subtitle: 'Vyber kapitolu a lokaci k prozkoumani',
+                                        icon: Icons.explore_rounded,
+                                        color: const Color(0xFF64B5F6),
+                                        onPressed: _openExplorationFlow,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 24),
-                    ],
+                    ),
                   ),
                 ),
-              ),
+              ],
             );
           },
         ),
@@ -571,6 +767,95 @@ class _VillageMenuButton extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _VillageMapBuilding extends StatelessWidget {
+  const _VillageMapBuilding({
+    required this.label,
+    required this.assetPath,
+    required this.width,
+    required this.onTap,
+  });
+
+  final String label;
+  final String assetPath;
+  final double width;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final shadowWidth = width * 0.8;
+    final shadowHeight = width * 0.19;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Stack(
+                alignment: Alignment.bottomCenter,
+                children: [
+                  Positioned(
+                    bottom: 34,
+                    child: IgnorePointer(
+                      child: Container(
+                        width: shadowWidth,
+                        height: shadowHeight,
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.26),
+                          borderRadius: BorderRadius.circular(999),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.18),
+                              blurRadius: 24,
+                              spreadRadius: 4,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Image.asset(
+                    assetPath,
+                    width: width,
+                    fit: BoxFit.contain,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xCC163628),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: const Color(0x664DF0A1)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.28),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -1815,11 +2100,11 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   // Hero bonuses from RPG system
   final Map<String, double> _damageBonuses = {}; // heroName -> damage bonus
   final Map<String, double> _cooldownReductions = {}; // heroName -> cooldown reduction (seconds)
-  ui.Image? _enemySpriteSheet;
+  final Map<String, ui.Image> _enemySpriteSheets = <String, ui.Image>{};
   ui.Image? _grassBackground;
   ui.Image? _wallSprite;
   ui.Image? _towerSprite;
-  int _enemySpriteFrameCount = 0;
+  final Map<String, int> _enemySpriteFrameCounts = <String, int>{};
   double _baseMapScale = 1.0;
   double _zoomMultiplier = 1.0;
   double _towerCooldownRemaining = 0.0;
@@ -1916,7 +2201,9 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    _enemySpriteSheet?.dispose();
+    for (final spriteSheet in _enemySpriteSheets.values) {
+      spriteSheet.dispose();
+    }
     _grassBackground?.dispose();
     _wallSprite?.dispose();
     _towerSprite?.dispose();
@@ -1994,23 +2281,39 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   }
 
   Future<void> _loadEnemySpriteSheet() async {
+    final loadedSheets = <String, ui.Image>{};
+    final loadedFrameCounts = <String, int>{};
     try {
-      final data = await rootBundle.load('assets/enemies/FatZombie.png');
-      final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
-      final frame = await codec.getNextFrame();
-      final image = frame.image;
-      final frameWidth = max(1, image.height);
-      final frameCount = max(1, image.width ~/ frameWidth);
+      for (final entry in _enemySpriteConfigs.entries) {
+        final config = entry.value;
+        final data = await rootBundle.load(config.assetPath);
+        final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+        final frame = await codec.getNextFrame();
+        final image = frame.image;
+        loadedSheets[entry.key] = image;
+        loadedFrameCounts[entry.key] = max(1, image.width ~/ config.frameWidth.round());
+      }
       if (!mounted) {
-        image.dispose();
+        for (final image in loadedSheets.values) {
+          image.dispose();
+        }
         return;
       }
       setState(() {
-        _enemySpriteSheet?.dispose();
-        _enemySpriteSheet = image;
-        _enemySpriteFrameCount = frameCount;
+        for (final spriteSheet in _enemySpriteSheets.values) {
+          spriteSheet.dispose();
+        }
+        _enemySpriteSheets
+          ..clear()
+          ..addAll(loadedSheets);
+        _enemySpriteFrameCounts
+          ..clear()
+          ..addAll(loadedFrameCounts);
       });
     } catch (_) {
+      for (final image in loadedSheets.values) {
+        image.dispose();
+      }
       // Keep the painter fallback if the sprite sheet cannot be loaded.
     }
   }
@@ -3745,8 +4048,11 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       }
       enemy.animTime += dt;
       if (enemy.isDying) {
-        if (enemy.deathAnimTime < _Enemy.deathDuration) {
-          enemy.deathAnimTime = min(_Enemy.deathDuration, enemy.deathAnimTime + dt);
+        final spriteConfig =
+            _enemySpriteConfigs[enemy.typeId] ?? _enemySpriteConfigs['fat_zombie']!;
+        final deathDuration = spriteConfig.deathFrameCount * _Enemy.deathFrameDuration;
+        if (enemy.deathAnimTime < deathDuration) {
+          enemy.deathAnimTime = min(deathDuration, enemy.deathAnimTime + dt);
         } else {
           enemy.corpseFadeTime = min(
             enemyCorpseFadeDuration,
@@ -5130,8 +5436,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                                 grassBackground: _grassBackground,
                                 wallSprite: _wallSprite,
                                 towerSprite: _towerSprite,
-                                enemySpriteSheet: _enemySpriteSheet,
-                                enemySpriteFrameCount: _enemySpriteFrameCount,
+                                enemySpriteSheets: _enemySpriteSheets,
+                                enemySpriteFrameCounts: _enemySpriteFrameCounts,
                                 targetIndicator: _targetIndicator,
                               ),
                             ),
@@ -6134,6 +6440,60 @@ class _ScheduledSpawn {
   final double seedOffset;
 }
 
+class _EnemySpriteConfig {
+  const _EnemySpriteConfig({
+    required this.assetPath,
+    required this.frameWidth,
+    required this.frameHeight,
+    required this.walkFrameStart,
+    required this.walkFrameCount,
+    required this.attackFrameStart,
+    required this.attackFrameCount,
+    this.deathFrameCount = _Enemy.deathFrameCount,
+  });
+
+  final String assetPath;
+  final double frameWidth;
+  final double frameHeight;
+  final int walkFrameStart;
+  final int walkFrameCount;
+  final int attackFrameStart;
+  final int attackFrameCount;
+  final int deathFrameCount;
+}
+
+const Map<String, _EnemySpriteConfig> _enemySpriteConfigs = <String, _EnemySpriteConfig>{
+  'fat_zombie': _EnemySpriteConfig(
+    assetPath: 'assets/enemies/FatZombie.png',
+    frameWidth: 90,
+    frameHeight: 90,
+    walkFrameStart: 8,
+    walkFrameCount: 8,
+    attackFrameStart: 16,
+    attackFrameCount: 9,
+  ),
+  'zombie_female': _EnemySpriteConfig(
+    assetPath: 'assets/enemies/ZombieFemale.png',
+    frameWidth: 62,
+    frameHeight: 37,
+    walkFrameStart: 8,
+    walkFrameCount: 8,
+    attackFrameStart: 16,
+    attackFrameCount: 8,
+    deathFrameCount: 9,
+  ),
+  'skull_mage': _EnemySpriteConfig(
+    assetPath: 'assets/enemies/Skull_mage_sprite_sheet.png',
+    frameWidth: 180,
+    frameHeight: 180,
+    walkFrameStart: 0,
+    walkFrameCount: 18,
+    attackFrameStart: 18,
+    attackFrameCount: 7,
+    deathFrameCount: 5,
+  ),
+};
+
 class _Projectile {
   _Projectile({
     required this.position,
@@ -6179,8 +6539,8 @@ class _GamePainter extends CustomPainter {
     required this.grassBackground,
     required this.wallSprite,
     required this.towerSprite,
-    required this.enemySpriteSheet,
-    required this.enemySpriteFrameCount,
+    required this.enemySpriteSheets,
+    required this.enemySpriteFrameCounts,
     this.targetIndicator,
   });
 
@@ -6205,8 +6565,8 @@ class _GamePainter extends CustomPainter {
   final ui.Image? grassBackground;
   final ui.Image? wallSprite;
   final ui.Image? towerSprite;
-  final ui.Image? enemySpriteSheet;
-  final int enemySpriteFrameCount;
+  final Map<String, ui.Image> enemySpriteSheets;
+  final Map<String, int> enemySpriteFrameCounts;
   final Offset? targetIndicator;
 
   @override
@@ -6268,7 +6628,8 @@ class _GamePainter extends CustomPainter {
 
     final wallEffectStrength =
         (wallHitEffectRemaining / _GameViewState.wallHitEffectDuration).clamp(0.0, 1.0);
-    if (wallSprite != null) {
+    final isWallDestroyed = wallHp <= 0;
+    if (wallSprite != null && !isWallDestroyed) {
       final sourceRect = Rect.fromLTWH(
         0,
         0,
@@ -6306,12 +6667,12 @@ class _GamePainter extends CustomPainter {
             ),
         );
       }
-    } else {
+    } else if (!isWallDestroyed) {
       final wall = Paint()..color = const Color(0xFF8B7D5A);
       canvas.drawRect(Rect.fromLTWH(wallX, 0, 4, size.height), wall);
     }
 
-    if (wallSprite == null) {
+    if (wallSprite == null && !isWallDestroyed) {
       final wallHpPaint = Paint()
         ..color = const Color(0xFF6BFA9D)
         ..style = PaintingStyle.fill;
@@ -6334,7 +6695,8 @@ class _GamePainter extends CustomPainter {
         shadowRect,
         Paint()..color = Colors.black.withOpacity(enemy.isDying ? 0.12 : 0.18),
       );
-      if (enemySpriteSheet != null && enemySpriteFrameCount > 0) {
+      if (enemySpriteSheets.containsKey(enemy.typeId) &&
+          (enemySpriteFrameCounts[enemy.typeId] ?? 0) > 0) {
         _drawEnemySprite(canvas, enemy);
       } else {
         _drawHungryEnemy(canvas, enemy, enemy.flashRemaining > 0 ? enemyHitPaint : enemyPaint);
@@ -6617,23 +6979,28 @@ class _GamePainter extends CustomPainter {
   }
 
   void _drawEnemySprite(Canvas canvas, _Enemy enemy) {
-    final spriteSheet = enemySpriteSheet;
-    if (spriteSheet == null || enemySpriteFrameCount <= 0) {
+    final spriteConfig = _enemySpriteConfigs[enemy.typeId] ?? _enemySpriteConfigs['fat_zombie']!;
+    final spriteSheet = enemySpriteSheets[enemy.typeId] ?? enemySpriteSheets['fat_zombie'];
+    final spriteFrameCount =
+        enemySpriteFrameCounts[enemy.typeId] ?? enemySpriteFrameCounts['fat_zombie'] ?? 0;
+    if (spriteSheet == null || spriteFrameCount <= 0) {
       return;
     }
 
-    const walkFrameStart = 8;
-    const walkFrameCount = 8;
-    const attackFrameStart = 16;
-    const attackFrameCount = 9;
-    final deathFrameStart = max(0, enemySpriteFrameCount - _Enemy.deathFrameCount);
-    final availableWalkFrames = max(1, min(walkFrameCount, enemySpriteFrameCount - walkFrameStart));
-    final availableAttackFrames = max(1, min(attackFrameCount, enemySpriteFrameCount - attackFrameStart));
+    final deathFrameStart = max(0, spriteFrameCount - spriteConfig.deathFrameCount);
+    final availableWalkFrames = max(
+      1,
+      min(spriteConfig.walkFrameCount, spriteFrameCount - spriteConfig.walkFrameStart),
+    );
+    final availableAttackFrames = max(
+      1,
+      min(spriteConfig.attackFrameCount, spriteFrameCount - spriteConfig.attackFrameStart),
+    );
 
     late final int frameIndex;
     if (enemy.isDying) {
       final deathFrameOffset = min(
-        _Enemy.deathFrameCount - 1,
+        spriteConfig.deathFrameCount - 1,
         (enemy.deathAnimTime / _Enemy.deathFrameDuration).floor(),
       );
       frameIndex = deathFrameStart + deathFrameOffset;
@@ -6641,12 +7008,12 @@ class _GamePainter extends CustomPainter {
       final animFps = enemy.attacking ? 10.0 : 12.0;
       final animPhase = (enemy.animTime * animFps + enemy.seed * 0.03).floor();
       frameIndex = enemy.attacking
-          ? attackFrameStart + (animPhase % availableAttackFrames)
-          : walkFrameStart + (animPhase % availableWalkFrames);
+          ? spriteConfig.attackFrameStart + (animPhase % availableAttackFrames)
+          : spriteConfig.walkFrameStart + (animPhase % availableWalkFrames);
     }
 
-    final frameWidth = spriteSheet.width / enemySpriteFrameCount;
-    final frameHeight = spriteSheet.height.toDouble();
+    final frameWidth = spriteConfig.frameWidth;
+    final frameHeight = spriteConfig.frameHeight;
     final t = enemy.animTime;
     final bob = enemy.isDying ? 0.0 : sin(t * 2.4 + enemy.seed) * 1.2;
     final jitter = enemy.isDying
@@ -6655,10 +7022,14 @@ class _GamePainter extends CustomPainter {
             ? sin(t * 18 + enemy.seed * 0.7) * 1.0
             : sin(t * 10 + enemy.seed * 0.7) * 0.5;
     final drawCenter = enemy.position + Offset(jitter, bob);
+    final enemyDrawWidth = _GameViewState.enemySize * 1.35;
+    final enemyDrawHeight = enemy.typeId == 'zombie_female'
+        ? _GameViewState.enemySize * 0.9
+        : _GameViewState.enemySize * 1.35;
     final destRect = Rect.fromCenter(
       center: drawCenter,
-      width: _GameViewState.enemySize * 1.35,
-      height: _GameViewState.enemySize * 1.35,
+      width: enemyDrawWidth,
+      height: enemyDrawHeight,
     );
     final srcRect = Rect.fromLTWH(
       frameIndex * frameWidth,
