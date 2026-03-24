@@ -2960,6 +2960,17 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     });
   }
 
+  void _selectHeroesFromCardIndices(Set<int> heroIndices) {
+    final selected = heroIndices.where(_isHeroAlive).toSet();
+    setState(() {
+      _selectedHeroIndex = null;
+      _multiSelectedHeroIndices
+        ..clear()
+        ..addAll(selected);
+      _showHeroRangeIndicators(selected);
+    });
+  }
+
   double _heroRangeIndicatorOpacity() {
     final shownAt = _rangeIndicatorShownAt;
     if (shownAt == null ||
@@ -6114,6 +6125,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                   multiSelectedHeroIndices: _multiSelectedHeroIndices,
                   onHeroTap: _selectHero,
                   onHeroDoubleTap: _centerMapOnHero,
+                  onHeroMultiSelect: _selectHeroesFromCardIndices,
                 ),
                 const SizedBox(width: 8),
                 _SpeedPanel(
@@ -6132,7 +6144,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   }
 }
 
-class _HeroCardsPanel extends StatelessWidget {
+class _HeroCardsPanel extends StatefulWidget {
   const _HeroCardsPanel({
     required this.heroes,
     required this.heroUnits,
@@ -6140,6 +6152,7 @@ class _HeroCardsPanel extends StatelessWidget {
     required this.multiSelectedHeroIndices,
     required this.onHeroTap,
     required this.onHeroDoubleTap,
+    required this.onHeroMultiSelect,
   });
 
   final List<HeroDef> heroes;
@@ -6148,38 +6161,182 @@ class _HeroCardsPanel extends StatelessWidget {
   final Set<int> multiSelectedHeroIndices;
   final ValueChanged<int> onHeroTap;
   final ValueChanged<int> onHeroDoubleTap;
+  final ValueChanged<Set<int>> onHeroMultiSelect;
+
+  @override
+  State<_HeroCardsPanel> createState() => _HeroCardsPanelState();
+}
+
+class _HeroCardsPanelState extends State<_HeroCardsPanel> {
+  static const double _panelPadding = 8;
+  static const double _cardSpacing = 8;
+  static const Duration _doubleTapWindow = Duration(milliseconds: 280);
+
+  Offset? _dragStartLocal;
+  Offset? _dragCurrentLocal;
+  int? _dragStartCardIndex;
+  int? _lastTappedCardIndex;
+  DateTime? _lastTapAt;
+
+  Rect _cardRect(int index) {
+    final left = _panelPadding + index * (_HeroQuickCard.outerWidth + _cardSpacing);
+    return Rect.fromLTWH(
+      left,
+      _panelPadding,
+      _HeroQuickCard.outerWidth,
+      _HeroQuickCard.outerHeight,
+    );
+  }
+
+  int? _hitTestCard(Offset localPosition, {bool requireAlive = false}) {
+    for (int i = 0; i < widget.heroes.length; i++) {
+      if (requireAlive && !widget.heroUnits[i].isAlive) {
+        continue;
+      }
+      if (_cardRect(i).contains(localPosition)) {
+        return i;
+      }
+    }
+    return null;
+  }
+
+  Rect? get _selectionRect {
+    final start = _dragStartLocal;
+    final current = _dragCurrentLocal;
+    if (start == null || current == null || _dragStartCardIndex == null) {
+      return null;
+    }
+    if ((current - start).distance < _GameViewState.multiSelectDragThreshold) {
+      return null;
+    }
+    return Rect.fromPoints(start, current);
+  }
+
+  void _handlePointerDown(PointerDownEvent event) {
+    final cardIndex = _hitTestCard(event.localPosition, requireAlive: true);
+    setState(() {
+      _dragStartLocal = cardIndex == null ? null : event.localPosition;
+      _dragCurrentLocal = null;
+      _dragStartCardIndex = cardIndex;
+    });
+  }
+
+  void _handlePointerMove(PointerMoveEvent event) {
+    final start = _dragStartLocal;
+    if (start == null || _dragStartCardIndex == null) {
+      return;
+    }
+    if ((event.localPosition - start).distance <
+        _GameViewState.multiSelectDragThreshold) {
+      return;
+    }
+    setState(() {
+      _dragCurrentLocal = event.localPosition;
+    });
+  }
+
+  void _handlePointerEnd(PointerEvent event) {
+    final start = _dragStartLocal;
+    final dragStartCardIndex = _dragStartCardIndex;
+    final selectionRect = _selectionRect;
+    final endPosition = event.localPosition;
+    setState(() {
+      _dragStartLocal = null;
+      _dragCurrentLocal = null;
+      _dragStartCardIndex = null;
+    });
+    if (start == null || dragStartCardIndex == null) {
+      return;
+    }
+    if (selectionRect != null) {
+      final selected = <int>{};
+      for (int i = 0; i < widget.heroes.length; i++) {
+        if (!widget.heroUnits[i].isAlive) {
+          continue;
+        }
+        if (selectionRect.overlaps(_cardRect(i))) {
+          selected.add(i);
+        }
+      }
+      widget.onHeroMultiSelect(selected);
+      return;
+    }
+    if ((endPosition - start).distance > 12) {
+      return;
+    }
+    final tappedCardIndex = _hitTestCard(endPosition, requireAlive: true);
+    if (tappedCardIndex == null || tappedCardIndex != dragStartCardIndex) {
+      return;
+    }
+    final now = DateTime.now();
+    final isDoubleTap =
+        _lastTappedCardIndex == tappedCardIndex &&
+        _lastTapAt != null &&
+        now.difference(_lastTapAt!) <= _doubleTapWindow;
+    widget.onHeroTap(tappedCardIndex);
+    if (isDoubleTap) {
+      widget.onHeroDoubleTap(tappedCardIndex);
+      _lastTappedCardIndex = null;
+      _lastTapAt = null;
+      return;
+    }
+    _lastTappedCardIndex = tappedCardIndex;
+    _lastTapAt = now;
+  }
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0xB012171B),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: List.generate(heroes.length, (index) {
-            final isSelected =
-                selectedHeroIndex == index ||
-                multiSelectedHeroIndices.contains(index);
-            return Padding(
-              padding: EdgeInsets.only(
-                right: index == heroes.length - 1 ? 0 : 8,
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: _handlePointerDown,
+      onPointerMove: _handlePointerMove,
+      onPointerUp: _handlePointerEnd,
+      onPointerCancel: _handlePointerEnd,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: const Color(0xB012171B),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.white12),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(_panelPadding),
+          child: Stack(
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(widget.heroes.length, (index) {
+                  final isSelected =
+                      widget.selectedHeroIndex == index ||
+                      widget.multiSelectedHeroIndices.contains(index);
+                  return Padding(
+                    padding: EdgeInsets.only(
+                      right: index == widget.heroes.length - 1 ? 0 : _cardSpacing,
+                    ),
+                    child: _HeroQuickCard(
+                      hero: widget.heroes[index],
+                      unit: widget.heroUnits[index],
+                      isSelected: isSelected,
+                    ),
+                  );
+                }),
               ),
-              child: _HeroQuickCard(
-                hero: heroes[index],
-                unit: heroUnits[index],
-                isSelected: isSelected,
-                onTap: heroUnits[index].isAlive ? () => onHeroTap(index) : null,
-                onDoubleTap: heroUnits[index].isAlive
-                    ? () => onHeroDoubleTap(index)
-                    : null,
-              ),
-            );
-          }),
+              if (_selectionRect != null)
+                Positioned.fromRect(
+                  rect: _selectionRect!,
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: const Color(0x3358D68D),
+                        border: Border.all(
+                          color: const Color(0xFF58D68D),
+                          width: 2,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -6720,9 +6877,10 @@ class _HeroQuickCard extends StatelessWidget {
     required this.hero,
     required this.unit,
     required this.isSelected,
-    required this.onTap,
-    required this.onDoubleTap,
   });
+
+  static const double outerWidth = 66;
+  static const double outerHeight = 77;
 
   static const List<double> _grayscaleMatrix = <double>[
     0.2126,
@@ -6750,8 +6908,6 @@ class _HeroQuickCard extends StatelessWidget {
   final HeroDef hero;
   final _HeroUnit unit;
   final bool isSelected;
-  final VoidCallback? onTap;
-  final VoidCallback? onDoubleTap;
 
   @override
   Widget build(BuildContext context) {
@@ -6760,7 +6916,8 @@ class _HeroQuickCard extends StatelessWidget {
         : 0.0;
     final isDead = !unit.isAlive;
     final content = Container(
-      width: 66,
+      width: outerWidth,
+      height: outerHeight,
       padding: const EdgeInsets.fromLTRB(6, 6, 6, 7),
       decoration: BoxDecoration(
         color: isDead ? const Color(0xCC3A3A3A) : const Color(0xCC1A2228),
@@ -6865,12 +7022,7 @@ class _HeroQuickCard extends StatelessWidget {
       ),
     );
 
-    return GestureDetector(
-      onTap: onTap,
-      onDoubleTap: onDoubleTap,
-      behavior: HitTestBehavior.opaque,
-      child: content,
-    );
+    return content;
   }
 }
 
