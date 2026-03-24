@@ -124,8 +124,6 @@ class _HeroUpgradeScreenState extends State<HeroUpgradeScreen> {
                 ),
               ),
 
-              // Bottom navigation
-              _buildBottomNav(),
             ],
           );
         },
@@ -385,6 +383,41 @@ class _HeroDetailScreenState extends State<HeroDetailScreen> {
   String get heroName => widget.heroName;
   Color get heroColor => widget.heroColor;
 
+  String _heroPortraitAsset(String heroName) {
+    switch (heroName) {
+      case 'Aerin':
+        return 'assets/heroes/hero_aerin.png';
+      case 'Veyra':
+        return 'assets/heroes/hero_veyra.png';
+      case 'Thalor':
+        return 'assets/heroes/hero_thalor.png';
+      case 'Myris':
+        return 'assets/heroes/hero_myris.png';
+      case 'Kaelen':
+        return 'assets/heroes/hero_kaelen.png';
+      case 'Solenne':
+        return 'assets/heroes/hero_solenne.png';
+      case 'Ravik':
+        return 'assets/heroes/hero_ravik.png';
+      case 'Brann':
+        return 'assets/heroes/hero_brann.png';
+      case 'Nyxra':
+        return 'assets/heroes/hero_nyxra.png';
+      case 'Eldrin':
+        return 'assets/heroes/hero_eldrin.png';
+      default:
+        return '';
+    }
+  }
+
+  double _heroBaseHp() {
+    return HeroDef(
+      widget.heroName,
+      heroColor,
+      imageAsset: _heroPortraitAsset(widget.heroName),
+    ).maxHp;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -643,24 +676,24 @@ class _HeroDetailScreenState extends State<HeroDetailScreen> {
     final xpProgress = heroData.xp / heroData.xpForNextLevel;
     final canLevelUp = heroData.canLevelUp();
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            heroColor.withOpacity(0.15),
-            heroColor.withOpacity(0.05),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: heroColor.withOpacity(0.4), width: 1.5),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                heroColor.withOpacity(0.15),
+                heroColor.withOpacity(0.05),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: heroColor.withOpacity(0.4), width: 1.5),
+          ),
+          child: Row(
             children: [
               // Hero level badge
               Container(
@@ -752,10 +785,75 @@ class _HeroDetailScreenState extends State<HeroDetailScreen> {
                   ],
                 ),
               ),
+              const SizedBox(width: 18),
+              Container(
+                width: 92,
+                height: 92,
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.22),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: heroColor.withOpacity(0.45), width: 1.5),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: _heroPortraitAsset(widget.heroName).isNotEmpty
+                    ? Image.asset(
+                        _heroPortraitAsset(widget.heroName),
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Icon(
+                            Icons.person,
+                            color: Colors.white.withOpacity(0.75),
+                            size: 40,
+                          );
+                        },
+                      )
+                    : Icon(
+                        Icons.person,
+                        color: Colors.white.withOpacity(0.75),
+                        size: 40,
+                      ),
+              ),
             ],
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: heroColor.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.favorite_rounded,
+                  color: heroColor,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'HP',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  _heroBaseHp().toStringAsFixed(0),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 

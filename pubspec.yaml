@@ -66,6 +66,7 @@ flutter:
   assets:
     - assets/heroes/
     - assets/heroes/Aerin/
+    - assets/heroes/Brann/
     - assets/heroes/Veyra/standing/
     - assets/heroes/Veyra/attack/
     - assets/buildings/

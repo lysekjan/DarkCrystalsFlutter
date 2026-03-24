@@ -60,8 +60,9 @@
 ## Hero Mechanics
 
 - Heroes now have HP and can die.
-- Current baseline hero HP is `20`, stored per hero definition as `HeroDef.maxHp`.
+- Current baseline hero HP is `100`, stored per hero definition as `HeroDef.maxHp`.
 - Current baseline hero attack range is about one sixth of the screen width, stored per hero definition as `HeroDef.attackRange`.
+- All in-game hero renders now auto-face their active horizontal action: while moving left or attacking a target to their left, their sprite/animation is mirrored; once they are idle again, they return to the default orientation.
 - Dead heroes disappear from the map, stop attacking, stop being selectable, and are ignored by enemy targeting.
 - Selecting a hero on the map now also shows a context mode menu next to that hero.
 - The context menu uses the same attack-mode icons that were previously shown in the old slot/card UI.
@@ -81,7 +82,7 @@
 - Thalor: modes `projectile`, `sword`, `energy`.
 - Myris: modes `normal`, `ice`, `freeze`.
 - Myris `normal` now reuses Veyra's old third attack behavior: a single-target lightning strike with the same fast timing and high damage profile.
-- Kaelen: modes `normal`, `vine`, `spore`.
+- Kaelen: modes `normal`, `vine`, `healing`.
 - Solenne: beam during sending; modes `normal`, `sunburst`, `radiant`.
 - Ravik: modes `normal`, `voidburst`, `soul`.
 - Brann: modes `normal`, `earthquake`, `boulder`.
@@ -114,8 +115,9 @@ Detailed balance values are documented in `INFO.txt` and `project_info.txt`.
 - The map uses a cover-style default fit under the top HUD, aligned to top-left, and can crop on the right side on narrower displays.
 - Zoom `+` and `-` buttons are present on screen.
 - Manual zoom is handled through `TransformationController`.
-- When zoomed in, single-touch gestures remain reserved for gameplay; map panning is handled manually from the centroid of two active touches instead of relying on `InteractiveViewer` pan gestures.
-- The same manual two-finger map panning now also remains available at the default zoom-out level, not only after zooming in.
+- Touch map panning is now driven by a permanently visible square joystick in the bottom-left HUD area; dragging inside that joystick moves the camera continuously in the opposite visual map direction (camera up means the rendered map moves down).
+- Two-finger touch panning is no longer used for camera movement.
+- Pinch zoom on touch remains available, but it now adjusts zoom without also translating the camera from finger-centroid drift.
 - Input positions are converted with `TransformationController.toScene(...)` where needed so manual targeting stays accurate.
 - For map taps inside the zoomed gameplay view, pointer coordinates must be converted from the `InteractiveViewer` viewport (`globalToLocal`) before calling `TransformationController.toScene(...)`; using the transformed child `localPosition` directly causes offset targets.
 - The old left hero card panel and the automode switch are removed from gameplay UI.
@@ -282,6 +284,47 @@ Detailed balance values are documented in `INFO.txt` and `project_info.txt`.
 - 2026-03-18: `VillageScreen` now also supports camera zoom: the map starts fully zoomed out to a contain-style fit of the viewport, touch devices can pinch to zoom, and desktop/web mouse users can zoom with the wheel around the cursor while keeping free panning.
 - 2026-03-18: The default `VillageScreen` camera fit was then changed from contain-fit to width-fit in landscape, so the initial view fills the screen width and any extra map height remains available through panning.
 - 2026-03-19: Gameplay map touch input was hardened so two-finger pan/pinch still works even if one finger lands directly on a hero unit; the shared raw pointer handling now also runs on the hero hitboxes instead of only on the empty-map overlay listener.
+- 2026-03-19: The selected-hero context menus were visually pulled closer to the unit: the attack/mode menu now sits higher than before, while the behavior menu was lowered closer to the hero instead of floating too far away above it.
+- 2026-03-19: The behavior menu under the selected hero was then nudged a bit lower again for a slightly looser gap from the unit, while the attack/mode menu stayed as previously adjusted.
+- 2026-03-19: The same selected-hero behavior menu was then lowered by one more small step, keeping the attack/mode menu unchanged.
+- 2026-03-19: Issuing a hero move order on the gameplay map now also shows the existing short-lived target marker at the clicked destination, both for single-hero orders and multi-select group movement, making the destination immediately visible to the player.
+- 2026-03-19: The direct play button was restored to the `HeroSelectScreen` used for assigning heroes into battle slots, while the separate `HeroUpgradeScreen` opened from the village hero building no longer shows its own bottom `Hrát` button.
+- 2026-03-19: The in-game pause/menu dialog no longer returns to the main menu; its button is now labeled `Zpět do vesnice` and routes straight back to `VillageScreen`.
+- 2026-03-19: The shared default hero HP was increased from `20` to `100` by raising the `HeroDef.maxHp` default, so all heroes now start substantially tankier unless overridden individually.
+- 2026-03-19: `HeroDetailScreen` now shows the selected hero portrait on the right side of the top XP info row, so the upgrade/detail header pairs the level and XP progress with a visible character portrait.
+- 2026-03-19: The same top hero-detail info panel now also shows the hero's current base HP directly under the XP progress section, sourced from the active `HeroDef.maxHp` value.
+- 2026-03-19: A temporary syntax break introduced while wrapping `LevelSelectScreen` in `PopScope` was repaired by restoring the correct `SafeArea -> LayoutBuilder` nesting, so the screen compiles again and keeps the safe fallback back-navigation to the village.
+- 2026-03-19: The upper hero-assignment carousel on `HeroSelectScreen` was enlarged significantly and moved into a vertically centered band of the screen, so the tappable hero cards are larger and no longer stick to the top edge.
+- 2026-03-19: The hero-detail HP readout under `XP Progress` was restyled from a plain text line into its own small stat tile, making the health value read as a separate upgrade-summary block.
+- 2026-03-19: That HP tile was then moved below the entire top row of level/XP/portrait content, so it now sits as a separate full-width block under the header row instead of crowding the XP column.
+- 2026-03-19: The HP tile was then pushed one level further out of the hero-detail layout, so it now renders below the whole bordered level/XP/portrait panel rather than inside that panel.
+- 2026-03-20: The last remaining `Pruzkum` text card on `VillageScreen` was replaced by a clickable map building using `assets/buildings/explorerTent.png`, so exploration is now entered from a fifth building on the village map instead of a bottom button.
+- 2026-03-20: All five clickable buildings on `VillageScreen` were enlarged to roughly double width, and their map positions were rebalanced so the bigger silhouettes still stay readable within the village layout.
+- 2026-03-20: The `Branit vesnici` tower on `VillageScreen` was then returned to its original pre-scale width and moved further right, while the other four village buildings stayed enlarged.
+- 2026-03-20: The `Samanova chyse` building on `VillageScreen` was then nudged slightly upward and more noticeably left to better fit the enlarged village composition.
+- 2026-03-20: The same `Samanova chyse` building was then shifted another small step upward and left for a tighter final placement.
+- 2026-03-20: The `Pruzkum` building on `VillageScreen` was then moved a large step upward to bring the exploration entry closer to the main village cluster.
+- 2026-03-20: The `Pruzkum` building was then moved upward again by another larger step, making it sit much higher in the village map.
+- 2026-03-20: The `Pruzkum` building sprite on `VillageScreen` is now rendered mirrored horizontally, using a new optional per-building flip flag in `_VillageMapBuilding`.
+- 2026-03-20: `VillageScreen` building widths are now derived from fixed `mapWidth` ratios instead of `compact` viewport breakpoints, so all village buildings keep the same scale relative to the map across different display sizes.
+- 2026-03-20: The `Management vesnice` building on `VillageScreen` was then moved upward by a small step while keeping its horizontal placement unchanged.
+- 2026-03-20: `VillageScreen` now also uses a fixed logical map size (`1500 x 980`) instead of resizing the village canvas from the current viewport, so the background image and all building placements stay locked to the same coordinate system across resolutions.
+- 2026-03-20: The `Pruzkum` building on `VillageScreen` was also moved behind the rest of the village cluster by drawing it earlier in the `Stack`, so the other buildings visually overlap it from the front.
+- 2026-03-20: The `Management vesnice` building was then moved upward again by a larger step to place it noticeably higher in the village composition.
+- 2026-03-20: The same `Management vesnice` building was then nudged upward by another smaller step for finer placement.
+- 2026-03-20: All `VillageScreen` buildings except the `Branit vesnici` tower were then reduced by 20%, while the tower kept its previous width.
+- 2026-03-20: The `Branit vesnici` tower was then moved a large step further right in the village map while keeping its size unchanged.
+- 2026-03-20: The `Branit vesnici` tower was then brought into the foreground by drawing it later in the village `Stack`, so it visually overlaps the other buildings.
+- 2026-03-20: The `Hrdinove` building on `VillageScreen` was then nudged a bit left while keeping its height and size unchanged.
+- 2026-03-20: The text labels under all clickable buildings on `VillageScreen` were removed; the map now shows only the building sprites and their ground shadows.
+- 2026-03-20: The top `Vesnice` title and its descriptive subtitle were also removed from `VillageScreen`, leaving the background map unobstructed except for the back button.
+- 2026-03-20: Brann now uses the sprite asset `assets/heroes/Brann/brann.png` instead of the former `assets/heroes/hero_brann.png`.
+- 2026-03-20: Brann's card portrait was then restored to `assets/heroes/hero_brann.png`, while only the in-game unit render now uses `assets/heroes/Brann/brann.png` through a dedicated `Brann` branch in `_HeroUnitWidget`.
+- 2026-03-20: `pubspec.yaml` now also declares `assets/heroes/Brann/`; without that explicit asset directory, Brann's in-game sprite path fell back to the default icon at runtime even though the file existed on disk.
+- 2026-03-20: Double-clicking a living hero card in the bottom gameplay HUD now selects that hero and recenters the current map camera directly on that hero while preserving the current zoom; dead hero cards still do nothing.
+- 2026-03-21: Kaelen's third mode `spore` was fully replaced by `healing`: it now emits a short-range (`100`) healing pulse that restores `2 HP` to all living allied heroes in range including Kaelen, and this mode cycles even without enemies present.
+- 2026-03-22: All in-game hero renders now flip horizontally while the hero is moving or actively attacking to the left, and they automatically return to their default orientation when idle again; the direction logic now applies consistently to static PNG unit sprites as well as sprite-sheet based heroes like Aerin and Veyra.
+- 2026-03-24: Gameplay touch camera control was moved from two-finger panning to a permanently visible bottom-left joystick HUD; dragging the joystick now pans the camera continuously, two-finger touch no longer pans the map, and pinch zoom remains available without centroid-based touch panning.
 
 ## Legacy Historical Notes
 

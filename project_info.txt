@@ -1,4 +1,64 @@
 PROJECT INFO: Dark Crystals (Flutter)
+2026-03-24:
+- Dotykovy posun herni mapy uz neni na dvouprstem panu. V levem dolnim rohu je ted trvale viditelny ctvercovy joystick priblizne o tretine vysky obrazovky; tah v joysticku posouva kameru prislusnym smerem a pinch zoom zustava zachovany bez soucasneho touch panu podle centroidu prstu.
+2026-03-22:
+- Vsechni hrdinove se ted ve hre automaticky nataceji podle horizontalni akce: pri pohybu doleva nebo pri utoku na cil nalevo se jejich in-game sprite/animace vykresli zrcadlove, a jakmile znovu jen stoji, vrati se do vychozi orientace.
+2026-03-19:
+- Informace o HP na detailu hrdiny pod `XP Progress` uz neni jen textovy radek; nyni se vykresluje jako samostatna mala dlazdice se srdcem a ciselne zobrazenou hodnotou.
+2026-03-19:
+- HP dlazdice na detailu hrdiny uz neni uvnitr stejneho radku jako level, XP a portret; byla presunuta pod cely tento horni blok jako samostatny plnosiroky panel.
+2026-03-19:
+- HP dlazdice byla nasledne presunuta jeste o uroven niz, takze uz neni ani uvnitr stejneho obaloveho panelu; nyni sedi az pod celym hornim blokem s levelem, XP a portretem.
+2026-03-20:
+- Tlacitko `Pruzkum` na obrazovce `Vesnice` uz neni textova karta dole; bylo nahrazeno klikaci budovou z `assets/buildings/explorerTent.png` umistenou primo na mape vesnice.
+2026-03-20:
+- Vsech pet klikacich budov na obrazovce `Vesnice` bylo zvetseno priblizne na dvojnasobek a jejich pozice na mape byly lehce rozlozeny znovu, aby i po zvetseni zustaly citelne.
+2026-03-20:
+- Budova `Branit vesnici` na obrazovce `Vesnice` byla nasledne vracena na puvodni velikost pred 2x zvetsenim a posunuta vice doprava; ostatni ctyri budovy zustaly zvetsene.
+2026-03-20:
+- Budova `Samanova chyse` na obrazovce `Vesnice` byla nasledne posunuta o kousek vys a citelne vic doleva, aby lepe sedela v novem zvetsenem rozlozeni budov.
+2026-03-20:
+- Budova `Samanova chyse` na obrazovce `Vesnice` byla pak posunuta jeste o dalsi mensi krok vys a doleva pro tesnejsi finalni usazeni.
+2026-03-20:
+- Budova `Pruzkum` na obrazovce `Vesnice` byla nasledne posunuta o velky kus vys, aby byla bliz hlavnimu shluku budov.
+2026-03-20:
+- Budova `Pruzkum` na obrazovce `Vesnice` byla pak posunuta jeste o dalsi vetsi kus vys, takze ted sedi vyrazne vys v ramci mapy vesnice.
+2026-03-20:
+- Budova `Pruzkum` na obrazovce `Vesnice` se ted vykresluje vodorovne zrcadlene; sdilena komponenta `_VillageMapBuilding` kvuli tomu dostala volitelny prepinac pro horizontalni flip sprite.
+2026-03-20:
+- Sirky budov na obrazovce `Vesnice` se uz neprepinaji podle `compact` breakpointu; vsechny se ted pocitaji z pevneho pomeru k `mapWidth`, takze si drzi stejnou relativni velikost vuci mape na ruznych velikostech displeje.
+2026-03-20:
+- Budova `Management vesnice` na obrazovce `Vesnice` byla nasledne posunuta o kus vys, zatimco jeji vodorovna pozice zustala stejna.
+2026-03-20:
+- Obrazovka `Vesnice` ted pouziva pevnou logickou velikost mapy `1500 x 980` misto dynamicke velikosti odvozene z viewportu; tim se stabilizovalo zarovnani budov i jejich velikost vuci obrazku na pozadi napric ruznymi rozlisenimi.
+2026-03-20:
+- Budova `Pruzkum` na obrazovce `Vesnice` se ted kresli v zadnejsi vrstve pod ostatnimi budovami; v `Stack`u je vlozena driv, takze ostatni budovy se pres ni muzou vizualne prekryvat.
+2026-03-20:
+- Budova `Management vesnice` na obrazovce `Vesnice` byla pak posunuta jeste o vetsi kus vys, aby sedela vyrazne vys v kompozici vesnice.
+2026-03-20:
+- Budova `Management vesnice` na obrazovce `Vesnice` byla pak posunuta jeste o dalsi mensi krok vys pro jemnejsi doladeni pozice.
+2026-03-20:
+- Vsechny budovy na obrazovce `Vesnice` krome `Branit vesnici` byly nasledne zmenseny o 20 %; obranna vez si ponechala puvodni velikost.
+2026-03-20:
+- Budova `Branit vesnici` na obrazovce `Vesnice` byla pak posunuta o velky kus doprava, aniz by se menila jeji velikost.
+2026-03-20:
+- Budova `Branit vesnici` na obrazovce `Vesnice` se ted kresli v popredi nad ostatnimi budovami; v `Stack`u je vlozena pozdeji, takze je muze vizualne prekryvat.
+2026-03-20:
+- Budova `Hrdinove` na obrazovce `Vesnice` byla pak posunuta o kousek doleva, zatimco jeji vyska i velikost zustaly stejne.
+2026-03-20:
+- Popisky pod vsemi klikacimi budovami na obrazovce `Vesnice` byly skryty; na mape ted zustavaji jen samotne sprity budov a jejich stiny.
+2026-03-20:
+- Z horni casti obrazovky `Vesnice` byl odebran i nadpis `Vesnice` a podtitulek `Prozkoumej budovy primo na mape vesnice.`, takze nad pozadim zustava uz jen tlacitko `Zpet`.
+2026-03-20:
+- Hrdina `Brann` ted pouziva sprite `assets/heroes/Brann/brann.png` misto puvodniho assetu `assets/heroes/hero_brann.png`.
+2026-03-20:
+- Portret hrdiny `Brann` na kartach a v menu byl vracen na `assets/heroes/hero_brann.png`; pouze jeho render jednotky primo ve hre ted pouziva sprite `assets/heroes/Brann/brann.png`.
+2026-03-20:
+- Do `pubspec.yaml` byla doplnena i asset slozka `assets/heroes/Brann/`, protoze bez ni se Brannuv in-game sprite `assets/heroes/Brann/brann.png` za behu nenasel a hra spadla na defaultni ikonu.
+2026-03-20:
+- Dvojklik na zivou kartu/avatar hrdiny ve spodnim hernim HUDu ted daneho hrdinu rovnou vybere a vycentruje na nej mapu pri zachovani aktualniho zoomu; mrtvy hrdina na dvojklik nereaguje.
+2026-03-21:
+- Kaelenuv treti mod `spore` byl plne nahrazen modem `healing`: Kaelen ted jednou za 2 sekundy celkove vysle kratky heal puls v radiusu 100, ktery obnovi 2 HP vsem zivym hrdinum v dosahu vcetne sebe, a tento mod se spousti i bez nepratel.
 
 Shrnuti projektu
 - Jednoducha arkadova/tower-defense minihra ve Flutteru s vlastnim hernim loopem a vykreslovanim pres CustomPainter.
@@ -220,11 +280,11 @@ Modi a statistiky hrdinu (bez castingu)
   - Normal: blesk do jednoho cile (stejny typ utoku jako puvodni Veyra lightning)
   - Ice: projektil s AoE 50
   - Freeze: AoE kolem hrdiny radius 200
-- Kaelen (_KaelenMode: normal/vine/spore)
-  - Sending: 2s / 0.5s / 1s
-  - Cooldown: 10s / 6s / 15s
-  - Damage: normal 5, vine 6 (AoE 100 kolem hrdiny), spore 2
-  - Spore: projektil s AoE 70
+- Kaelen (_KaelenMode: normal/vine/healing)
+  - Sending: 2s / 0.5s / 0.5s
+  - Cooldown: 10s / 6s / 6s
+  - Damage: normal 5, vine 6 (AoE 100 kolem hrdiny), healing 0
+  - Healing: kratky puls v radiusu 100, ktery leci vsechny zive hrdiny v dosahu vcetne sebe o 2 HP; cyklus bezi porad i bez pritomnosti nepratel
 - Solenne (_SolenneMode: normal/sunburst/radiant)
   - Sending: 2s / 0.5s / 1s
   - Cooldown: 10s / 14s / 10s
@@ -309,7 +369,7 @@ Spusteni
 - Pokud je nepritel v dosahu, zastavi se u hrdiny a utoci do nej obdobne jako do zdi.
 - Pokud pred nepritelem neni zadny zivy hrdina, pokracuje primym pohybem doleva ke zdi.
 - Hrdinove maji nyni vlastni HP a mohou zemrit.
-- Aktualni vychozi HP hrdiny je `20`, ale hodnota je ulozena v `HeroDef.maxHp`, aby sla pozdeji menit per-hero i pres bonusy/vylepseni.
+- Aktualni vychozi HP hrdiny je `100`, ale hodnota je ulozena v `HeroDef.maxHp`, aby sla pozdeji menit per-hero i pres bonusy/vylepseni.
 - Po smrti hrdina zmizi z mapy, neni dal vykreslovan, nejde vybrat, nehybe se a neutoci.
 - Widget hrdiny ted zobrazuje jak HP bar, tak cooldown bar.
 2026-03-11:
@@ -568,3 +628,23 @@ Spusteni
 - Vychozi zoom obrazovky `Vesnice` byl nasledne zmenen z contain-fit na fit podle sirky displeje v landscape, takze startovni pohled vyplni sirku a zbytek vysky mapy se prohlizi posunem.
 2026-03-19:
 - Dvouprsty pan a pinch v herni mape ted funguje i v pripade, kdy jeden z prstu dopadne primo na hrdinu; stejna surova pointer logika jako na prazdne mape se ted zpracovava i na hero hitboxech, takze uz nedochazi ke kolizi s hero tap akcemi.
+2026-03-19:
+- Kontextova menu vybraneho hrdiny byla vizualne pritazena bliz k postave: nabidka utoku/modu je vys nez driv a nabidka chovani je naopak posunuta niz, aby obe nepusobily tak odtrzene od jednotky.
+2026-03-19:
+- Nabidka chovani vybraneho hrdiny byla pak jeste o kus posunuta niz; nabidka utoku/modu zustava beze zmeny.
+2026-03-19:
+- Nabidka chovani vybraneho hrdiny byla snizena jeste o maly dalsi krok; nabidka utoku/modu zustava beze zmeny.
+2026-03-19:
+- Pri vydani move orderu na herni mape se ted na cilove pozici kratce zobrazi stejny target marker, a to jak pro jednoho vybraneho hrdinu, tak pro skupinovy presun po multi-selectu.
+2026-03-19:
+- Tlacitko `Boj` bylo vraceno na obrazovku vyberu hrdinu pro samotnou hru; naopak na samostatne obrazovce spravy hrdinu otevrene z budovy `Hrdinove` uz spodni `Hrat` tlacitko neni.
+2026-03-19:
+- Tlacitko v hernim `Menu`, ktere driv vracelo do hlavniho menu, bylo prejmenovano na `Zpet do vesnice` a nove smeruje primo na obrazovku `Vesnice`.
+2026-03-19:
+- Na obrazovce detailu hrdiny ve vylepsenich se nyní v hornim info panelu napravo od `XP Progress` zobrazuje i portret vybraneho hrdiny.
+2026-03-19:
+- Na stejne obrazovce detailu hrdiny se ted pod `XP Progress` zobrazuje i informace o aktualnim zakladnim HP daneho hrdiny podle `HeroDef.maxHp`.
+2026-03-19:
+- Byla opravena syntakticka chyba v `LevelSelectScreen`, ktera vznikla pri obaleni obrazovky do `PopScope`; struktura `SafeArea -> LayoutBuilder` je znovu spravne uzavrena a obrazovka se ma znovu normalne kompilovat.
+2026-03-19:
+- Horni vodorovny vyber hrdinu na obrazovce prirazovani do slotu byl zvetsen zhruba o polovinu a nově sedi ve vertikalne centrovane oblasti misto u horni hrany obrazovky.

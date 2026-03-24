@@ -126,9 +126,9 @@ class IntroScreen extends StatelessWidget {
                   Text(
                     loc.appName,
                     style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                        ),
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   const SizedBox(height: 24),
                   Row(
@@ -206,17 +206,13 @@ class _SaveSlotScreenState extends State<SaveSlotScreen> {
     await RpgSystem.setActiveSlot(slot);
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(
-        builder: (_) => const VillageScreen(),
-      ),
+      MaterialPageRoute<void>(builder: (_) => const VillageScreen()),
     );
   }
 
   void _goBackToIntro() {
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(
-        builder: (_) => const IntroScreen(),
-      ),
+      MaterialPageRoute<void>(builder: (_) => const IntroScreen()),
     );
   }
 
@@ -255,76 +251,78 @@ class _SaveSlotScreenState extends State<SaveSlotScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-            const Text(
-              'Vyber Herni Slot',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 30,
-                fontWeight: FontWeight.w700,
+              const Text(
+                'Vyber Herni Slot',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 30,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(3, (idx) {
-                final slot = idx + 1;
-                final progress = _slotProgress[slot]!;
-                final isActive = _activeSlot == slot;
-                return Container(
-                  width: 240,
-                  margin: EdgeInsets.only(right: slot < 3 ? 16 : 0),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF101816),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isActive ? const Color(0xFF6BFA9D) : const Color(0xFF2F4B45),
-                      width: isActive ? 2 : 1,
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(3, (idx) {
+                  final slot = idx + 1;
+                  final progress = _slotProgress[slot]!;
+                  final isActive = _activeSlot == slot;
+                  return Container(
+                    width: 240,
+                    margin: EdgeInsets.only(right: slot < 3 ? 16 : 0),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF101816),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isActive
+                            ? const Color(0xFF6BFA9D)
+                            : const Color(0xFF2F4B45),
+                        width: isActive ? 2 : 1,
+                      ),
                     ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Slot $slot',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Slot $slot',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Mince: ${progress.coins}',
-                        style: const TextStyle(color: Colors.white70),
-                      ),
-                      Text(
-                        'Hrdinove: ${_unlockedHeroesCount(progress)}/10',
-                        style: const TextStyle(color: Colors.white70),
-                      ),
-                      Text(
-                        'Skore: ${progress.totalGamesPlayed}',
-                        style: const TextStyle(color: Colors.white70),
-                      ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        child: FilledButton(
-                          onPressed: () => _selectSlot(slot),
-                          child: Text(isActive ? 'Pokracovat' : 'Vybrat'),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Mince: ${progress.coins}',
+                          style: const TextStyle(color: Colors.white70),
                         ),
-                      ),
-                    ],
-                  ),
-                );
-              }),
-            ),
-            const SizedBox(height: 16),
-            OutlinedButton(
-              onPressed: _goBackToIntro,
-              child: const Text('Zpet'),
-            ),
-          ],
+                        Text(
+                          'Hrdinove: ${_unlockedHeroesCount(progress)}/10',
+                          style: const TextStyle(color: Colors.white70),
+                        ),
+                        Text(
+                          'Skore: ${progress.totalGamesPlayed}',
+                          style: const TextStyle(color: Colors.white70),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton(
+                            onPressed: () => _selectSlot(slot),
+                            child: Text(isActive ? 'Pokracovat' : 'Vybrat'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ),
+              const SizedBox(height: 16),
+              OutlinedButton(
+                onPressed: _goBackToIntro,
+                child: const Text('Zpet'),
+              ),
+            ],
           ),
         ),
       ),
@@ -340,13 +338,17 @@ class VillageScreen extends StatefulWidget {
 }
 
 class _VillageScreenState extends State<VillageScreen> {
-  static const String _villageBackgroundAsset = 'assets/backgrounds/village_basic.png';
+  static const String _villageBackgroundAsset =
+      'assets/backgrounds/village_basic.png';
   static const String _heroesAtriumAsset = 'assets/buildings/heroesAtrium.png';
   static const String _shamanTentAsset = 'assets/buildings/shamanTent.png';
   static const String _villageTowerAsset = 'assets/buildings/tower.png';
   static const String _villageAtriumAsset = 'assets/buildings/atrium.png';
+  static const String _explorerTentAsset = 'assets/buildings/explorerTent.png';
   static const double _villageMaxZoomMultiplier = 3.0;
   static const double _villageWheelZoomStep = 0.12;
+  static const double _villageLogicalMapWidth = 1500.0;
+  static const double _villageLogicalMapHeight = 980.0;
   final TransformationController _villageMapController =
       TransformationController();
   Size? _villageConfiguredViewportSize;
@@ -360,25 +362,19 @@ class _VillageScreenState extends State<VillageScreen> {
 
   void _goBackToSaveSlots() {
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(
-        builder: (_) => const SaveSlotScreen(),
-      ),
+      MaterialPageRoute<void>(builder: (_) => const SaveSlotScreen()),
     );
   }
 
   void _openHeroes() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => const HeroUpgradeScreen(),
-      ),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const HeroUpgradeScreen()));
   }
 
   void _openDefenseFlow() {
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(
-        builder: (_) => const HeroSelectScreen(),
-      ),
+      MaterialPageRoute<void>(builder: (_) => const HeroSelectScreen()),
     );
   }
 
@@ -392,9 +388,7 @@ class _VillageScreenState extends State<VillageScreen> {
 
   void _showPlaceholderMessage() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Tato cast vesnice zatim neni dostupna.'),
-      ),
+      const SnackBar(content: Text('Tato cast vesnice zatim neni dostupna.')),
     );
   }
 
@@ -456,10 +450,7 @@ class _VillageScreenState extends State<VillageScreen> {
     final maxDx = max(defaultOffset.dx, 0.0);
     final minDy = min(defaultOffset.dy, viewportSize.height - scaledHeight);
     final maxDy = max(defaultOffset.dy, 0.0);
-    return Offset(
-      offset.dx.clamp(minDx, maxDx),
-      offset.dy.clamp(minDy, maxDy),
-    );
+    return Offset(offset.dx.clamp(minDx, maxDx), offset.dy.clamp(minDy, maxDy));
   }
 
   void _setVillageZoomAroundViewportPoint({
@@ -510,10 +501,16 @@ class _VillageScreenState extends State<VillageScreen> {
         backgroundColor: Colors.black,
         body: LayoutBuilder(
           builder: (context, constraints) {
-            final compact = constraints.maxHeight < 520 || constraints.maxWidth < 820;
-            final mapWidth = max(constraints.maxWidth * 1.35, 1500.0);
-            final mapHeight = max(constraints.maxHeight * 1.45, 980.0);
+            final compact =
+                constraints.maxHeight < 520 || constraints.maxWidth < 820;
+            const mapWidth = _villageLogicalMapWidth;
+            const mapHeight = _villageLogicalMapHeight;
             final contentPadding = compact ? 18.0 : 24.0;
+            final heroesBuildingWidth = mapWidth * (544.0 / 1500.0);
+            final defenseBuildingWidth = mapWidth * (230.0 / 1500.0);
+            final shamanBuildingWidth = mapWidth * (448.0 / 1500.0);
+            final managementBuildingWidth = mapWidth * (448.0 / 1500.0);
+            final explorationBuildingWidth = mapWidth * (432.0 / 1500.0);
             final viewportSize = Size(
               constraints.maxWidth,
               constraints.maxHeight,
@@ -535,9 +532,10 @@ class _VillageScreenState extends State<VillageScreen> {
                           event.kind != ui.PointerDeviceKind.mouse) {
                         return;
                       }
-                      final currentScale =
-                          _villageMapController.value.getMaxScaleOnAxis();
-                      final nextScale = currentScale +
+                      final currentScale = _villageMapController.value
+                          .getMaxScaleOnAxis();
+                      final nextScale =
+                          currentScale +
                           (event.scrollDelta.dy < 0
                               ? _villageWheelZoomStep
                               : -_villageWheelZoomStep);
@@ -577,7 +575,10 @@ class _VillageScreenState extends State<VillageScreen> {
                                   gradient: LinearGradient(
                                     begin: Alignment.topCenter,
                                     end: Alignment.bottomCenter,
-                                    colors: [Color(0x55101713), Color(0x99101713)],
+                                    colors: [
+                                      Color(0x55101713),
+                                      Color(0x99101713),
+                                    ],
                                   ),
                                 ),
                               ),
@@ -591,97 +592,54 @@ class _VillageScreenState extends State<VillageScreen> {
                               ),
                             ),
                             Positioned(
-                              left: 0,
-                              right: 0,
-                              top: compact ? 26 : 36,
-                              child: Column(
-                                children: [
-                                  const Text(
-                                    'Vesnice',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 34,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Text(
-                                    'Prozkoumej budovy primo na mape vesnice.',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: Colors.white.withOpacity(0.78),
-                                      fontSize: 15,
-                                    ),
-                                  ),
-                                ],
+                              left: mapWidth * 0.16,
+                              top: mapHeight * 0.01,
+                              child: _VillageMapBuilding(
+                                label: 'Pruzkum',
+                                assetPath: _explorerTentAsset,
+                                width: explorationBuildingWidth,
+                                mirrorHorizontally: true,
+                                onTap: _openExplorationFlow,
                               ),
                             ),
                             Positioned(
-                              left: mapWidth * 0.5 - (compact ? 130 : 170),
-                              top: mapHeight * 0.36,
+                              left: mapWidth * 0.37 - heroesBuildingWidth / 2,
+                              top: mapHeight * 0.39,
                               child: _VillageMapBuilding(
                                 label: 'Hrdinove',
                                 assetPath: _heroesAtriumAsset,
-                                width: compact ? 260 : 340,
+                                width: heroesBuildingWidth,
                                 onTap: _openHeroes,
                               ),
                             ),
                             Positioned(
-                              left: mapWidth * 0.12,
-                              top: mapHeight * 0.48,
+                              left: mapWidth * 0.45,
+                              top: mapHeight * -0.15,
                               child: _VillageMapBuilding(
-                                label: 'Branit vesnici',
-                                assetPath: _villageTowerAsset,
-                                width: compact ? 180 : 230,
-                                onTap: _openDefenseFlow,
+                                label: 'Samanova chyse',
+                                assetPath: _shamanTentAsset,
+                                width: shamanBuildingWidth,
+                                onTap: _showPlaceholderMessage,
+                              ),
+                            ),
+                            Positioned(
+                              left: mapWidth * 0.52,
+                              top: mapHeight * 0.40,
+                              child: _VillageMapBuilding(
+                                label: 'Management vesnice',
+                                assetPath: _villageAtriumAsset,
+                                width: managementBuildingWidth,
+                                onTap: _showPlaceholderMessage,
                               ),
                             ),
                             Positioned(
                               left: mapWidth * 0.68,
-                              top: mapHeight * 0.24,
+                              top: mapHeight * 0.04,
                               child: _VillageMapBuilding(
-                                label: 'Samanova chyse',
-                                assetPath: _shamanTentAsset,
-                                width: compact ? 220 : 280,
-                                onTap: _showPlaceholderMessage,
-                              ),
-                            ),
-                            Positioned(
-                              left: mapWidth * 0.64,
-                              top: mapHeight * 0.67,
-                              child: _VillageMapBuilding(
-                                label: 'Management vesnice',
-                                assetPath: _villageAtriumAsset,
-                                width: compact ? 220 : 280,
-                                onTap: _showPlaceholderMessage,
-                              ),
-                            ),
-                            Positioned(
-                              left: contentPadding,
-                              right: contentPadding,
-                              bottom: contentPadding,
-                              child: Center(
-                                child: ConstrainedBox(
-                                  constraints: const BoxConstraints(maxWidth: 420),
-                                  child: GridView.count(
-                                    crossAxisCount: 1,
-                                    shrinkWrap: true,
-                                    physics: const NeverScrollableScrollPhysics(),
-                                    mainAxisSpacing: 18,
-                                    crossAxisSpacing: 18,
-                                    childAspectRatio: compact ? 3.2 : 2.9,
-                                    children: [
-                                      _VillageMenuButton(
-                                        title: 'Pruzkum',
-                                        subtitle: 'Vyber kapitolu a lokaci k prozkoumani',
-                                        icon: Icons.explore_rounded,
-                                        color: const Color(0xFF64B5F6),
-                                        onPressed: _openExplorationFlow,
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                                label: 'Branit vesnici',
+                                assetPath: _villageTowerAsset,
+                                width: defenseBuildingWidth,
+                                onTap: _openDefenseFlow,
                               ),
                             ),
                           ],
@@ -780,17 +738,20 @@ class _VillageMapBuilding extends StatelessWidget {
     required this.assetPath,
     required this.width,
     required this.onTap,
+    this.mirrorHorizontally = false,
   });
 
   final String label;
   final String assetPath;
   final double width;
   final VoidCallback onTap;
+  final bool mirrorHorizontally;
 
   @override
   Widget build(BuildContext context) {
     final shadowWidth = width * 0.8;
     final shadowHeight = width * 0.19;
+    final shadowBottom = width * 0.1;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -798,61 +759,40 @@ class _VillageMapBuilding extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         child: Padding(
           padding: const EdgeInsets.all(8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+          child: Stack(
+            alignment: Alignment.bottomCenter,
             children: [
-              Stack(
-                alignment: Alignment.bottomCenter,
-                children: [
-                  Positioned(
-                    bottom: 34,
-                    child: IgnorePointer(
-                      child: Container(
-                        width: shadowWidth,
-                        height: shadowHeight,
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.26),
-                          borderRadius: BorderRadius.circular(999),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.18),
-                              blurRadius: 24,
-                              spreadRadius: 4,
-                            ),
-                          ],
+              Positioned(
+                bottom: shadowBottom,
+                child: IgnorePointer(
+                  child: Container(
+                    width: shadowWidth,
+                    height: shadowHeight,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.26),
+                      borderRadius: BorderRadius.circular(999),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.18),
+                          blurRadius: 24,
+                          spreadRadius: 4,
                         ),
-                      ),
+                      ],
                     ),
                   ),
-                  Image.asset(
-                    assetPath,
-                    width: width,
-                    fit: BoxFit.contain,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0xCC163628),
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: const Color(0x664DF0A1)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.28),
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
                 ),
-                child: Text(
-                  label,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
+              ),
+              Transform(
+                alignment: Alignment.center,
+                transform: Matrix4.diagonal3Values(
+                  mirrorHorizontally ? -1.0 : 1.0,
+                  1.0,
+                  1.0,
+                ),
+                child: Image.asset(
+                  assetPath,
+                  width: width,
+                  fit: BoxFit.contain,
                 ),
               ),
             ],
@@ -915,9 +855,7 @@ class _ExplorationChapterSelectScreenState
 
   void _goBackToVillage() {
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(
-        builder: (_) => const VillageScreen(),
-      ),
+      MaterialPageRoute<void>(builder: (_) => const VillageScreen()),
     );
   }
 
@@ -962,7 +900,9 @@ class _ExplorationChapterSelectScreenState
               return SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(0, 20, 0, 24),
                 child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight - 44),
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight - 44,
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: Column(
@@ -1007,10 +947,14 @@ class _ExplorationChapterSelectScreenState
                                     final item = _chapters[index];
                                     final isActive = index == _currentIndex;
                                     return AnimatedPadding(
-                                      duration: const Duration(milliseconds: 180),
+                                      duration: const Duration(
+                                        milliseconds: 180,
+                                      ),
                                       padding: EdgeInsets.symmetric(
                                         horizontal: compactCards ? 8 : 12,
-                                        vertical: isActive ? 0 : (compactCards ? 8 : 16),
+                                        vertical: isActive
+                                            ? 0
+                                            : (compactCards ? 8 : 16),
                                       ),
                                       child: _SelectionCard(
                                         title: item.title,
@@ -1019,7 +963,9 @@ class _ExplorationChapterSelectScreenState
                                         accentColor: const Color(0xFF64B5F6),
                                         compact: compactCards,
                                         buttonLabel: 'Vybrat kapitolu',
-                                        onPressed: isActive ? _selectCurrentChapter : null,
+                                        onPressed: isActive
+                                            ? _selectCurrentChapter
+                                            : null,
                                       ),
                                     );
                                   },
@@ -1032,7 +978,8 @@ class _ExplorationChapterSelectScreenState
                                   bottom: 0,
                                   child: Center(
                                     child: IconButton.filledTonal(
-                                      onPressed: () => _goToChapter(_currentIndex - 1),
+                                      onPressed: () =>
+                                          _goToChapter(_currentIndex - 1),
                                       iconSize: 32,
                                       icon: const Icon(Icons.chevron_left),
                                     ),
@@ -1045,7 +992,8 @@ class _ExplorationChapterSelectScreenState
                                   bottom: 0,
                                   child: Center(
                                     child: IconButton.filledTonal(
-                                      onPressed: () => _goToChapter(_currentIndex + 1),
+                                      onPressed: () =>
+                                          _goToChapter(_currentIndex + 1),
                                       iconSize: 32,
                                       icon: const Icon(Icons.chevron_right),
                                     ),
@@ -1100,7 +1048,8 @@ class ExplorationLevelSelectScreen extends StatefulWidget {
       _ExplorationLevelSelectScreenState();
 }
 
-class _ExplorationLevelSelectScreenState extends State<ExplorationLevelSelectScreen> {
+class _ExplorationLevelSelectScreenState
+    extends State<ExplorationLevelSelectScreen> {
   static const int _levelCount = 2;
 
   late final PageController _pageController;
@@ -1177,7 +1126,9 @@ class _ExplorationLevelSelectScreenState extends State<ExplorationLevelSelectScr
               return SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(0, 20, 0, 24),
                 child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight - 44),
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight - 44,
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: Column(
@@ -1222,10 +1173,14 @@ class _ExplorationLevelSelectScreenState extends State<ExplorationLevelSelectScr
                                     final currentLevel = index + 1;
                                     final isActive = index == _currentIndex;
                                     return AnimatedPadding(
-                                      duration: const Duration(milliseconds: 180),
+                                      duration: const Duration(
+                                        milliseconds: 180,
+                                      ),
                                       padding: EdgeInsets.symmetric(
                                         horizontal: compactCards ? 8 : 12,
-                                        vertical: isActive ? 0 : (compactCards ? 8 : 16),
+                                        vertical: isActive
+                                            ? 0
+                                            : (compactCards ? 8 : 16),
                                       ),
                                       child: _SelectionCard(
                                         title: 'Lokace $currentLevel',
@@ -1236,7 +1191,9 @@ class _ExplorationLevelSelectScreenState extends State<ExplorationLevelSelectScr
                                         accentColor: const Color(0xFF64B5F6),
                                         compact: compactCards,
                                         buttonLabel: 'Otevrit lokaci',
-                                        onPressed: isActive ? _openSelectedLocation : null,
+                                        onPressed: isActive
+                                            ? _openSelectedLocation
+                                            : null,
                                       ),
                                     );
                                   },
@@ -1249,7 +1206,8 @@ class _ExplorationLevelSelectScreenState extends State<ExplorationLevelSelectScr
                                   bottom: 0,
                                   child: Center(
                                     child: IconButton.filledTonal(
-                                      onPressed: () => _goToLevel(_currentIndex - 1),
+                                      onPressed: () =>
+                                          _goToLevel(_currentIndex - 1),
                                       iconSize: 32,
                                       icon: const Icon(Icons.chevron_left),
                                     ),
@@ -1262,7 +1220,8 @@ class _ExplorationLevelSelectScreenState extends State<ExplorationLevelSelectScr
                                   bottom: 0,
                                   child: Center(
                                     child: IconButton.filledTonal(
-                                      onPressed: () => _goToLevel(_currentIndex + 1),
+                                      onPressed: () =>
+                                          _goToLevel(_currentIndex + 1),
                                       iconSize: 32,
                                       icon: const Icon(Icons.chevron_right),
                                     ),
@@ -1386,7 +1345,9 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
               return SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(0, 20, 0, 24),
                 child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight - 44),
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight - 44,
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: Column(
@@ -1433,10 +1394,16 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                                     final item = _chapters[index];
                                     final isActive = index == _currentIndex;
                                     return AnimatedPadding(
-                                      duration: const Duration(milliseconds: 180),
+                                      duration: const Duration(
+                                        milliseconds: 180,
+                                      ),
                                       padding: EdgeInsets.symmetric(
-                                        horizontal: compactChapterCards ? 8 : 12,
-                                        vertical: isActive ? 0 : (compactChapterCards ? 8 : 16),
+                                        horizontal: compactChapterCards
+                                            ? 8
+                                            : 12,
+                                        vertical: isActive
+                                            ? 0
+                                            : (compactChapterCards ? 8 : 16),
                                       ),
                                       child: _SelectionCard(
                                         title: item.title,
@@ -1447,8 +1414,12 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                                             : const Color(0xFF5A5F66),
                                         locked: !item.unlocked,
                                         compact: compactChapterCards,
-                                        buttonLabel: item.unlocked ? 'Vybrat kapitolu' : 'Zamceno',
-                                        onPressed: item.unlocked && isActive ? _selectCurrentChapter : null,
+                                        buttonLabel: item.unlocked
+                                            ? 'Vybrat kapitolu'
+                                            : 'Zamceno',
+                                        onPressed: item.unlocked && isActive
+                                            ? _selectCurrentChapter
+                                            : null,
                                       ),
                                     );
                                   },
@@ -1461,7 +1432,8 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                                   bottom: 0,
                                   child: Center(
                                     child: IconButton.filledTonal(
-                                      onPressed: () => _goToChapter(_currentIndex - 1),
+                                      onPressed: () =>
+                                          _goToChapter(_currentIndex - 1),
                                       iconSize: 32,
                                       icon: const Icon(Icons.chevron_left),
                                     ),
@@ -1474,7 +1446,8 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                                   bottom: 0,
                                   child: Center(
                                     child: IconButton.filledTonal(
-                                      onPressed: () => _goToChapter(_currentIndex + 1),
+                                      onPressed: () =>
+                                          _goToChapter(_currentIndex + 1),
                                       iconSize: 32,
                                       icon: const Icon(Icons.chevron_right),
                                     ),
@@ -1495,8 +1468,12 @@ class _ChapterSelectScreenState extends State<ChapterSelectScreen> {
                             const SizedBox(width: 16),
                             Expanded(
                               child: FilledButton(
-                                onPressed: chapter.unlocked ? _selectCurrentChapter : null,
-                                child: Text(chapter.unlocked ? 'Pokracovat' : 'Zamceno'),
+                                onPressed: chapter.unlocked
+                                    ? _selectCurrentChapter
+                                    : null,
+                                child: Text(
+                                  chapter.unlocked ? 'Pokracovat' : 'Zamceno',
+                                ),
                               ),
                             ),
                           ],
@@ -1560,7 +1537,8 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
   }
 
   bool _isLevelCompleted(int levelNumber) {
-    return _progress?.isLevelCompleted(widget.chapterNumber, levelNumber) ?? false;
+    return _progress?.isLevelCompleted(widget.chapterNumber, levelNumber) ??
+        false;
   }
 
   Future<void> _goToLevel(int index) async {
@@ -1606,163 +1584,201 @@ class _LevelSelectScreenState extends State<LevelSelectScreen> {
     );
   }
 
+  void _goBackFromLevelSelect() {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+      return;
+    }
+    navigator.pushReplacement(
+      MaterialPageRoute<void>(builder: (_) => const VillageScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final levelNumber = _currentIndex + 1;
     final levelMultiplier = pow(1.2, _currentIndex).toDouble();
     final hpBonusPercent = ((levelMultiplier - 1) * 100).round();
     final selectedLevelCompleted = _isLevelCompleted(levelNumber);
-    return Scaffold(
-      backgroundColor: const Color(0xFF070909),
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final compactLevelCards =
-                constraints.maxWidth < 760 || constraints.maxHeight < 520;
-            final levelCarouselHeight = compactLevelCards ? 280.0 : 320.0;
-            return SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(0, 20, 0, 24),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight - 44),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Kapitola ${widget.chapterNumber}  Level $levelNumber',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 28,
-                          fontWeight: FontWeight.w700,
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (!didPop) {
+          _goBackFromLevelSelect();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFF070909),
+        body: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final compactLevelCards =
+                  constraints.maxWidth < 760 || constraints.maxHeight < 520;
+              final levelCarouselHeight = compactLevelCards ? 280.0 : 320.0;
+              return SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(0, 20, 0, 24),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight - 44,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Kapitola ${widget.chapterNumber}  Level $levelNumber',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        selectedLevelCompleted
-                            ? (hpBonusPercent <= 0
-                                ? 'Vychozi obtiznost. Level uz je dokonceny.'
-                                : 'Nepratele maji o $hpBonusPercent % vice HP nez v levelu 1. Level uz je dokonceny.')
-                            : (hpBonusPercent <= 0
-                                ? 'Vychozi obtiznost.'
-                                : 'Nepratele maji o $hpBonusPercent % vice HP nez v levelu 1.'),
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.75),
-                          fontSize: 14,
+                        const SizedBox(height: 10),
+                        Text(
+                          selectedLevelCompleted
+                              ? (hpBonusPercent <= 0
+                                    ? 'Vychozi obtiznost. Level uz je dokonceny.'
+                                    : 'Nepratele maji o $hpBonusPercent % vice HP nez v levelu 1. Level uz je dokonceny.')
+                              : (hpBonusPercent <= 0
+                                    ? 'Vychozi obtiznost.'
+                                    : 'Nepratele maji o $hpBonusPercent % vice HP nez v levelu 1.'),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.75),
+                            fontSize: 14,
+                          ),
                         ),
-                      ),
-                      SizedBox(height: compactLevelCards ? 16 : 24),
-                      SizedBox(
-                        height: levelCarouselHeight,
-                        child: Stack(
-                          children: [
-                            Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: compactLevelCards ? 34 : 44,
+                        SizedBox(height: compactLevelCards ? 16 : 24),
+                        SizedBox(
+                          height: levelCarouselHeight,
+                          child: Stack(
+                            children: [
+                              Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: compactLevelCards ? 34 : 44,
+                                ),
+                                child: PageView.builder(
+                                  controller: _pageController,
+                                  itemCount: _levelCount,
+                                  onPageChanged: (index) {
+                                    setState(() {
+                                      _currentIndex = index;
+                                    });
+                                  },
+                                  itemBuilder: (context, index) {
+                                    final currentLevel = index + 1;
+                                    final currentMultiplier = pow(
+                                      1.2,
+                                      index,
+                                    ).toDouble();
+                                    final currentBonusPercent =
+                                        ((currentMultiplier - 1) * 100).round();
+                                    final isActive = index == _currentIndex;
+                                    final isCompleted = _isLevelCompleted(
+                                      currentLevel,
+                                    );
+                                    return AnimatedPadding(
+                                      duration: const Duration(
+                                        milliseconds: 180,
+                                      ),
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: compactLevelCards ? 8 : 12,
+                                        vertical: isActive
+                                            ? 0
+                                            : (compactLevelCards ? 8 : 16),
+                                      ),
+                                      child: _SelectionCard(
+                                        title: 'Level $currentLevel',
+                                        subtitle: isCompleted
+                                            ? (currentBonusPercent <= 0
+                                                  ? 'Vychozi HP nepratel\nDokonceno'
+                                                  : '+$currentBonusPercent % HP nepratel\nDokonceno')
+                                            : (currentBonusPercent <= 0
+                                                  ? 'Vychozi HP nepratel'
+                                                  : '+$currentBonusPercent % HP nepratel'),
+                                        icon: isCompleted
+                                            ? Icons.task_alt_rounded
+                                            : Icons.flag_rounded,
+                                        accentColor: const Color(0xFF64B5F6),
+                                        compact: compactLevelCards,
+                                        buttonLabel: isCompleted
+                                            ? 'Spustit znovu'
+                                            : 'Spustit level',
+                                        completed: isCompleted,
+                                        onPressed: isActive
+                                            ? _startSelectedLevel
+                                            : null,
+                                      ),
+                                    );
+                                  },
+                                ),
                               ),
-                              child: PageView.builder(
-                                controller: _pageController,
-                                itemCount: _levelCount,
-                                onPageChanged: (index) {
-                                  setState(() {
-                                    _currentIndex = index;
-                                  });
-                                },
-                                itemBuilder: (context, index) {
-                                  final currentLevel = index + 1;
-                                  final currentMultiplier = pow(1.2, index).toDouble();
-                                  final currentBonusPercent =
-                                      ((currentMultiplier - 1) * 100).round();
-                                  final isActive = index == _currentIndex;
-                                  final isCompleted = _isLevelCompleted(currentLevel);
-                                  return AnimatedPadding(
-                                    duration: const Duration(milliseconds: 180),
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: compactLevelCards ? 8 : 12,
-                                      vertical: isActive ? 0 : (compactLevelCards ? 8 : 16),
+                              if (_currentIndex > 0)
+                                Positioned(
+                                  left: 0,
+                                  top: 0,
+                                  bottom: 0,
+                                  child: Center(
+                                    child: IconButton.filledTonal(
+                                      onPressed: () =>
+                                          _goToLevel(_currentIndex - 1),
+                                      iconSize: 32,
+                                      icon: const Icon(Icons.chevron_left),
                                     ),
-                                    child: _SelectionCard(
-                                      title: 'Level $currentLevel',
-                                      subtitle: isCompleted
-                                          ? (currentBonusPercent <= 0
-                                              ? 'Vychozi HP nepratel\nDokonceno'
-                                              : '+$currentBonusPercent % HP nepratel\nDokonceno')
-                                          : (currentBonusPercent <= 0
-                                              ? 'Vychozi HP nepratel'
-                                              : '+$currentBonusPercent % HP nepratel'),
-                                      icon: isCompleted ? Icons.task_alt_rounded : Icons.flag_rounded,
-                                      accentColor: const Color(0xFF64B5F6),
-                                      compact: compactLevelCards,
-                                      buttonLabel: isCompleted ? 'Spustit znovu' : 'Spustit level',
-                                      completed: isCompleted,
-                                      onPressed: isActive ? _startSelectedLevel : null,
+                                  ),
+                                ),
+                              if (_currentIndex < _levelCount - 1)
+                                Positioned(
+                                  right: 0,
+                                  top: 0,
+                                  bottom: 0,
+                                  child: Center(
+                                    child: IconButton.filledTonal(
+                                      onPressed: () =>
+                                          _goToLevel(_currentIndex + 1),
+                                      iconSize: 32,
+                                      icon: const Icon(Icons.chevron_right),
                                     ),
-                                  );
-                                },
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: _goBackFromLevelSelect,
+                                child: const Text('Zpet'),
                               ),
                             ),
-                            if (_currentIndex > 0)
-                              Positioned(
-                                left: 0,
-                                top: 0,
-                                bottom: 0,
-                                child: Center(
-                                  child: IconButton.filledTonal(
-                                    onPressed: () => _goToLevel(_currentIndex - 1),
-                                    iconSize: 32,
-                                    icon: const Icon(Icons.chevron_left),
-                                  ),
-                                ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: _openLevelEditor,
+                                child: const Text('Editor'),
                               ),
-                            if (_currentIndex < _levelCount - 1)
-                              Positioned(
-                                right: 0,
-                                top: 0,
-                                bottom: 0,
-                                child: Center(
-                                  child: IconButton.filledTonal(
-                                    onPressed: () => _goToLevel(_currentIndex + 1),
-                                    iconSize: 32,
-                                    icon: const Icon(Icons.chevron_right),
-                                  ),
-                                ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: FilledButton(
+                                onPressed: _startSelectedLevel,
+                                child: const Text('Spustit'),
                               ),
+                            ),
                           ],
                         ),
-                      ),
-                      const SizedBox(height: 20),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () => Navigator.of(context).pop(),
-                              child: const Text('Zpet'),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: _openLevelEditor,
-                              child: const Text('Editor'),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: FilledButton(
-                              onPressed: _startSelectedLevel,
-                              child: const Text('Spustit'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );
@@ -1794,7 +1810,9 @@ class _SelectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cardColor = locked ? const Color(0xFF25282C) : accentColor.withOpacity(0.24);
+    final cardColor = locked
+        ? const Color(0xFF25282C)
+        : accentColor.withOpacity(0.24);
     final borderColor = locked ? Colors.white12 : accentColor.withOpacity(0.65);
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -1831,10 +1849,14 @@ class _SelectionCard extends StatelessWidget {
                   width: iconContainerSize,
                   height: iconContainerSize,
                   decoration: BoxDecoration(
-                    color: locked ? Colors.black26 : accentColor.withOpacity(0.2),
+                    color: locked
+                        ? Colors.black26
+                        : accentColor.withOpacity(0.2),
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: locked ? Colors.white24 : accentColor.withOpacity(0.7),
+                      color: locked
+                          ? Colors.white24
+                          : accentColor.withOpacity(0.7),
                     ),
                   ),
                   child: Icon(
@@ -1853,7 +1875,9 @@ class _SelectionCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: const Color(0xFF1D6F42),
                       borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: const Color(0xFF6BFA9D).withOpacity(0.45)),
+                      border: Border.all(
+                        color: const Color(0xFF6BFA9D).withOpacity(0.45),
+                      ),
                     ),
                     child: Text(
                       'Dokonceno',
@@ -1968,7 +1992,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   static const int heroGridRows = 7;
   static const int enemyLanes = 5;
   static const double heroPositionHeight = 50;
-  static const double heroSpacerHeight = (mapHeight - heroSlots * heroPositionHeight) / 2;
+  static const double heroSpacerHeight =
+      (mapHeight - heroSlots * heroPositionHeight) / 2;
   static const double enemyLaneHeight = mapHeight / enemyLanes;
   static const double heroCardHeight = 28;
   static const double wallHpMax = 300;
@@ -1995,10 +2020,16 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   static const double minZoomMultiplier = 1.0;
   static const double maxZoomMultiplier = 2.5;
   static const double zoomStep = 0.2;
+  static const double mapJoystickViewportHeightFactor = 0.33;
+  static const double mapJoystickMinSize = 120.0;
+  static const double mapJoystickMaxSize = 220.0;
+  static const double mapJoystickKnobRadiusFactor = 0.26;
+  static const double mapJoystickPanSpeedViewportFactor = 1.35;
   static const double heroRangeIndicatorVisibleDuration = 5.0;
   static const double heroRangeIndicatorFadeDuration = 0.6;
 
-  double get _levelEnemyHpMultiplier => pow(1.2, widget.levelNumber - 1).toDouble();
+  double get _levelEnemyHpMultiplier =>
+      pow(1.2, widget.levelNumber - 1).toDouble();
   static const double multiSelectDragThreshold = 18.0;
   static const double multiMoveSpacing = heroUnitSize + 12.0;
   static const double enemyHeroContactRange = enemySize / 2 + heroUnitSize / 2;
@@ -2041,7 +2072,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   int? _readyHeroIndex;
   final _interactiveViewerKey = GlobalKey();
   final FocusNode _gameFocusNode = FocusNode(debugLabel: 'game_view_input');
-  final TransformationController _mapTransformController = TransformationController();
+  final TransformationController _mapTransformController =
+      TransformationController();
   _HeroMode _aerinMode = _HeroMode.normal;
   bool _aerinMenuOpen = false;
   late final AnimationController _aerinMenuController;
@@ -2099,7 +2131,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
 
   // Hero bonuses from RPG system
   final Map<String, double> _damageBonuses = {}; // heroName -> damage bonus
-  final Map<String, double> _cooldownReductions = {}; // heroName -> cooldown reduction (seconds)
+  final Map<String, double> _cooldownReductions =
+      {}; // heroName -> cooldown reduction (seconds)
   final Map<String, ui.Image> _enemySpriteSheets = <String, ui.Image>{};
   ui.Image? _grassBackground;
   ui.Image? _wallSprite;
@@ -2109,6 +2142,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   double _zoomMultiplier = 1.0;
   double _towerCooldownRemaining = 0.0;
   Offset _mapViewportOffset = Offset.zero;
+  Offset _mapJoystickInput = Offset.zero;
   final Map<int, Offset> _activeViewportPointers = <int, Offset>{};
   int? _desktopPanPointer;
   Offset? _desktopPanLastViewportPosition;
@@ -2127,7 +2161,10 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       chapterNumber: widget.chapterNumber,
       levelNumber: widget.levelNumber,
     );
-    _heroSlotIndices = List<int>.generate(widget.heroes.length, (index) => index);
+    _heroSlotIndices = List<int>.generate(
+      widget.heroes.length,
+      (index) => index,
+    );
     _heroStates = List<_HeroState>.generate(
       widget.heroes.length,
       (_) => _HeroState(
@@ -2291,7 +2328,10 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
         final frame = await codec.getNextFrame();
         final image = frame.image;
         loadedSheets[entry.key] = image;
-        loadedFrameCounts[entry.key] = max(1, image.width ~/ config.frameWidth.round());
+        loadedFrameCounts[entry.key] = max(
+          1,
+          image.width ~/ config.frameWidth.round(),
+        );
       }
       if (!mounted) {
         for (final image in loadedSheets.values) {
@@ -2323,8 +2363,14 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     for (final hero in widget.heroes) {
       final skillTree = skillTrees[hero.name];
       if (skillTree != null) {
-        final damageBonus = await RpgSystem.getTotalDamageBonus(hero.name, skillTree);
-        final cooldownReduction = await RpgSystem.getTotalCooldownReduction(hero.name, skillTree);
+        final damageBonus = await RpgSystem.getTotalDamageBonus(
+          hero.name,
+          skillTree,
+        );
+        final cooldownReduction = await RpgSystem.getTotalCooldownReduction(
+          hero.name,
+          skillTree,
+        );
         if (mounted) {
           setState(() {
             _damageBonuses[hero.name] = damageBonus;
@@ -2364,11 +2410,14 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       return;
     }
     _totalWaves = _levelDef.waves.length;
-    final waveIndex = (_currentWave - 1).clamp(0, _levelDef.waves.length - 1).toInt();
+    final waveIndex = (_currentWave - 1)
+        .clamp(0, _levelDef.waves.length - 1)
+        .toInt();
     final wave = _levelDef.waves[waveIndex];
     final scheduled = <_ScheduledSpawn>[];
     for (final event in wave.events) {
-      final enemyType = enemyTypeRegistry[event.enemyType] ?? enemyTypeRegistry.values.first;
+      final enemyType =
+          enemyTypeRegistry[event.enemyType] ?? enemyTypeRegistry.values.first;
       for (int i = 0; i < event.count; i++) {
         scheduled.add(
           _ScheduledSpawn(
@@ -2400,6 +2449,58 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     final matrix = Matrix4.identity()..scale(_baseMapScale * _zoomMultiplier);
     matrix.setTranslationRaw(_mapViewportOffset.dx, _mapViewportOffset.dy, 0);
     _mapTransformController.value = matrix;
+  }
+
+  double _mapJoystickSizeForViewport(double viewportHeight) {
+    return (viewportHeight * mapJoystickViewportHeightFactor).clamp(
+      mapJoystickMinSize,
+      mapJoystickMaxSize,
+    ).toDouble();
+  }
+
+  void _updateMapJoystickInput(Offset localPosition, double size) {
+    final center = Offset(size / 2, size / 2);
+    final rawDelta = localPosition - center;
+    final maxDistance = size * mapJoystickKnobRadiusFactor;
+    final distance = rawDelta.distance;
+    final clampedDelta = distance <= maxDistance || distance <= 0.0001
+        ? rawDelta
+        : rawDelta / distance * maxDistance;
+    setState(() {
+      _mapJoystickInput = Offset(
+        (clampedDelta.dx / maxDistance).clamp(-1.0, 1.0),
+        (clampedDelta.dy / maxDistance).clamp(-1.0, 1.0),
+      );
+    });
+  }
+
+  void _resetMapJoystickInput() {
+    if (_mapJoystickInput.distanceSquared <= 0.0001) {
+      return;
+    }
+    setState(() {
+      _mapJoystickInput = Offset.zero;
+    });
+  }
+
+  void _updateMapJoystickPan(double dt) {
+    if (_mapJoystickInput.distanceSquared <= 0.0001) {
+      return;
+    }
+    final viewportSize = _interactiveViewportSize();
+    if (viewportSize == null) {
+      return;
+    }
+    final panSpeed = viewportSize.height * mapJoystickPanSpeedViewportFactor;
+    final delta = Offset(
+      -_mapJoystickInput.dx * panSpeed * dt,
+      -_mapJoystickInput.dy * panSpeed * dt,
+    );
+    if (delta.distanceSquared <= 0) {
+      return;
+    }
+    _mapViewportOffset = _clampMapViewportOffset(_mapViewportOffset + delta);
+    _applyMapTransform();
   }
 
   void _changeZoom(double delta) {
@@ -2493,7 +2594,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   }
 
   Size? _interactiveViewportSize() {
-    final renderObject = _interactiveViewerKey.currentContext?.findRenderObject();
+    final renderObject = _interactiveViewerKey.currentContext
+        ?.findRenderObject();
     if (renderObject is RenderBox) {
       return renderObject.size;
     }
@@ -2510,10 +2612,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     final scaledHeight = mapHeight * scale;
     final minDx = min(0.0, viewportSize.width - scaledWidth);
     final minDy = min(0.0, viewportSize.height - scaledHeight);
-    return Offset(
-      offset.dx.clamp(minDx, 0.0),
-      offset.dy.clamp(minDy, 0.0),
-    );
+    return Offset(offset.dx.clamp(minDx, 0.0), offset.dy.clamp(minDy, 0.0));
   }
 
   Offset _viewportCentroid(Iterable<Offset> positions) {
@@ -2559,7 +2658,9 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   bool _isHeroAlive(int heroIndex) => _heroUnits[heroIndex].isAlive;
 
   bool _containsTargetableEnemy(_Enemy? enemy) {
-    return enemy != null && _enemies.contains(enemy) && _isEnemyTargetable(enemy);
+    return enemy != null &&
+        _enemies.contains(enemy) &&
+        _isEnemyTargetable(enemy);
   }
 
   bool get _hasTargetableEnemies => _enemies.any(_isEnemyTargetable);
@@ -2581,6 +2682,9 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       return 200;
     }
     if (_isKaelen(heroIndex) && _kaelenMode == _KaelenMode.vine) {
+      return 100;
+    }
+    if (_isKaelen(heroIndex) && _kaelenMode == _KaelenMode.healing) {
       return 100;
     }
     if (_isSolenne(heroIndex)) {
@@ -2754,6 +2858,20 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       ..isMoving = (unit.position - target).distance > 0.01;
   }
 
+  void _showTargetIndicatorAt(Offset target) {
+    setState(() {
+      _targetIndicator = target;
+    });
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _targetIndicator = null;
+      });
+    });
+  }
+
   Offset _attackApproachTarget(int heroIndex, _Enemy enemy) {
     final heroPos = _heroPosition(heroIndex);
     final desiredDistance = max(
@@ -2762,9 +2880,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     );
     final delta = heroPos - enemy.position;
     if (delta.distance <= 0.001) {
-      return _clampHeroTarget(
-        enemy.position.translate(-desiredDistance, 0),
-      );
+      return _clampHeroTarget(enemy.position.translate(-desiredDistance, 0));
     }
     final direction = delta / delta.distance;
     return _clampHeroTarget(enemy.position + direction * desiredDistance);
@@ -2783,7 +2899,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   }
 
   void _issueMultiAttackOrder(_Enemy enemy) {
-    final heroIndices = _multiSelectedHeroIndices.where(_isHeroAlive).toList()..sort();
+    final heroIndices = _multiSelectedHeroIndices.where(_isHeroAlive).toList()
+      ..sort();
     for (final heroIndex in heroIndices) {
       _issueAttackOrder(heroIndex, enemy);
     }
@@ -2801,7 +2918,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   }
 
   void _issueMultiMoveOrder(Offset center) {
-    final heroIndices = _multiSelectedHeroIndices.where(_isHeroAlive).toList()..sort();
+    final heroIndices = _multiSelectedHeroIndices.where(_isHeroAlive).toList()
+      ..sort();
     if (heroIndices.isEmpty) {
       _multiSelectedHeroIndices.clear();
       return;
@@ -2844,7 +2962,10 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
 
   double _heroRangeIndicatorOpacity() {
     final shownAt = _rangeIndicatorShownAt;
-    if (shownAt == null || _rangeIndicatorHeroIndices.every((heroIndex) => !_isHeroAlive(heroIndex))) {
+    if (shownAt == null ||
+        _rangeIndicatorHeroIndices.every(
+          (heroIndex) => !_isHeroAlive(heroIndex),
+        )) {
       return 0;
     }
     final elapsed = _lastTime - shownAt;
@@ -2855,7 +2976,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       return 1;
     }
     final fadeProgress =
-        (elapsed - heroRangeIndicatorVisibleDuration) / heroRangeIndicatorFadeDuration;
+        (elapsed - heroRangeIndicatorVisibleDuration) /
+        heroRangeIndicatorFadeDuration;
     if (fadeProgress >= 1) {
       return 0;
     }
@@ -2874,6 +2996,31 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       _multiSelectedHeroIndices.clear();
       _selectedHeroIndex = heroIndex;
       _showHeroRangeIndicator(heroIndex);
+    });
+  }
+
+  void _centerMapOnHero(int heroIndex) {
+    final viewportSize = _interactiveViewportSize();
+    if (viewportSize == null || !_isHeroAlive(heroIndex)) {
+      return;
+    }
+    final heroPosition = _heroPosition(heroIndex);
+    final scale = _baseMapScale * _zoomMultiplier;
+    final viewportCenter = Offset(
+      viewportSize.width / 2,
+      viewportSize.height / 2,
+    );
+    setState(() {
+      _multiSelectedHeroIndices.clear();
+      _selectedHeroIndex = heroIndex;
+      _showHeroRangeIndicator(heroIndex);
+      _mapViewportOffset = _clampMapViewportOffset(
+        Offset(
+          viewportCenter.dx - heroPosition.dx * scale,
+          viewportCenter.dy - heroPosition.dy * scale,
+        ),
+      );
+      _applyMapTransform();
     });
   }
 
@@ -2906,10 +3053,12 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     }
 
     if (_isMultiSelectMode) {
+      final target = _clampHeroTarget(position);
       setState(() {
-        _issueMultiMoveOrder(_clampHeroTarget(position));
+        _issueMultiMoveOrder(target);
         _multiSelectedHeroIndices.clear();
       });
+      _showTargetIndicatorAt(target);
       return;
     }
 
@@ -2918,11 +3067,12 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       return;
     }
 
+    final target = _clampHeroTarget(position);
     setState(() {
-      final target = _clampHeroTarget(position);
       _issueMoveOrder(selectedHeroIndex, target);
       _selectedHeroIndex = null;
     });
+    _showTargetIndicatorAt(target);
   }
 
   int _totalEnemiesForCurrentWave() => _enemiesInWave;
@@ -2967,7 +3117,6 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
-
   void _onTick(Duration elapsed) {
     final t = elapsed.inMicroseconds;
     final seconds = t / 1e6;
@@ -2984,6 +3133,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     _updateProjectiles(dt);
     _updateTower(dt);
     _updateHeroAttackAnimations(dt);
+    _updateMapJoystickPan(dt);
     _updateHeroBehaviorTargets();
     _updateHeroMovement(dt);
     _updateHero(dt);
@@ -3025,7 +3175,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       return false;
     }
     final isFinalWave = _currentWave >= _levelDef.waves.length;
-    final allSpawnsConsumed = _nextWaveSpawnIndex >= _scheduledWaveSpawns.length;
+    final allSpawnsConsumed =
+        _nextWaveSpawnIndex >= _scheduledWaveSpawns.length;
     return isFinalWave && allSpawnsConsumed && !_hasTargetableEnemies;
   }
 
@@ -3068,8 +3219,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     final currentWaveIndex = _currentWave - 1;
     final waveCompleteCondition = currentWaveIndex < _levelDef.waves.length
         ? (_levelDef.waves[currentWaveIndex].completeWhenNoEnemies
-            ? !_hasTargetableEnemies
-            : true)
+              ? !_hasTargetableEnemies
+              : true)
         : false;
     if (currentWaveIndex < _levelDef.waves.length &&
         _nextWaveSpawnIndex >= _scheduledWaveSpawns.length &&
@@ -3090,7 +3241,10 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       if (enemy.position.dx <= heroAreaWidth + 4) {
         enemy.attacking = true;
         _wallHp -= wallDps * dt;
-        _wallHitEffectRemaining = max(_wallHitEffectRemaining, wallHitEffectDuration);
+        _wallHitEffectRemaining = max(
+          _wallHitEffectRemaining,
+          wallHitEffectDuration,
+        );
         continue;
       }
       final targetHeroIndex = _nearestHeroAheadOfEnemy(enemy);
@@ -3183,7 +3337,11 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       return;
     }
     final threatRange = enemyHeroContactRange + defensiveThreatPadding;
-    final threat = _nearestEnemy(unit.position, const <_Enemy>{}, maxDistance: threatRange);
+    final threat = _nearestEnemy(
+      unit.position,
+      const <_Enemy>{},
+      maxDistance: threatRange,
+    );
     if (threat != null) {
       unit
         ..target = _defensiveRetreatTarget(heroIndex, threat)
@@ -3193,7 +3351,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
 
     final hasEnemyInAttackRange = _nearestEnemyForHero(heroIndex) != null;
     if (!hasEnemyInAttackRange &&
-        (unit.position - unit.homePosition).distance > defensiveReturnTolerance) {
+        (unit.position - unit.homePosition).distance >
+            defensiveReturnTolerance) {
       unit.target = unit.homePosition;
       return;
     }
@@ -3216,9 +3375,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     );
     final delta = heroPos - enemy.position;
     if (delta.distance <= 0.001) {
-      return _clampHeroTarget(
-        heroPos.translate(-safeDistance, 0),
-      );
+      return _clampHeroTarget(heroPos.translate(-safeDistance, 0));
     }
     final direction = delta / delta.distance;
     return _clampHeroTarget(enemy.position + direction * safeDistance);
@@ -3260,7 +3417,9 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
         _tryPerformQueuedAttackAfterMovement(i);
       } else {
         unit
-          ..position = unit.position + Offset(delta.dx / distance * step, delta.dy / distance * step)
+          ..position =
+              unit.position +
+              Offset(delta.dx / distance * step, delta.dy / distance * step)
           ..isMoving = true;
       }
     }
@@ -3268,7 +3427,9 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
 
   void _tryPerformQueuedAttackAfterMovement(int heroIndex) {
     final state = _heroStates[heroIndex];
-    if (state.phase != _HeroPhase.sending || !state.pendingAttack || !_isHeroAlive(heroIndex)) {
+    if (state.phase != _HeroPhase.sending ||
+        !state.pendingAttack ||
+        !_isHeroAlive(heroIndex)) {
       return;
     }
     final forcedTarget = _forcedTargetForHero(heroIndex);
@@ -3286,7 +3447,10 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
 
   void _updateProjectiles(double dt) {
     for (final proj in _projectiles) {
-      proj.position = proj.position.translate(proj.velocity.dx * dt, proj.velocity.dy * dt);
+      proj.position = proj.position.translate(
+        proj.velocity.dx * dt,
+        proj.velocity.dy * dt,
+      );
     }
 
     for (final proj in List<_Projectile>.from(_projectiles)) {
@@ -3295,7 +3459,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
         if (!_isEnemyTargetable(enemy)) {
           continue;
         }
-        if ((enemy.position - proj.position).distance <= enemySize / 2 + proj.radius) {
+        if ((enemy.position - proj.position).distance <=
+            enemySize / 2 + proj.radius) {
           hit = enemy;
           break;
         }
@@ -3332,7 +3497,9 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
           }
         }
         _projectiles.remove(proj);
-      } else if (proj.position.dx > mapWidth + 10 || proj.position.dy < -10 || proj.position.dy > mapHeight + 10) {
+      } else if (proj.position.dx > mapWidth + 10 ||
+          proj.position.dy < -10 ||
+          proj.position.dy > mapHeight + 10) {
         _projectiles.remove(proj);
       }
     }
@@ -3405,6 +3572,9 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     if (!_isHeroAlive(heroIndex)) {
       return false;
     }
+    if (_isKaelen(heroIndex) && _kaelenMode == _KaelenMode.healing) {
+      return true;
+    }
     final forcedTarget = _forcedTargetForHero(heroIndex);
     if (forcedTarget != null) {
       return _isEnemyInHeroRange(heroIndex, forcedTarget);
@@ -3421,10 +3591,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     enemy.pendingDamage += damage;
     if (enemy.damageTextCooldown <= 0) {
       _damageTexts.add(
-        _DamageText(
-          position: enemy.position,
-          value: enemy.pendingDamage,
-        ),
+        _DamageText(position: enemy.position, value: enemy.pendingDamage),
       );
       enemy.pendingDamage = 0;
       enemy.damageTextCooldown = 0.35;
@@ -3595,9 +3762,9 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
             onTap: () => _setHeroMode(heroIndex, _KaelenMode.vine),
           ),
           _HeroModeAction(
-            icon: _kaelenModeIcon(_KaelenMode.spore),
-            selected: _kaelenMode == _KaelenMode.spore,
-            onTap: () => _setHeroMode(heroIndex, _KaelenMode.spore),
+            icon: _kaelenModeIcon(_KaelenMode.healing),
+            selected: _kaelenMode == _KaelenMode.healing,
+            onTap: () => _setHeroMode(heroIndex, _KaelenMode.healing),
           ),
         ];
       case 'Solenne':
@@ -3689,7 +3856,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       center: _heroPosition(selectedHeroIndex),
       heroColor: widget.heroes[selectedHeroIndex].color,
       actions: actions,
-      verticalOffset: _GameViewState.heroUnitSize * 0.9,
+      verticalOffset: _GameViewState.heroUnitSize * 0.55,
     );
   }
 
@@ -3714,7 +3881,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       _HeroModeAction(
         icon: Icons.flag,
         selected: behavior == _HeroBehaviorMode.holdPosition,
-        onTap: () => _setHeroBehavior(heroIndex, _HeroBehaviorMode.holdPosition),
+        onTap: () =>
+            _setHeroBehavior(heroIndex, _HeroBehaviorMode.holdPosition),
       ),
       _HeroModeAction(
         icon: Icons.flash_on,
@@ -3738,7 +3906,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       center: _heroPosition(selectedHeroIndex),
       heroColor: widget.heroes[selectedHeroIndex].color,
       actions: _heroBehaviorActions(selectedHeroIndex),
-      verticalOffset: -_GameViewState.heroUnitSize * 2.1,
+      verticalOffset: -_GameViewState.heroUnitSize * 1.1,
     );
   }
 
@@ -3819,6 +3987,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
         state.phase = _HeroPhase.cooldown;
         state.timeRemaining = 0;
         state.pendingAttack = false;
+        state.attackFlipHorizontally = false;
         state.beamTarget = null;
       }
       _selectedHeroIndex = null;
@@ -3829,6 +3998,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       _activePointerCount = 0;
       _activeViewportPointers.clear();
       _mapViewportOffset = Offset.zero;
+      _mapJoystickInput = Offset.zero;
       _clearHeroRangeIndicator();
       _prepareWaveRuntime();
       _applyMapTransform();
@@ -3857,13 +4027,33 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                   ),
                   child: Column(
                     children: [
-                      _buildStatRow(Icons.waves, Colors.blue, 'Wave Reached', _currentWave.toString()),
+                      _buildStatRow(
+                        Icons.waves,
+                        Colors.blue,
+                        'Wave Reached',
+                        _currentWave.toString(),
+                      ),
                       const SizedBox(height: 8),
-                      _buildStatRow(Icons.favorite, Colors.redAccent, 'Enemies Killed', _enemiesKilled.toString()),
+                      _buildStatRow(
+                        Icons.favorite,
+                        Colors.redAccent,
+                        'Enemies Killed',
+                        _enemiesKilled.toString(),
+                      ),
                       const SizedBox(height: 8),
-                      _buildStatRow(Icons.monetization_on, Colors.amber, 'Coins Earned', _coinsEarned.toString()),
+                      _buildStatRow(
+                        Icons.monetization_on,
+                        Colors.amber,
+                        'Coins Earned',
+                        _coinsEarned.toString(),
+                      ),
                       const SizedBox(height: 8),
-                      _buildStatRow(Icons.timer, Colors.lightBlue, 'Game Time', _gameDurationText),
+                      _buildStatRow(
+                        Icons.timer,
+                        Colors.lightBlue,
+                        'Game Time',
+                        _gameDurationText,
+                      ),
                     ],
                   ),
                 ),
@@ -3896,9 +4086,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                 await _saveProgress();
                 Navigator.of(dialogContext).pop();
                 Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const IntroScreen(),
-                  ),
+                  MaterialPageRoute<void>(builder: (_) => const IntroScreen()),
                   (route) => false,
                 );
               },
@@ -3949,7 +4137,11 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
         ),
         Text(
           value,
-          style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ],
     );
@@ -3987,10 +4179,10 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       case 'Eldrin':
         _eldrinMode = mode as _EldrinMode;
         break;
-      }
-      setState(() {
-        _modeSelectorOpen = false;
-      });
+    }
+    setState(() {
+      _modeSelectorOpen = false;
+    });
   }
 
   void _applyBeamDamage(int heroIndex, double dt) {
@@ -4005,7 +4197,10 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       return;
     }
     final state = _heroStates[heroIndex];
-    final nearest = _nearestEnemyForHero(heroIndex, preferredTarget: state.beamTarget);
+    final nearest = _nearestEnemyForHero(
+      heroIndex,
+      preferredTarget: state.beamTarget,
+    );
     if (nearest == null) {
       state.beamTarget = null;
       return;
@@ -4049,8 +4244,10 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       enemy.animTime += dt;
       if (enemy.isDying) {
         final spriteConfig =
-            _enemySpriteConfigs[enemy.typeId] ?? _enemySpriteConfigs['fat_zombie']!;
-        final deathDuration = spriteConfig.deathFrameCount * _Enemy.deathFrameDuration;
+            _enemySpriteConfigs[enemy.typeId] ??
+            _enemySpriteConfigs['fat_zombie']!;
+        final deathDuration =
+            spriteConfig.deathFrameCount * _Enemy.deathFrameDuration;
         if (enemy.deathAnimTime < deathDuration) {
           enemy.deathAnimTime = min(deathDuration, enemy.deathAnimTime + dt);
         } else {
@@ -4085,6 +4282,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
         ..phase = _HeroPhase.cooldown
         ..timeRemaining = 0
         ..pendingAttack = false
+        ..attackFlipHorizontally = false
         ..beamTarget = null;
       return;
     }
@@ -4092,6 +4290,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     _heroStates[heroIndex]
       ..phase = _HeroPhase.sending
       ..pendingAttack = isMoving
+      ..attackFlipHorizontally = false
       ..beamTarget = null
       ..timeRemaining = _effectiveSending(heroIndex);
     if (!isMoving) {
@@ -4103,6 +4302,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     _heroStates[heroIndex]
       ..phase = _HeroPhase.cooldown
       ..pendingAttack = false
+      ..attackFlipHorizontally = false
       ..beamTarget = null
       ..timeRemaining = _effectiveCooldown(heroIndex);
   }
@@ -4110,13 +4310,44 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   void _beginSendingAfterManualAttack(int heroIndex) {
     _heroStates[heroIndex]
       ..pendingAttack = false
+      ..attackFlipHorizontally = false
       ..timeRemaining = _effectiveSending(heroIndex);
+  }
+
+  bool _shouldFlipHeroSprite(int heroIndex) {
+    if (!_isHeroAlive(heroIndex)) {
+      return false;
+    }
+    final unit = _heroUnits[heroIndex];
+    if (unit.isMoving) {
+      return unit.target.dx < unit.position.dx - 0.01;
+    }
+    final state = _heroStates[heroIndex];
+    if (state.phase != _HeroPhase.sending || state.pendingAttack) {
+      return false;
+    }
+    final beamTarget = state.beamTarget;
+    if (_containsTargetableEnemy(beamTarget)) {
+      return beamTarget!.position.dx < unit.position.dx - 0.01;
+    }
+    return state.attackFlipHorizontally;
+  }
+
+  bool _attackFlipFromTarget(int heroIndex, _Enemy? target) {
+    if (!_containsTargetableEnemy(target)) {
+      return false;
+    }
+    return target!.position.dx < _heroPosition(heroIndex).dx - 0.01;
   }
 
   void _performAttack(int heroIndex, {_Enemy? target}) {
     if (!_isHeroAlive(heroIndex)) {
       return;
     }
+    _heroStates[heroIndex].attackFlipHorizontally = _attackFlipFromTarget(
+      heroIndex,
+      target ?? _nearestEnemyForHero(heroIndex),
+    );
     if (_isVeyra(heroIndex)) {
       _heroAttackAnimationRemainingTimes[heroIndex] =
           _HeroUnitWidget.veyraAttackAnimationDurationSeconds;
@@ -4155,8 +4386,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
         case _KaelenMode.vine:
           _castKaelenVine(heroIndex);
           break;
-        case _KaelenMode.spore:
-          _castKaelenSpore(heroIndex, target: target);
+        case _KaelenMode.healing:
+          _castKaelenHealingPulse(heroIndex);
           break;
       }
     } else if (_isSolenne(heroIndex)) {
@@ -4298,9 +4529,7 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       builder: (dialogContext) {
         return AlertDialog(
           title: const Text('Vesnice ubranená'),
-          content: const Text(
-            'Ubranil jsi vesnici a dokoncil tento level.',
-          ),
+          content: const Text('Ubranil jsi vesnici a dokoncil tento level.'),
           actions: [
             TextButton(
               onPressed: () async {
@@ -4339,7 +4568,9 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
 
     // Prevent rapid-fire tapping (minimum 200ms between shots)
     final now = DateTime.now();
-    final timeSinceLastFire = now.difference(_lastManualFireTime).inMilliseconds;
+    final timeSinceLastFire = now
+        .difference(_lastManualFireTime)
+        .inMilliseconds;
     if (timeSinceLastFire < 200) {
       return; // Ignore taps that are too close together
     }
@@ -4357,22 +4588,15 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     final mapPosition = _screenToMapPosition(screenPosition);
 
     // Show target indicator at the exact map target used for firing.
-    setState(() {
-      _targetIndicator = mapPosition;
-    });
-    // Hide indicator after a short delay
-    Future.delayed(const Duration(milliseconds: 300), () {
-      if (mounted) {
-        setState(() {
-          _targetIndicator = null;
-        });
-      }
-    });
+    _showTargetIndicatorAt(mapPosition);
 
     // Fire projectile at map position
     final dir = (mapPosition - heroPos);
     final len = max(dir.distance, 0.001);
-    final velocity = Offset(dir.dx / len * projectileSpeed, dir.dy / len * projectileSpeed);
+    final velocity = Offset(
+      dir.dx / len * projectileSpeed,
+      dir.dy / len * projectileSpeed,
+    );
     final damage = _effectiveDamage(heroIndex);
     final radius = _effectiveProjectileRadius(heroIndex);
     final aoeRadius = _effectiveAoeRadius(heroIndex);
@@ -4405,7 +4629,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   }
 
   Offset _pointerEventToViewportPosition(PointerEvent event) {
-    final renderObject = _interactiveViewerKey.currentContext?.findRenderObject();
+    final renderObject = _interactiveViewerKey.currentContext
+        ?.findRenderObject();
     if (renderObject is RenderBox) {
       return renderObject.globalToLocal(event.position);
     }
@@ -4451,39 +4676,40 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     if (previousViewportPosition != null) {
       _activeViewportPointers[event.pointer] = viewportPosition;
     }
-    if (_activeViewportPointers.length >= 2 && previousViewportPosition != null) {
+    if (_activeViewportPointers.length >= 2 &&
+        previousViewportPosition != null) {
       final previousCentroid = _viewportCentroid(
         _activeViewportPointers.entries.map(
-          (entry) => entry.key == event.pointer ? previousViewportPosition : entry.value,
+          (entry) => entry.key == event.pointer
+              ? previousViewportPosition
+              : entry.value,
         ),
       );
       final previousSpread = _viewportPointerSpread(
         _activeViewportPointers.entries.map(
-          (entry) => entry.key == event.pointer ? previousViewportPosition : entry.value,
+          (entry) => entry.key == event.pointer
+              ? previousViewportPosition
+              : entry.value,
         ),
       );
-      final currentCentroid = _viewportCentroid(_activeViewportPointers.values);
-      final currentSpread = _viewportPointerSpread(_activeViewportPointers.values);
-      final centroidDelta = currentCentroid - previousCentroid;
+      final currentSpread = _viewportPointerSpread(
+        _activeViewportPointers.values,
+      );
       final zoomRatio = previousSpread > 0 && currentSpread > 0
           ? currentSpread / previousSpread
           : 1.0;
       final nextZoom = (_zoomMultiplier * zoomRatio)
-          .clamp(
-            minZoomMultiplier,
-            maxZoomMultiplier,
-          )
+          .clamp(minZoomMultiplier, maxZoomMultiplier)
           .toDouble();
       final sceneAnchor = _mapTransformController.toScene(previousCentroid);
-      if (centroidDelta.distanceSquared > 0 ||
-          (nextZoom - _zoomMultiplier).abs() > 0.0001) {
+      if ((nextZoom - _zoomMultiplier).abs() > 0.0001) {
         setState(() {
           _zoomMultiplier = nextZoom;
           final nextScale = _baseMapScale * _zoomMultiplier;
           _mapViewportOffset = _clampMapViewportOffset(
             Offset(
-              currentCentroid.dx - sceneAnchor.dx * nextScale,
-              currentCentroid.dy - sceneAnchor.dy * nextScale,
+              previousCentroid.dx - sceneAnchor.dx * nextScale,
+              previousCentroid.dy - sceneAnchor.dy * nextScale,
             ),
           );
           _pointerDownScenePosition = null;
@@ -4495,7 +4721,9 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       return;
     }
     final start = _pointerDownScenePosition;
-    if (_activePointerCount != 1 || start == null || _pointerDownHeroIndex != null) {
+    if (_activePointerCount != 1 ||
+        start == null ||
+        _pointerDownHeroIndex != null) {
       return;
     }
     final scenePosition = _pointerEventToScenePosition(event);
@@ -4535,10 +4763,9 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     if (start == null) {
       return;
     }
-    if (pointerDownHeroIndex == null && dragDistance >= multiSelectDragThreshold) {
-      _selectHeroesInSquare(
-        _selectionSquareFromPoints(start, scenePosition),
-      );
+    if (pointerDownHeroIndex == null &&
+        dragDistance >= multiSelectDragThreshold) {
+      _selectHeroesInSquare(_selectionSquareFromPoints(start, scenePosition));
       return;
     }
     if (dragDistance > 12) {
@@ -4605,7 +4832,10 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       return;
     }
     final heroPos = _heroPosition(_heroSlotIndices[heroIndex]);
-    final resolvedTarget = _nearestEnemyForHero(heroIndex, preferredTarget: target);
+    final resolvedTarget = _nearestEnemyForHero(
+      heroIndex,
+      preferredTarget: target,
+    );
     if (resolvedTarget == null) {
       return;
     }
@@ -4613,7 +4843,10 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
 
     final dir = (targetPos - heroPos);
     final len = max(dir.distance, 0.001);
-    final velocity = Offset(dir.dx / len * projectileSpeed, dir.dy / len * projectileSpeed);
+    final velocity = Offset(
+      dir.dx / len * projectileSpeed,
+      dir.dy / len * projectileSpeed,
+    );
     final damage = _effectiveDamage(heroIndex);
     final radius = _effectiveProjectileRadius(heroIndex);
     final aoeRadius = _effectiveAoeRadius(heroIndex);
@@ -4684,8 +4917,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
           return spellSendingDuration;
         case _KaelenMode.vine:
           return 0.5;
-        case _KaelenMode.spore:
-          return 1;
+        case _KaelenMode.healing:
+          return 0.5;
       }
     }
     if (_isSolenne(heroIndex)) {
@@ -4792,8 +5025,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
         return Icons.auto_awesome;
       case _KaelenMode.vine:
         return Icons.grass;
-      case _KaelenMode.spore:
-        return Icons.cloud;
+      case _KaelenMode.healing:
+        return Icons.favorite;
     }
   }
 
@@ -4893,8 +5126,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
           return _scaleCooldown(widget.heroes[heroIndex].cooldownDuration);
         case _KaelenMode.vine:
           return _scaleCooldown(6);
-        case _KaelenMode.spore:
-          return _scaleCooldown(15);
+        case _KaelenMode.healing:
+          return _scaleCooldown(6);
       }
     }
     if (_isSolenne(heroIndex)) {
@@ -4939,7 +5172,9 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     }
 
     // Apply cooldown reduction from RPG system
-    final baseCooldown = _scaleCooldown(widget.heroes[heroIndex].cooldownDuration);
+    final baseCooldown = _scaleCooldown(
+      widget.heroes[heroIndex].cooldownDuration,
+    );
     final heroName = widget.heroes[heroIndex].name;
     final reduction = _cooldownReductions[heroName] ?? 0;
     return max(0.5, baseCooldown - reduction);
@@ -4997,8 +5232,8 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
         case _KaelenMode.vine:
           baseDamage = 6;
           break;
-        case _KaelenMode.spore:
-          baseDamage = 2;
+        case _KaelenMode.healing:
+          baseDamage = 0;
           break;
       }
     } else if (_isSolenne(heroIndex)) {
@@ -5088,9 +5323,6 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     if (_isMyris(heroIndex) && _myrisMode == _MyrisMode.ice) {
       return 50;
     }
-    if (_isKaelen(heroIndex) && _kaelenMode == _KaelenMode.spore) {
-      return 70;
-    }
     if (_isSolenne(heroIndex)) {
       switch (_solenneMode) {
         case _SolenneMode.sunburst:
@@ -5118,7 +5350,11 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     return 0;
   }
 
-  _Enemy? _nearestEnemy(Offset from, Set<_Enemy> exclude, {double? maxDistance}) {
+  _Enemy? _nearestEnemy(
+    Offset from,
+    Set<_Enemy> exclude, {
+    double? maxDistance,
+  }) {
     _Enemy? nearest;
     double bestDist = maxDistance ?? double.infinity;
     for (final enemy in _enemies) {
@@ -5138,7 +5374,11 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     final heroPos = _heroPosition(_heroSlotIndices[heroIndex]);
     final used = <_Enemy>{};
 
-    final first = _nearestEnemyForHero(heroIndex, preferredTarget: target, exclude: used);
+    final first = _nearestEnemyForHero(
+      heroIndex,
+      preferredTarget: target,
+      exclude: used,
+    );
     if (first == null) {
       return;
     }
@@ -5146,14 +5386,24 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     _applyDamage(first, 10);
 
     final segments = <_LightningSegment>[
-      _LightningSegment(start: heroPos, end: first.position, seed: _rng.nextDouble() * 1000),
+      _LightningSegment(
+        start: heroPos,
+        end: first.position,
+        seed: _rng.nextDouble() * 1000,
+      ),
     ];
 
     final second = _nearestEnemy(first.position, used);
     if (second != null) {
       used.add(second);
       _applyDamage(second, 8);
-      segments.add(_LightningSegment(start: first.position, end: second.position, seed: _rng.nextDouble() * 1000));
+      segments.add(
+        _LightningSegment(
+          start: first.position,
+          end: second.position,
+          seed: _rng.nextDouble() * 1000,
+        ),
+      );
     }
 
     if (second != null) {
@@ -5161,7 +5411,13 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       if (third != null) {
         used.add(third);
         _applyDamage(third, 5);
-        segments.add(_LightningSegment(start: second.position, end: third.position, seed: _rng.nextDouble() * 1000));
+        segments.add(
+          _LightningSegment(
+            start: second.position,
+            end: third.position,
+            seed: _rng.nextDouble() * 1000,
+          ),
+        );
       }
     }
 
@@ -5203,7 +5459,14 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   void _castMyrisIce(int heroIndex, {_Enemy? target}) {
     final heroPos = _heroPosition(_heroSlotIndices[heroIndex]);
     final heroColor = widget.heroes[heroIndex].color;
-    _fireProjectileWithAoe(heroIndex, heroPos, heroColor, 50, false, target: target);
+    _fireProjectileWithAoe(
+      heroIndex,
+      heroPos,
+      heroColor,
+      50,
+      false,
+      target: target,
+    );
   }
 
   void _castMyrisFreeze(int heroIndex) {
@@ -5241,10 +5504,19 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     }
   }
 
-  void _castKaelenSpore(int heroIndex, {_Enemy? target}) {
+  void _castKaelenHealingPulse(int heroIndex) {
     final heroPos = _heroPosition(_heroSlotIndices[heroIndex]);
-    final heroColor = widget.heroes[heroIndex].color;
-    _fireProjectileWithAoe(heroIndex, heroPos, heroColor, 70, false, target: target);
+    const healingRadius = 100.0;
+    const healAmount = 2.0;
+    for (final unit in _heroUnits) {
+      if (!unit.isAlive) {
+        continue;
+      }
+      if ((unit.position - heroPos).distance > healingRadius) {
+        continue;
+      }
+      unit.hp = min(unit.maxHp, unit.hp + healAmount);
+    }
   }
 
   void _castSolenneSunburst(int heroIndex) {
@@ -5292,14 +5564,25 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
   void _castRavikVoidBurst(int heroIndex, {_Enemy? target}) {
     final heroPos = _heroPosition(_heroSlotIndices[heroIndex]);
     final heroColor = widget.heroes[heroIndex].color;
-    _fireProjectileWithAoe(heroIndex, heroPos, heroColor, 60, false, target: target);
+    _fireProjectileWithAoe(
+      heroIndex,
+      heroPos,
+      heroColor,
+      60,
+      false,
+      target: target,
+    );
   }
 
   void _castRavikSoulDrain(int heroIndex, {_Enemy? target}) {
     final heroPos = _heroPosition(_heroSlotIndices[heroIndex]);
     final used = <_Enemy>{};
 
-    final first = _nearestEnemyForHero(heroIndex, preferredTarget: target, exclude: used);
+    final first = _nearestEnemyForHero(
+      heroIndex,
+      preferredTarget: target,
+      exclude: used,
+    );
     if (first == null) {
       return;
     }
@@ -5307,14 +5590,24 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     _applyDamage(first, 5);
 
     final segments = <_LightningSegment>[
-      _LightningSegment(start: heroPos, end: first.position, seed: _rng.nextDouble() * 1000),
+      _LightningSegment(
+        start: heroPos,
+        end: first.position,
+        seed: _rng.nextDouble() * 1000,
+      ),
     ];
 
     final second = _nearestEnemy(first.position, used);
     if (second != null) {
       used.add(second);
       _applyDamage(second, 4);
-      segments.add(_LightningSegment(start: first.position, end: second.position, seed: _rng.nextDouble() * 1000));
+      segments.add(
+        _LightningSegment(
+          start: first.position,
+          end: second.position,
+          seed: _rng.nextDouble() * 1000,
+        ),
+      );
     }
 
     if (second != null) {
@@ -5322,7 +5615,13 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       if (third != null) {
         used.add(third);
         _applyDamage(third, 3);
-        segments.add(_LightningSegment(start: second.position, end: third.position, seed: _rng.nextDouble() * 1000));
+        segments.add(
+          _LightningSegment(
+            start: second.position,
+            end: third.position,
+            seed: _rng.nextDouble() * 1000,
+          ),
+        );
       }
     }
 
@@ -5373,7 +5672,10 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
 
   void _castVeyraLightning(int heroIndex, {_Enemy? target}) {
     final heroPos = _heroPosition(_heroSlotIndices[heroIndex]);
-    final resolvedTarget = _nearestEnemyForHero(heroIndex, preferredTarget: target);
+    final resolvedTarget = _nearestEnemyForHero(
+      heroIndex,
+      preferredTarget: target,
+    );
     if (resolvedTarget == null) {
       return;
     }
@@ -5396,7 +5698,11 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     final heroPos = _heroPosition(_heroSlotIndices[heroIndex]);
     final used = <_Enemy>{};
 
-    final first = _nearestEnemyForHero(heroIndex, preferredTarget: target, exclude: used);
+    final first = _nearestEnemyForHero(
+      heroIndex,
+      preferredTarget: target,
+      exclude: used,
+    );
     if (first == null) {
       return;
     }
@@ -5404,26 +5710,48 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     _applyDamage(first, 8);
 
     final segments = <_LightningSegment>[
-      _LightningSegment(start: heroPos, end: first.position, seed: _rng.nextDouble() * 1000),
+      _LightningSegment(
+        start: heroPos,
+        end: first.position,
+        seed: _rng.nextDouble() * 1000,
+      ),
     ];
 
     final second = _nearestEnemy(first.position, used);
     if (second != null) {
       used.add(second);
       _applyDamage(second, 6);
-      segments.add(_LightningSegment(start: first.position, end: second!.position, seed: _rng.nextDouble() * 1000));
+      segments.add(
+        _LightningSegment(
+          start: first.position,
+          end: second!.position,
+          seed: _rng.nextDouble() * 1000,
+        ),
+      );
 
       final third = _nearestEnemy(second!.position, used);
       if (third != null) {
         used.add(third);
         _applyDamage(third, 4);
-        segments.add(_LightningSegment(start: second!.position, end: third!.position, seed: _rng.nextDouble() * 1000));
+        segments.add(
+          _LightningSegment(
+            start: second!.position,
+            end: third!.position,
+            seed: _rng.nextDouble() * 1000,
+          ),
+        );
 
         final fourth = _nearestEnemy(third!.position, used);
         if (fourth != null) {
           used.add(fourth);
           _applyDamage(fourth, 2);
-          segments.add(_LightningSegment(start: third!.position, end: fourth!.position, seed: _rng.nextDouble() * 1000));
+          segments.add(
+            _LightningSegment(
+              start: third!.position,
+              end: fourth!.position,
+              seed: _rng.nextDouble() * 1000,
+            ),
+          );
         }
       }
     }
@@ -5439,7 +5767,10 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     bool isFire, {
     _Enemy? target,
   }) {
-    final resolvedTarget = _nearestEnemyForHero(heroIndex, preferredTarget: target);
+    final resolvedTarget = _nearestEnemyForHero(
+      heroIndex,
+      preferredTarget: target,
+    );
     if (resolvedTarget == null) {
       return;
     }
@@ -5447,7 +5778,10 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
 
     final dir = (targetPos - heroPos);
     final len = max(dir.distance, 0.001);
-    final velocity = Offset(dir.dx / len * projectileSpeed, dir.dy / len * projectileSpeed);
+    final velocity = Offset(
+      dir.dx / len * projectileSpeed,
+      dir.dy / len * projectileSpeed,
+    );
     final damage = _effectiveDamage(heroIndex);
 
     _projectiles.add(
@@ -5476,12 +5810,12 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                 Navigator.of(dialogContext).pop();
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute<void>(
-                    builder: (_) => const IntroScreen(),
+                    builder: (_) => const VillageScreen(),
                   ),
                   (route) => false,
                 );
               },
-              child: const Text('Zpět do hlavního menu'),
+              child: const Text('Zpět do vesnice'),
             ),
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
@@ -5498,6 +5832,9 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
     final heroCooldowns = List<double>.generate(
       widget.heroes.length,
       (i) => _effectiveCooldown(i),
+    );
+    final mapJoystickSize = _mapJoystickSizeForViewport(
+      MediaQuery.sizeOf(context).height,
     );
     final selectionSquare = _activeSelectionSquare();
     final rangeIndicatorOpacity = _heroRangeIndicatorOpacity();
@@ -5567,153 +5904,180 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                           height: mapHeight,
                           child: Stack(
                             children: [
-                            CustomPaint(
-                              size: const Size(mapWidth, mapHeight),
-                              painter: _GamePainter(
-                                wallHp: _wallHp,
-                                wallHitEffectRemaining: _wallHitEffectRemaining,
-                                enemies: _enemies,
-                                projectiles: _projectiles,
-                                damageTexts: _damageTexts,
-                                explosions: _explosions,
-                                lightnings: _lightnings,
-                                wallX: heroAreaWidth,
-                                towerPosition: towerPosition,
-                                towerWidth: towerWidth,
-                                towerHeight: towerHeight,
-                                heroes: widget.heroes,
-                                heroPositions: _heroUnits.map((unit) => unit.position).toList(),
-                                heroAttackRanges: List<double>.generate(
-                                  widget.heroes.length,
-                                  _heroCurrentAttackRange,
+                              CustomPaint(
+                                size: const Size(mapWidth, mapHeight),
+                                painter: _GamePainter(
+                                  wallHp: _wallHp,
+                                  wallHitEffectRemaining:
+                                      _wallHitEffectRemaining,
+                                  enemies: _enemies,
+                                  projectiles: _projectiles,
+                                  damageTexts: _damageTexts,
+                                  explosions: _explosions,
+                                  lightnings: _lightnings,
+                                  wallX: heroAreaWidth,
+                                  towerPosition: towerPosition,
+                                  towerWidth: towerWidth,
+                                  towerHeight: towerHeight,
+                                  heroes: widget.heroes,
+                                  heroPositions: _heroUnits
+                                      .map((unit) => unit.position)
+                                      .toList(),
+                                  heroAttackRanges: List<double>.generate(
+                                    widget.heroes.length,
+                                    _heroCurrentAttackRange,
+                                  ),
+                                  heroAlive: _heroUnits
+                                      .map((unit) => unit.isAlive)
+                                      .toList(),
+                                  heroStates: _heroStates,
+                                  thalorMode: _thalorMode,
+                                  time: _lastTime,
+                                  grassBackground: _grassBackground,
+                                  wallSprite: _wallSprite,
+                                  towerSprite: _towerSprite,
+                                  enemySpriteSheets: _enemySpriteSheets,
+                                  enemySpriteFrameCounts:
+                                      _enemySpriteFrameCounts,
+                                  targetIndicator: _targetIndicator,
                                 ),
-                                heroAlive: _heroUnits.map((unit) => unit.isAlive).toList(),
-                                heroStates: _heroStates,
-                                thalorMode: _thalorMode,
-                                time: _lastTime,
-                                grassBackground: _grassBackground,
-                                wallSprite: _wallSprite,
-                                towerSprite: _towerSprite,
-                                enemySpriteSheets: _enemySpriteSheets,
-                                enemySpriteFrameCounts: _enemySpriteFrameCounts,
-                                targetIndicator: _targetIndicator,
                               ),
-                            ),
-                            for (final heroIndex in rangeIndicatorHeroIndices)
-                              Positioned(
-                                left: _heroPosition(heroIndex).dx -
-                                    _heroCurrentAttackRange(heroIndex),
-                                top: _heroPosition(heroIndex).dy -
-                                    _heroCurrentAttackRange(heroIndex),
-                                child: IgnorePointer(
-                                  child: Container(
-                                    width: _heroCurrentAttackRange(heroIndex) * 2,
-                                    height: _heroCurrentAttackRange(heroIndex) * 2,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: widget.heroes[heroIndex]
-                                          .color
-                                          .withOpacity(0.14 * rangeIndicatorOpacity),
-                                      border: Border.all(
-                                        color: widget.heroes[heroIndex]
-                                            .color
-                                            .withOpacity(0.58 * rangeIndicatorOpacity),
-                                        width: 3,
+                              for (final heroIndex in rangeIndicatorHeroIndices)
+                                Positioned(
+                                  left:
+                                      _heroPosition(heroIndex).dx -
+                                      _heroCurrentAttackRange(heroIndex),
+                                  top:
+                                      _heroPosition(heroIndex).dy -
+                                      _heroCurrentAttackRange(heroIndex),
+                                  child: IgnorePointer(
+                                    child: Container(
+                                      width:
+                                          _heroCurrentAttackRange(heroIndex) *
+                                          2,
+                                      height:
+                                          _heroCurrentAttackRange(heroIndex) *
+                                          2,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: widget.heroes[heroIndex].color
+                                            .withOpacity(
+                                              0.14 * rangeIndicatorOpacity,
+                                            ),
+                                        border: Border.all(
+                                          color: widget.heroes[heroIndex].color
+                                              .withOpacity(
+                                                0.58 * rangeIndicatorOpacity,
+                                              ),
+                                          width: 3,
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            Positioned.fill(
-                              child: Listener(
-                                onPointerSignal: (event) {
-                                  if (event is! PointerScrollEvent ||
-                                      event.kind != ui.PointerDeviceKind.mouse) {
-                                    return;
-                                  }
-                                  _gameFocusNode.requestFocus();
-                                  final nextZoom = (_zoomMultiplier +
-                                          (event.scrollDelta.dy < 0
-                                              ? zoomStep
-                                              : -zoomStep))
-                                      .clamp(
-                                        minZoomMultiplier,
-                                        maxZoomMultiplier,
-                                      )
-                                      .toDouble();
-                                  _setZoomAroundViewportPoint(
-                                    nextZoom,
-                                    _pointerEventToViewportPosition(event),
-                                  );
-                                },
-                                onPointerDown: (event) {
-                                  _handleGameplayPointerDown(event);
-                                },
-                                onPointerMove: (event) {
-                                  _handleGameplayPointerMove(event);
-                                },
-                                onPointerUp: (event) {
-                                  _handleGameplayPointerUp(event);
-                                },
-                                onPointerCancel: (event) {
-                                  _handleGameplayPointerCancel(event);
-                                },
-                                behavior: HitTestBehavior.opaque,
-                                child: const SizedBox.expand(),
-                              ),
-                            ),
-                            if (selectionSquare != null)
-                              Positioned.fromRect(
-                                rect: selectionSquare,
-                                child: IgnorePointer(
-                                  child: DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      color: const Color(0x3358D68D),
-                                      border: Border.all(
-                                        color: const Color(0xFF58D68D),
-                                        width: 2,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            for (int i = 0; i < widget.heroes.length; i++)
-                              if (_heroUnits[i].isAlive)
-                              Positioned(
-                                key: ValueKey<String>('hero-unit-$i'),
-                                left: _heroPosition(i).dx - (heroUnitSize + 18) / 2,
-                                top: _heroPosition(i).dy - (heroUnitSize + 22) / 2,
+                              Positioned.fill(
                                 child: Listener(
+                                  onPointerSignal: (event) {
+                                    if (event is! PointerScrollEvent ||
+                                        event.kind !=
+                                            ui.PointerDeviceKind.mouse) {
+                                      return;
+                                    }
+                                    _gameFocusNode.requestFocus();
+                                    final nextZoom =
+                                        (_zoomMultiplier +
+                                                (event.scrollDelta.dy < 0
+                                                    ? zoomStep
+                                                    : -zoomStep))
+                                            .clamp(
+                                              minZoomMultiplier,
+                                              maxZoomMultiplier,
+                                            )
+                                            .toDouble();
+                                    _setZoomAroundViewportPoint(
+                                      nextZoom,
+                                      _pointerEventToViewportPosition(event),
+                                    );
+                                  },
+                                  onPointerDown: (event) {
+                                    _handleGameplayPointerDown(event);
+                                  },
+                                  onPointerMove: (event) {
+                                    _handleGameplayPointerMove(event);
+                                  },
+                                  onPointerUp: (event) {
+                                    _handleGameplayPointerUp(event);
+                                  },
+                                  onPointerCancel: (event) {
+                                    _handleGameplayPointerCancel(event);
+                                  },
                                   behavior: HitTestBehavior.opaque,
-                                  onPointerDown: _handleGameplayPointerDown,
-                                  onPointerMove: _handleGameplayPointerMove,
-                                  onPointerUp: _handleGameplayPointerUp,
-                                  onPointerCancel: _handleGameplayPointerCancel,
-                                  child: SizedBox(
-                                    width: heroUnitSize + 18,
-                                    height: heroUnitSize + 22,
-                                    child: Center(
-                                      child: _HeroUnitWidget(
-                                        key: ValueKey<String>('hero-unit-widget-$i'),
-                                        hero: widget.heroes[i],
-                                        state: _heroStates[i],
-                                        isSelected: _selectedHeroIndex == i ||
-                                            _multiSelectedHeroIndices.contains(i),
-                                        isMoving: _heroUnits[i].isMoving,
-                                        hp: _heroUnits[i].hp,
-                                        maxHp: _heroUnits[i].maxHp,
-                                        cooldownDuration: heroCooldowns[i],
-                                        attackAnimationRemainingTime:
-                                            _heroAttackAnimationRemainingTimes[i],
-                                        size: heroUnitSize,
-                                        time: _lastTime,
+                                  child: const SizedBox.expand(),
+                                ),
+                              ),
+                              if (selectionSquare != null)
+                                Positioned.fromRect(
+                                  rect: selectionSquare,
+                                  child: IgnorePointer(
+                                    child: DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        color: const Color(0x3358D68D),
+                                        border: Border.all(
+                                          color: const Color(0xFF58D68D),
+                                          width: 2,
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            _buildSelectedHeroBehaviorMenu(),
-                            _buildSelectedHeroModeMenu(),
+                              for (int i = 0; i < widget.heroes.length; i++)
+                                if (_heroUnits[i].isAlive)
+                                  Positioned(
+                                    key: ValueKey<String>('hero-unit-$i'),
+                                    left:
+                                        _heroPosition(i).dx -
+                                        (heroUnitSize + 18) / 2,
+                                    top:
+                                        _heroPosition(i).dy -
+                                        (heroUnitSize + 22) / 2,
+                                    child: Listener(
+                                      behavior: HitTestBehavior.opaque,
+                                      onPointerDown: _handleGameplayPointerDown,
+                                      onPointerMove: _handleGameplayPointerMove,
+                                      onPointerUp: _handleGameplayPointerUp,
+                                      onPointerCancel:
+                                          _handleGameplayPointerCancel,
+                                      child: SizedBox(
+                                        width: heroUnitSize + 18,
+                                        height: heroUnitSize + 22,
+                                        child: Center(
+                                          child: _HeroUnitWidget(
+                                            key: ValueKey<String>(
+                                              'hero-unit-widget-$i',
+                                            ),
+                                            hero: widget.heroes[i],
+                                            state: _heroStates[i],
+                                            isSelected:
+                                                _selectedHeroIndex == i ||
+                                                _multiSelectedHeroIndices
+                                                    .contains(i),
+                                            isMoving: _heroUnits[i].isMoving,
+                                            hp: _heroUnits[i].hp,
+                                            maxHp: _heroUnits[i].maxHp,
+                                            cooldownDuration: heroCooldowns[i],
+                                            attackAnimationRemainingTime:
+                                                _heroAttackAnimationRemainingTimes[i],
+                                            flipHorizontally:
+                                                _shouldFlipHeroSprite(i),
+                                            size: heroUnitSize,
+                                            time: _lastTime,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              _buildSelectedHeroBehaviorMenu(),
+                              _buildSelectedHeroModeMenu(),
                             ],
                           ),
                         ),
@@ -5723,6 +6087,19 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                 ),
               ),
             ],
+          ),
+          Positioned(
+            left: 12,
+            bottom: 12,
+            child: _MapPanJoystick(
+              size: mapJoystickSize,
+              input: _mapJoystickInput,
+              onPanDown: (localPosition) =>
+                  _updateMapJoystickInput(localPosition, mapJoystickSize),
+              onPanUpdate: (localPosition) =>
+                  _updateMapJoystickInput(localPosition, mapJoystickSize),
+              onPanEnd: _resetMapJoystickInput,
+            ),
           ),
           Positioned(
             right: 8,
@@ -5736,12 +6113,14 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
                   selectedHeroIndex: _selectedHeroIndex,
                   multiSelectedHeroIndices: _multiSelectedHeroIndices,
                   onHeroTap: _selectHero,
+                  onHeroDoubleTap: _centerMapOnHero,
                 ),
                 const SizedBox(width: 8),
                 _SpeedPanel(
                   isOpen: _speedPanelOpen,
                   speed: _gameSpeed,
-                  onToggle: () => setState(() => _speedPanelOpen = !_speedPanelOpen),
+                  onToggle: () =>
+                      setState(() => _speedPanelOpen = !_speedPanelOpen),
                   onSetSpeed: (value) => setState(() => _gameSpeed = value),
                 ),
               ],
@@ -5760,6 +6139,7 @@ class _HeroCardsPanel extends StatelessWidget {
     required this.selectedHeroIndex,
     required this.multiSelectedHeroIndices,
     required this.onHeroTap,
+    required this.onHeroDoubleTap,
   });
 
   final List<HeroDef> heroes;
@@ -5767,6 +6147,7 @@ class _HeroCardsPanel extends StatelessWidget {
   final int? selectedHeroIndex;
   final Set<int> multiSelectedHeroIndices;
   final ValueChanged<int> onHeroTap;
+  final ValueChanged<int> onHeroDoubleTap;
 
   @override
   Widget build(BuildContext context) {
@@ -5782,17 +6163,127 @@ class _HeroCardsPanel extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: List.generate(heroes.length, (index) {
             final isSelected =
-                selectedHeroIndex == index || multiSelectedHeroIndices.contains(index);
+                selectedHeroIndex == index ||
+                multiSelectedHeroIndices.contains(index);
             return Padding(
-              padding: EdgeInsets.only(right: index == heroes.length - 1 ? 0 : 8),
+              padding: EdgeInsets.only(
+                right: index == heroes.length - 1 ? 0 : 8,
+              ),
               child: _HeroQuickCard(
                 hero: heroes[index],
                 unit: heroUnits[index],
                 isSelected: isSelected,
                 onTap: heroUnits[index].isAlive ? () => onHeroTap(index) : null,
+                onDoubleTap: heroUnits[index].isAlive
+                    ? () => onHeroDoubleTap(index)
+                    : null,
               ),
             );
           }),
+        ),
+      ),
+    );
+  }
+}
+
+class _MapPanJoystick extends StatelessWidget {
+  const _MapPanJoystick({
+    required this.size,
+    required this.input,
+    required this.onPanDown,
+    required this.onPanUpdate,
+    required this.onPanEnd,
+  });
+
+  final double size;
+  final Offset input;
+  final ValueChanged<Offset> onPanDown;
+  final ValueChanged<Offset> onPanUpdate;
+  final VoidCallback onPanEnd;
+
+  @override
+  Widget build(BuildContext context) {
+    final knobTravel = size * _GameViewState.mapJoystickKnobRadiusFactor;
+    final knobOffset = Offset(
+      input.dx.clamp(-1.0, 1.0) * knobTravel,
+      input.dy.clamp(-1.0, 1.0) * knobTravel,
+    );
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onPanDown: (details) => onPanDown(details.localPosition),
+      onPanUpdate: (details) => onPanUpdate(details.localPosition),
+      onPanEnd: (_) => onPanEnd(),
+      onPanCancel: onPanEnd,
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: const Color(0x5512181C),
+                  borderRadius: BorderRadius.circular(size * 0.18),
+                  border: Border.all(color: Colors.white24, width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.22),
+                      blurRadius: 12,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Positioned.fill(
+              child: Padding(
+                padding: EdgeInsets.all(size * 0.14),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0x221D2830),
+                    border: Border.all(color: Colors.white12),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              left: size / 2 + knobOffset.dx - size * 0.16,
+              top: size / 2 + knobOffset.dy - size * 0.16,
+              child: Container(
+                width: size * 0.32,
+                height: size * 0.32,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xCC5FAAA0),
+                  border: Border.all(color: Colors.white54, width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0x885FAAA0),
+                      blurRadius: 14,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: size * 0.08,
+              child: Text(
+                'MAPA',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: size * 0.08,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -5810,6 +6301,7 @@ class _HeroUnitWidget extends StatelessWidget {
     required this.maxHp,
     required this.cooldownDuration,
     required this.attackAnimationRemainingTime,
+    required this.flipHorizontally,
     required this.size,
     required this.time,
   });
@@ -5822,17 +6314,21 @@ class _HeroUnitWidget extends StatelessWidget {
   final double maxHp;
   final double cooldownDuration;
   final double attackAnimationRemainingTime;
+  final bool flipHorizontally;
   final double size;
   final double time;
 
   static const String _aerinSpriteSheetAsset = 'assets/heroes/Aerin_sheet.png';
   static const String _aerinFallbackAsset = 'assets/heroes/Aerin_default.png';
+  static const String _brannInGameSpriteAsset = 'assets/heroes/Brann/brann.png';
   static const int _aerinFrameCount = 31;
   static const double _aerinFrameWidth = 479;
   static const double _aerinFrameHeight = 404;
   static ui.Image? _aerinSpriteSheetCache;
-  static final Future<ui.Image?> _aerinSpriteSheetFuture = _loadAerinSpriteSheet();
-  static const String _veyraSpriteSheetAsset = 'assets/heroes/Veyra/standing/Veyra_sheet.png';
+  static final Future<ui.Image?> _aerinSpriteSheetFuture =
+      _loadAerinSpriteSheet();
+  static const String _veyraSpriteSheetAsset =
+      'assets/heroes/Veyra/standing/Veyra_sheet.png';
   static const int _veyraFrameCount = 16;
   static const double _veyraFrameWidth = 688;
   static const double _veyraFrameHeight = 464;
@@ -5847,9 +6343,8 @@ class _HeroUnitWidget extends StatelessWidget {
   static const double _veyraAttackFrameWidth = 512;
   static const double _veyraAttackFrameHeight = 345;
   static ui.Image? _veyraAttackSpriteSheetCache;
-  static final Future<ui.Image?> _veyraAttackSpriteSheetFuture = _loadSpriteSheet(
-    _veyraAttackSpriteSheetAsset,
-  );
+  static final Future<ui.Image?> _veyraAttackSpriteSheetFuture =
+      _loadSpriteSheet(_veyraAttackSpriteSheetAsset);
   static const double _veyraAttackAnimationDurationSeconds = 2.9;
   static double get veyraAttackAnimationDurationSeconds =>
       _veyraAttackAnimationDurationSeconds;
@@ -5877,31 +6372,53 @@ class _HeroUnitWidget extends StatelessWidget {
     return _loadSpriteSheet(_aerinSpriteSheetAsset);
   }
 
+  bool get _usesBaseHorizontalFlip => hero.name == 'Veyra';
+
+  bool get _effectiveFlipHorizontally =>
+      _usesBaseHorizontalFlip != flipHorizontally;
+
+  Widget _maybeFlip({required Widget child, required bool flip}) {
+    if (!flip) {
+      return child;
+    }
+    return Transform(
+      alignment: Alignment.center,
+      transform: Matrix4.diagonal3Values(-1, 1, 1),
+      child: child,
+    );
+  }
+
   Widget _buildHeroImage({
     required String imageAsset,
     required bool isAerinInGameSprite,
+    required bool flipHorizontally,
   }) {
-    return Image.asset(
-      imageAsset,
-      fit: isAerinInGameSprite ? BoxFit.contain : BoxFit.cover,
-      filterQuality: isAerinInGameSprite ? FilterQuality.none : FilterQuality.low,
-      isAntiAlias: !isAerinInGameSprite,
-      gaplessPlayback: true,
-      errorBuilder: (context, error, stackTrace) {
-        if (isAerinInGameSprite) {
-          return Image.asset(
-            _aerinFallbackAsset,
-            fit: BoxFit.contain,
-            filterQuality: FilterQuality.none,
-            isAntiAlias: false,
-            gaplessPlayback: true,
-            errorBuilder: (context, error, stackTrace) {
-              return const Icon(Icons.person, color: Colors.white70, size: 20);
-            },
-          );
-        }
-        return const Icon(Icons.person, color: Colors.white70, size: 20);
-      },
+    return _maybeFlip(
+      flip: flipHorizontally,
+      child: Image.asset(
+        imageAsset,
+        fit: isAerinInGameSprite ? BoxFit.contain : BoxFit.cover,
+        filterQuality: isAerinInGameSprite
+            ? FilterQuality.none
+            : FilterQuality.low,
+        isAntiAlias: !isAerinInGameSprite,
+        gaplessPlayback: true,
+        errorBuilder: (context, error, stackTrace) {
+          if (isAerinInGameSprite) {
+            return Image.asset(
+              _aerinFallbackAsset,
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.none,
+              isAntiAlias: false,
+              gaplessPlayback: true,
+              errorBuilder: (context, error, stackTrace) {
+                return const Icon(Icons.person, color: Colors.white70, size: 20);
+              },
+            );
+          }
+          return const Icon(Icons.person, color: Colors.white70, size: 20);
+        },
+      ),
     );
   }
 
@@ -5915,6 +6432,7 @@ class _HeroUnitWidget extends StatelessWidget {
           return _buildHeroImage(
             imageAsset: _aerinFallbackAsset,
             isAerinInGameSprite: true,
+            flipHorizontally: _effectiveFlipHorizontally,
           );
         }
         return SizedBox.expand(
@@ -5925,6 +6443,7 @@ class _HeroUnitWidget extends StatelessWidget {
               frameCount: _aerinFrameCount,
               frameWidth: _aerinFrameWidth,
               frameHeight: _aerinFrameHeight,
+              flipHorizontally: _effectiveFlipHorizontally,
             ),
           ),
         );
@@ -5942,6 +6461,7 @@ class _HeroUnitWidget extends StatelessWidget {
           return _buildHeroImage(
             imageAsset: hero.imageAsset,
             isAerinInGameSprite: false,
+            flipHorizontally: _effectiveFlipHorizontally,
           );
         }
         return SizedBox.expand(
@@ -5952,7 +6472,7 @@ class _HeroUnitWidget extends StatelessWidget {
               frameCount: _veyraFrameCount,
               frameWidth: _veyraFrameWidth,
               frameHeight: _veyraFrameHeight,
-              flipHorizontally: true,
+              flipHorizontally: _effectiveFlipHorizontally,
             ),
           ),
         );
@@ -5990,7 +6510,7 @@ class _HeroUnitWidget extends StatelessWidget {
               frameColumns: _veyraAttackFrameColumns,
               frameWidth: _veyraAttackFrameWidth,
               frameHeight: _veyraAttackFrameHeight,
-              flipHorizontally: true,
+              flipHorizontally: _effectiveFlipHorizontally,
             ),
           ),
         );
@@ -6002,13 +6522,15 @@ class _HeroUnitWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final pulse = sin(time * 6) * 0.5 + 0.5;
     final isAerinInGameSprite = hero.name == 'Aerin';
+    final isBrannInGameSprite = hero.name == 'Brann';
     final isVeyraInGameSprite = hero.name == 'Veyra';
-    final usesTransparentInGameSprite = isAerinInGameSprite || isVeyraInGameSprite;
+    final usesTransparentInGameSprite =
+        isAerinInGameSprite || isVeyraInGameSprite;
     final shadowBottomOffset = isVeyraInGameSprite ? size * 0.10 : size * 0.04;
     final cooldownFraction =
         (state.phase == _HeroPhase.cooldown && cooldownDuration > 0)
-            ? (state.timeRemaining / cooldownDuration).clamp(0.0, 1.0)
-            : 0.0;
+        ? (state.timeRemaining / cooldownDuration).clamp(0.0, 1.0)
+        : 0.0;
     final hpFraction = maxHp > 0 ? (hp / maxHp).clamp(0.0, 1.0) : 0.0;
 
     return SizedBox(
@@ -6041,17 +6563,23 @@ class _HeroUnitWidget extends StatelessWidget {
                     color: usesTransparentInGameSprite
                         ? Colors.transparent
                         : hero.color.withOpacity(isMoving ? 0.75 : 0.9),
-                    borderRadius: BorderRadius.circular(usesTransparentInGameSprite ? 0 : 10),
+                    borderRadius: BorderRadius.circular(
+                      usesTransparentInGameSprite ? 0 : 10,
+                    ),
                     border: usesTransparentInGameSprite
                         ? null
                         : Border.all(
-                            color: isSelected ? const Color(0xFFFFE08A) : Colors.white24,
+                            color: isSelected
+                                ? const Color(0xFFFFE08A)
+                                : Colors.white24,
                             width: isSelected ? 2.5 : 1,
                           ),
                     boxShadow: isSelected && !usesTransparentInGameSprite
                         ? [
                             BoxShadow(
-                              color: const Color(0xFFFFE08A).withOpacity(0.5 + pulse * 0.35),
+                              color: const Color(
+                                0xFFFFE08A,
+                              ).withOpacity(0.5 + pulse * 0.35),
                               blurRadius: 14 + pulse * 6,
                               spreadRadius: 1.5,
                             ),
@@ -6059,29 +6587,50 @@ class _HeroUnitWidget extends StatelessWidget {
                         : null,
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(usesTransparentInGameSprite ? 0 : 9),
+                    borderRadius: BorderRadius.circular(
+                      usesTransparentInGameSprite ? 0 : 9,
+                    ),
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
                         if (isAerinInGameSprite)
-                          _buildAerinFrame((time * 12).floor() % _aerinFrameCount)
+                          _buildAerinFrame(
+                            (time * 12).floor() % _aerinFrameCount,
+                          )
                         else if (isVeyraInGameSprite)
                           _buildVeyraFrame(
-                            idleFrameIndex: (time * 12).floor() % _veyraFrameCount,
-                            attackAnimationRemainingTime: attackAnimationRemainingTime,
+                            idleFrameIndex:
+                                (time * 12).floor() % _veyraFrameCount,
+                            attackAnimationRemainingTime:
+                                attackAnimationRemainingTime,
+                          )
+                        else if (isBrannInGameSprite)
+                          _buildHeroImage(
+                            imageAsset: _brannInGameSpriteAsset,
+                            isAerinInGameSprite: false,
+                            flipHorizontally: _effectiveFlipHorizontally,
                           )
                         else if (hero.imageAsset.isNotEmpty)
                           _buildHeroImage(
                             imageAsset: hero.imageAsset,
                             isAerinInGameSprite: false,
+                            flipHorizontally: _effectiveFlipHorizontally,
                           )
                         else
-                          const Icon(Icons.person, color: Colors.white70, size: 20),
+                          const Icon(
+                            Icons.person,
+                            color: Colors.white70,
+                            size: 20,
+                          ),
                         if (isMoving && !usesTransparentInGameSprite)
                           Container(
                             color: const Color(0x66000000),
                             alignment: Alignment.center,
-                            child: const Icon(Icons.directions_run, color: Colors.white, size: 16),
+                            child: const Icon(
+                              Icons.directions_run,
+                              color: Colors.white,
+                              size: 16,
+                            ),
                           ),
                       ],
                     ),
@@ -6139,10 +6688,7 @@ class _HeroUnitWidget extends StatelessWidget {
 }
 
 class _ZoomButton extends StatelessWidget {
-  const _ZoomButton({
-    required this.icon,
-    required this.onTap,
-  });
+  const _ZoomButton({required this.icon, required this.onTap});
 
   final IconData icon;
   final VoidCallback onTap;
@@ -6175,31 +6721,49 @@ class _HeroQuickCard extends StatelessWidget {
     required this.unit,
     required this.isSelected,
     required this.onTap,
+    required this.onDoubleTap,
   });
 
   static const List<double> _grayscaleMatrix = <double>[
-    0.2126, 0.7152, 0.0722, 0, 0,
-    0.2126, 0.7152, 0.0722, 0, 0,
-    0.2126, 0.7152, 0.0722, 0, 0,
-    0, 0, 0, 1, 0,
+    0.2126,
+    0.7152,
+    0.0722,
+    0,
+    0,
+    0.2126,
+    0.7152,
+    0.0722,
+    0,
+    0,
+    0.2126,
+    0.7152,
+    0.0722,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
   ];
 
   final HeroDef hero;
   final _HeroUnit unit;
   final bool isSelected;
   final VoidCallback? onTap;
+  final VoidCallback? onDoubleTap;
 
   @override
   Widget build(BuildContext context) {
-    final hpFraction = unit.maxHp > 0 ? (unit.hp / unit.maxHp).clamp(0.0, 1.0) : 0.0;
+    final hpFraction = unit.maxHp > 0
+        ? (unit.hp / unit.maxHp).clamp(0.0, 1.0)
+        : 0.0;
     final isDead = !unit.isAlive;
     final content = Container(
       width: 66,
       padding: const EdgeInsets.fromLTRB(6, 6, 6, 7),
       decoration: BoxDecoration(
-        color: isDead
-            ? const Color(0xCC3A3A3A)
-            : const Color(0xCC1A2228),
+        color: isDead ? const Color(0xCC3A3A3A) : const Color(0xCC1A2228),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: isSelected ? const Color(0xFFFFE08A) : Colors.white24,
@@ -6229,10 +6793,26 @@ class _HeroQuickCard extends StatelessWidget {
                         isDead
                             ? _grayscaleMatrix
                             : const <double>[
-                                1, 0, 0, 0, 0,
-                                0, 1, 0, 0, 0,
-                                0, 0, 1, 0, 0,
-                                0, 0, 0, 1, 0,
+                                1,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                1,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                1,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                1,
+                                0,
                               ],
                       ),
                       child: Opacity(
@@ -6241,7 +6821,10 @@ class _HeroQuickCard extends StatelessWidget {
                           hero.imageAsset,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
-                            return const Icon(Icons.person, color: Colors.white54);
+                            return const Icon(
+                              Icons.person,
+                              color: Colors.white54,
+                            );
                           },
                         ),
                       ),
@@ -6268,11 +6851,11 @@ class _HeroQuickCard extends StatelessWidget {
                   color: isDead
                       ? Colors.grey.shade500
                       : Color.lerp(
-                            const Color(0xFFE14D4D),
+                              const Color(0xFFE14D4D),
+                              const Color(0xFF58D68D),
+                              hpFraction,
+                            ) ??
                             const Color(0xFF58D68D),
-                            hpFraction,
-                          ) ??
-                          const Color(0xFF58D68D),
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),
@@ -6284,6 +6867,7 @@ class _HeroQuickCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
+      onDoubleTap: onDoubleTap,
       behavior: HitTestBehavior.opaque,
       child: content,
     );
@@ -6340,20 +6924,10 @@ class _SpriteFramePainter extends CustomPainter {
       canvas.save();
       canvas.translate(size.width, 0);
       canvas.scale(-1, 1);
-      canvas.drawImageRect(
-        spriteSheet,
-        src,
-        dst,
-        paint,
-      );
+      canvas.drawImageRect(spriteSheet, src, dst, paint);
       canvas.restore();
     } else {
-      canvas.drawImageRect(
-        spriteSheet,
-        src,
-        dst,
-        paint,
-      );
+      canvas.drawImageRect(spriteSheet, src, dst, paint);
     }
   }
 
@@ -6418,10 +6992,12 @@ class _Enemy {
   double corpseFadeTime = 0;
 
   static const int deathFrameCount = 6;
-  static const double deathFrameDuration = _GameViewState.enemyDeathFrameDuration;
+  static const double deathFrameDuration =
+      _GameViewState.enemyDeathFrameDuration;
   static const double deathDuration = deathFrameCount * deathFrameDuration;
 
-  bool get canRemove => isDying && corpseFadeTime >= _GameViewState.enemyCorpseFadeDuration;
+  bool get canRemove =>
+      isDying && corpseFadeTime >= _GameViewState.enemyCorpseFadeDuration;
 }
 
 class _ScheduledSpawn {
@@ -6464,37 +7040,38 @@ class _EnemySpriteConfig {
   final int deathFrameCount;
 }
 
-const Map<String, _EnemySpriteConfig> _enemySpriteConfigs = <String, _EnemySpriteConfig>{
-  'fat_zombie': _EnemySpriteConfig(
-    assetPath: 'assets/enemies/FatZombie.png',
-    frameWidth: 90,
-    frameHeight: 90,
-    walkFrameStart: 8,
-    walkFrameCount: 8,
-    attackFrameStart: 16,
-    attackFrameCount: 9,
-  ),
-  'zombie_female': _EnemySpriteConfig(
-    assetPath: 'assets/enemies/ZombieFemale.png',
-    frameWidth: 62,
-    frameHeight: 37,
-    walkFrameStart: 8,
-    walkFrameCount: 8,
-    attackFrameStart: 16,
-    attackFrameCount: 8,
-    deathFrameCount: 9,
-  ),
-  'skull_mage': _EnemySpriteConfig(
-    assetPath: 'assets/enemies/Skull_mage_sprite_sheet.png',
-    frameWidth: 180,
-    frameHeight: 180,
-    walkFrameStart: 0,
-    walkFrameCount: 18,
-    attackFrameStart: 18,
-    attackFrameCount: 7,
-    deathFrameCount: 5,
-  ),
-};
+const Map<String, _EnemySpriteConfig> _enemySpriteConfigs =
+    <String, _EnemySpriteConfig>{
+      'fat_zombie': _EnemySpriteConfig(
+        assetPath: 'assets/enemies/FatZombie.png',
+        frameWidth: 90,
+        frameHeight: 90,
+        walkFrameStart: 8,
+        walkFrameCount: 8,
+        attackFrameStart: 16,
+        attackFrameCount: 9,
+      ),
+      'zombie_female': _EnemySpriteConfig(
+        assetPath: 'assets/enemies/ZombieFemale.png',
+        frameWidth: 62,
+        frameHeight: 37,
+        walkFrameStart: 8,
+        walkFrameCount: 8,
+        attackFrameStart: 16,
+        attackFrameCount: 8,
+        deathFrameCount: 9,
+      ),
+      'skull_mage': _EnemySpriteConfig(
+        assetPath: 'assets/enemies/Skull_mage_sprite_sheet.png',
+        frameWidth: 180,
+        frameHeight: 180,
+        walkFrameStart: 0,
+        walkFrameCount: 18,
+        attackFrameStart: 18,
+        attackFrameCount: 7,
+        deathFrameCount: 5,
+      ),
+    };
 
 class _Projectile {
   _Projectile({
@@ -6594,7 +7171,8 @@ class _GamePainter extends CustomPainter {
         continue;
       }
       final heroPos = heroPositions[i];
-      if (heroes[i].attackType == _AttackType.beam && heroStates[i].phase == _HeroPhase.sending) {
+      if (heroes[i].attackType == _AttackType.beam &&
+          heroStates[i].phase == _HeroPhase.sending) {
         _Enemy? nearest;
         double minDist = double.infinity;
         for (final enemy in enemies) {
@@ -6610,7 +7188,12 @@ class _GamePainter extends CustomPainter {
         if (nearest != null) {
           final dir = nearest.position - heroPos;
           final len = max(dir.distance, 0.001);
-          final end = heroPos + Offset(dir.dx / len * heroAttackRanges[i], dir.dy / len * heroAttackRanges[i]);
+          final end =
+              heroPos +
+              Offset(
+                dir.dx / len * heroAttackRanges[i],
+                dir.dy / len * heroAttackRanges[i],
+              );
           _drawMagicBeam(canvas, heroPos, end, heroes[i].color, time);
         }
       }
@@ -6629,7 +7212,10 @@ class _GamePainter extends CustomPainter {
     }
 
     final wallEffectStrength =
-        (wallHitEffectRemaining / _GameViewState.wallHitEffectDuration).clamp(0.0, 1.0);
+        (wallHitEffectRemaining / _GameViewState.wallHitEffectDuration).clamp(
+          0.0,
+          1.0,
+        );
     final isWallDestroyed = wallHp <= 0;
     if (wallSprite != null && !isWallDestroyed) {
       final sourceRect = Rect.fromLTWH(
@@ -6649,12 +7235,7 @@ class _GamePainter extends CustomPainter {
         wallWidth,
         size.height,
       );
-      canvas.drawImageRect(
-        wallSprite!,
-        sourceRect,
-        destRect,
-        Paint(),
-      );
+      canvas.drawImageRect(wallSprite!, sourceRect, destRect, Paint());
       if (wallEffectStrength > 0) {
         final flashOpacity =
             (0.14 + 0.28 * (0.5 + 0.5 * sin(time * 48))) * wallEffectStrength;
@@ -6679,7 +7260,10 @@ class _GamePainter extends CustomPainter {
         ..color = const Color(0xFF6BFA9D)
         ..style = PaintingStyle.fill;
       final hpRatio = (wallHp / _GameViewState.wallHpMax).clamp(0.0, 1.0);
-      canvas.drawRect(Rect.fromLTWH(wallX + 4, 0, 3, size.height * hpRatio), wallHpPaint);
+      canvas.drawRect(
+        Rect.fromLTWH(wallX + 4, 0, 3, size.height * hpRatio),
+        wallHpPaint,
+      );
     }
     _drawDefenseTower(canvas);
 
@@ -6701,7 +7285,11 @@ class _GamePainter extends CustomPainter {
           (enemySpriteFrameCounts[enemy.typeId] ?? 0) > 0) {
         _drawEnemySprite(canvas, enemy);
       } else {
-        _drawHungryEnemy(canvas, enemy, enemy.flashRemaining > 0 ? enemyHitPaint : enemyPaint);
+        _drawHungryEnemy(
+          canvas,
+          enemy,
+          enemy.flashRemaining > 0 ? enemyHitPaint : enemyPaint,
+        );
       }
 
       if (enemy.isDying) {
@@ -6715,7 +7303,12 @@ class _GamePainter extends CustomPainter {
       final barLeft = enemy.position.dx - barWidth / 2;
       final barTop = enemy.position.dy - _GameViewState.enemySize / 2 - 8;
       final backRect = Rect.fromLTWH(barLeft, barTop, barWidth, barHeight);
-      final fillRect = Rect.fromLTWH(barLeft, barTop, barWidth * hpRatio, barHeight);
+      final fillRect = Rect.fromLTWH(
+        barLeft,
+        barTop,
+        barWidth * hpRatio,
+        barHeight,
+      );
       canvas.drawRect(backRect, enemyHpBack);
       canvas.drawRect(fillRect, enemyHpFill);
     }
@@ -6750,7 +7343,8 @@ class _GamePainter extends CustomPainter {
     }
 
     for (final boom in explosions) {
-      final alpha = (boom.lifeRemaining / _GameViewState.explosionDuration).clamp(0.0, 1.0);
+      final alpha = (boom.lifeRemaining / _GameViewState.explosionDuration)
+          .clamp(0.0, 1.0);
       if (boom.isFire) {
         _drawFireExplosion(canvas, boom, time, alpha);
       } else {
@@ -6758,7 +7352,11 @@ class _GamePainter extends CustomPainter {
           ..color = Colors.orangeAccent.withOpacity(alpha)
           ..style = PaintingStyle.stroke
           ..strokeWidth = 2;
-        canvas.drawCircle(boom.position, boom.radius * (1 - alpha * 0.3), paint);
+        canvas.drawCircle(
+          boom.position,
+          boom.radius * (1 - alpha * 0.3),
+          paint,
+        );
       }
     }
 
@@ -6769,7 +7367,6 @@ class _GamePainter extends CustomPainter {
     if (targetIndicator != null) {
       _drawTargetIndicator(canvas, targetIndicator!);
     }
-
   }
 
   void _drawDefenseTower(Canvas canvas) {
@@ -6821,11 +7418,7 @@ class _GamePainter extends CustomPainter {
       borderPaint,
     );
     canvas.drawCircle(towerPosition, 6, corePaint);
-    canvas.drawLine(
-      towerPosition,
-      towerPosition.translate(12, 0),
-      barrelPaint,
-    );
+    canvas.drawLine(towerPosition, towerPosition.translate(12, 0), barrelPaint);
   }
 
   void _drawFireballProjectile(Canvas canvas, _Projectile p, double time) {
@@ -6851,7 +7444,8 @@ class _GamePainter extends CustomPainter {
     canvas.drawCircle(p.position, glowRadius, glowPaint);
 
     final trailLength = glowRadius * 1.6;
-    final trailOffset = p.position - trailDir * trailLength * (0.5 + flicker * 0.2);
+    final trailOffset =
+        p.position - trailDir * trailLength * (0.5 + flicker * 0.2);
     final trailPath = Path()
       ..moveTo(p.position.dx, p.position.dy)
       ..quadraticBezierTo(
@@ -6868,14 +7462,10 @@ class _GamePainter extends CustomPainter {
       )
       ..close();
     final trailPaint = Paint()
-      ..shader = ui.Gradient.linear(
-        p.position,
-        trailOffset,
-        [
-          const Color(0xFFFFC15A).withOpacity(0.75),
-          const Color(0xFFFF6A3A).withOpacity(0.0),
-        ],
-      );
+      ..shader = ui.Gradient.linear(p.position, trailOffset, [
+        const Color(0xFFFFC15A).withOpacity(0.75),
+        const Color(0xFFFF6A3A).withOpacity(0.0),
+      ]);
     canvas.drawPath(trailPath, trailPaint);
 
     final corePaint = Paint()
@@ -6896,12 +7486,18 @@ class _GamePainter extends CustomPainter {
       final angle = (i / sparkCount) * pi * 2 + time * 2 + p.seed * 0.1;
       final r = coreRadius * (1.1 + flicker * 0.4);
       final sparkPos = p.position + Offset(cos(angle), sin(angle)) * r;
-      final sparkPaint = Paint()..color = const Color(0xFFFFE08A).withOpacity(0.8);
+      final sparkPaint = Paint()
+        ..color = const Color(0xFFFFE08A).withOpacity(0.8);
       canvas.drawCircle(sparkPos, 1.2 + flicker, sparkPaint);
     }
   }
 
-  void _drawFireExplosion(Canvas canvas, _ExplosionEffect boom, double time, double alpha) {
+  void _drawFireExplosion(
+    Canvas canvas,
+    _ExplosionEffect boom,
+    double time,
+    double alpha,
+  ) {
     final progress = 1 - alpha;
     final wobble = sin(time * 10 + boom.seed) * 0.6;
     final radius = boom.radius * (0.6 + progress * 0.6) + wobble;
@@ -6925,7 +7521,8 @@ class _GamePainter extends CustomPainter {
       ..strokeWidth = 3 + progress * 2;
     canvas.drawCircle(boom.position, radius, ringPaint);
 
-    final sparkPaint = Paint()..color = const Color(0xFFFFD08A).withOpacity(0.8 * alpha);
+    final sparkPaint = Paint()
+      ..color = const Color(0xFFFFD08A).withOpacity(0.8 * alpha);
     for (int i = 0; i < 8; i++) {
       final angle = (i / 8) * pi * 2 + time * 1.2 + boom.seed * 0.1;
       final r = radius * (0.7 + (i % 3) * 0.12);
@@ -6953,7 +7550,8 @@ class _GamePainter extends CustomPainter {
       canvas.drawPath(path, glowPaint);
       canvas.drawPath(path, corePaint);
 
-      final impact = Paint()..color = const Color(0xFFD9F4FF).withOpacity(0.8 * alpha);
+      final impact = Paint()
+        ..color = const Color(0xFFD9F4FF).withOpacity(0.8 * alpha);
       canvas.drawCircle(seg.end, 4 + sin(time * 14 + seg.seed) * 1.5, impact);
     }
   }
@@ -6981,22 +7579,35 @@ class _GamePainter extends CustomPainter {
   }
 
   void _drawEnemySprite(Canvas canvas, _Enemy enemy) {
-    final spriteConfig = _enemySpriteConfigs[enemy.typeId] ?? _enemySpriteConfigs['fat_zombie']!;
-    final spriteSheet = enemySpriteSheets[enemy.typeId] ?? enemySpriteSheets['fat_zombie'];
+    final spriteConfig =
+        _enemySpriteConfigs[enemy.typeId] ?? _enemySpriteConfigs['fat_zombie']!;
+    final spriteSheet =
+        enemySpriteSheets[enemy.typeId] ?? enemySpriteSheets['fat_zombie'];
     final spriteFrameCount =
-        enemySpriteFrameCounts[enemy.typeId] ?? enemySpriteFrameCounts['fat_zombie'] ?? 0;
+        enemySpriteFrameCounts[enemy.typeId] ??
+        enemySpriteFrameCounts['fat_zombie'] ??
+        0;
     if (spriteSheet == null || spriteFrameCount <= 0) {
       return;
     }
 
-    final deathFrameStart = max(0, spriteFrameCount - spriteConfig.deathFrameCount);
+    final deathFrameStart = max(
+      0,
+      spriteFrameCount - spriteConfig.deathFrameCount,
+    );
     final availableWalkFrames = max(
       1,
-      min(spriteConfig.walkFrameCount, spriteFrameCount - spriteConfig.walkFrameStart),
+      min(
+        spriteConfig.walkFrameCount,
+        spriteFrameCount - spriteConfig.walkFrameStart,
+      ),
     );
     final availableAttackFrames = max(
       1,
-      min(spriteConfig.attackFrameCount, spriteFrameCount - spriteConfig.attackFrameStart),
+      min(
+        spriteConfig.attackFrameCount,
+        spriteFrameCount - spriteConfig.attackFrameStart,
+      ),
     );
 
     late final int frameIndex;
@@ -7021,8 +7632,8 @@ class _GamePainter extends CustomPainter {
     final jitter = enemy.isDying
         ? 0.0
         : enemy.attacking
-            ? sin(t * 18 + enemy.seed * 0.7) * 1.0
-            : sin(t * 10 + enemy.seed * 0.7) * 0.5;
+        ? sin(t * 18 + enemy.seed * 0.7) * 1.0
+        : sin(t * 10 + enemy.seed * 0.7) * 0.5;
     final drawCenter = enemy.position + Offset(jitter, bob);
     final enemyDrawWidth = _GameViewState.enemySize * 1.35;
     final enemyDrawHeight = enemy.typeId == 'zombie_female'
@@ -7044,7 +7655,10 @@ class _GamePainter extends CustomPainter {
       ..filterQuality = FilterQuality.none
       ..isAntiAlias = false;
     if (enemy.flashRemaining > 0) {
-      paint.colorFilter = const ui.ColorFilter.mode(Colors.white, BlendMode.modulate);
+      paint.colorFilter = const ui.ColorFilter.mode(
+        Colors.white,
+        BlendMode.modulate,
+      );
     }
     if (enemy.isDying) {
       paint.color = Colors.white.withOpacity(
@@ -7065,7 +7679,9 @@ class _GamePainter extends CustomPainter {
     final t = enemy.animTime;
     final seed = enemy.seed;
     final bob = sin(t * 2.4 + seed) * 1.6;
-    final jitter = enemy.attacking ? sin(t * 18 + seed * 0.7) * 1.2 : sin(t * 10 + seed * 0.7) * 0.6;
+    final jitter = enemy.attacking
+        ? sin(t * 18 + seed * 0.7) * 1.2
+        : sin(t * 10 + seed * 0.7) * 0.6;
     final offset = enemy.position + Offset(jitter, bob);
     final squash = 1 + sin(t * 3.1 + seed * 0.3) * 0.06;
     final stretch = 1 - sin(t * 3.1 + seed * 0.3) * 0.05;
@@ -7148,7 +7764,8 @@ class _GamePainter extends CustomPainter {
       eyeBlack,
     );
 
-    final droolPaint = Paint()..color = const Color(0xFF7EC7FF).withOpacity(0.7);
+    final droolPaint = Paint()
+      ..color = const Color(0xFF7EC7FF).withOpacity(0.7);
     final droolLen = radius * (0.3 + mouthPulse * 0.3);
     canvas.drawRRect(
       RRect.fromRectAndRadius(
@@ -7161,8 +7778,13 @@ class _GamePainter extends CustomPainter {
     canvas.restore();
   }
 
-
-  void _drawMagicBeam(Canvas canvas, Offset start, Offset end, Color color, double time) {
+  void _drawMagicBeam(
+    Canvas canvas,
+    Offset start,
+    Offset end,
+    Color color,
+    double time,
+  ) {
     final dir = end - start;
     final len = max(dir.distance, 0.001);
     final ux = dir.dx / len;
@@ -7259,11 +7881,14 @@ class _GamePainter extends CustomPainter {
     final progress = (1 - (remaining / sendingDuration)).clamp(0.0, 1.0);
     final swing = sin(progress * pi * 2); // up -> down -> up
     final swingOffset = Offset(-uy, ux) * (swing * 18);
-    final end = heroPos + Offset(ux, uy) * _GameViewState.swordRadius + swingOffset;
+    final end =
+        heroPos + Offset(ux, uy) * _GameViewState.swordRadius + swingOffset;
 
-    final arcStart = heroPos + Offset(ux, uy) * (_GameViewState.swordRadius * 0.2);
+    final arcStart =
+        heroPos + Offset(ux, uy) * (_GameViewState.swordRadius * 0.2);
     final arcEnd = end;
-    final arcMid = heroPos +
+    final arcMid =
+        heroPos +
         Offset(ux, uy) * (_GameViewState.swordRadius * 0.65) +
         Offset(-uy, ux) * (swing * 26);
     final arcPath = Path()
@@ -7304,11 +7929,11 @@ class _GamePainter extends CustomPainter {
       final t = i / 5;
       final wave = sin(time * 6.0 + i * 1.2) * 2.5;
       final p = Offset.lerp(arcStart, arcEnd, t)! + Offset(-uy, ux) * wave;
-      final sparkPaint = Paint()..color = const Color(0xFFFFD98A).withOpacity(0.8);
+      final sparkPaint = Paint()
+        ..color = const Color(0xFFFFD98A).withOpacity(0.8);
       canvas.drawCircle(p, 1.4 + (i % 2) * 0.6, sparkPaint);
     }
   }
-
 
   void _drawTargetIndicator(Canvas canvas, Offset center) {
     final targetPaint = Paint()
@@ -7383,9 +8008,7 @@ class _HpBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: const BoxDecoration(
         color: Color(0xFF101816),
-        border: Border(
-          bottom: BorderSide(color: Color(0xFF1F2C29), width: 1),
-        ),
+        border: Border(bottom: BorderSide(color: Color(0xFF1F2C29), width: 1)),
       ),
       child: Row(
         children: [
@@ -7402,7 +8025,11 @@ class _HpBar extends StatelessWidget {
                 ),
                 Text(
                   wallHp.toStringAsFixed(0),
-                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ],
             ),
@@ -7420,8 +8047,12 @@ class _HpBar extends StatelessWidget {
                   style: TextStyle(color: Colors.white60, fontSize: 10),
                 ),
                 Text(
- 'Wave $currentWave',
-                  style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                  'Wave $currentWave',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
@@ -7435,21 +8066,32 @@ class _HpBar extends StatelessWidget {
               runSpacing: 4,
               children: [
                 _buildStatItem(Icons.favorite, Colors.redAccent, enemiesKilled),
-                _buildStatItem(Icons.monetization_on, Colors.amber, coinsEarned),
-                _buildStatItem(Icons.timer, Colors.blueAccent, gameDurationText, isText: true),
+                _buildStatItem(
+                  Icons.monetization_on,
+                  Colors.amber,
+                  coinsEarned,
+                ),
+                _buildStatItem(
+                  Icons.timer,
+                  Colors.blueAccent,
+                  gameDurationText,
+                  isText: true,
+                ),
               ],
             ),
           ),
-          if (trailing != null) ...[
-            const SizedBox(width: 12),
-            trailing!,
-          ],
+          if (trailing != null) ...[const SizedBox(width: 12), trailing!],
         ],
       ),
     );
   }
 
-  Widget _buildStatItem(IconData icon, Color color, dynamic value, {bool isText = false}) {
+  Widget _buildStatItem(
+    IconData icon,
+    Color color,
+    dynamic value, {
+    bool isText = false,
+  }) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -7457,7 +8099,11 @@ class _HpBar extends StatelessWidget {
         const SizedBox(width: 4),
         Text(
           isText ? value.toString() : value.toString(),
-          style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ],
     );
@@ -7465,17 +8111,29 @@ class _HpBar extends StatelessWidget {
 }
 
 enum _HeroPhase { sending, cooldown }
+
 enum _AttackType { projectile, beam }
+
 enum _HeroMode { normal, fast, strong }
+
 enum _VeyraMode { rapid, explosive, lightning }
+
 enum _ThalorMode { projectile, sword, energy }
+
 enum _NyxraMode { normal, lightning, voidchain }
+
 enum _MyrisMode { normal, ice, freeze }
-enum _KaelenMode { normal, vine, spore }
+
+enum _KaelenMode { normal, vine, healing }
+
 enum _SolenneMode { normal, sunburst, radiant }
+
 enum _RavikMode { normal, voidburst, soul }
+
 enum _BrannMode { normal, earthquake, boulder }
+
 enum _EldrinMode { normal, cosmic, nova }
+
 enum _HeroBehaviorMode { holdPosition, offensive, defensive }
 
 class _HeroState {
@@ -7483,12 +8141,14 @@ class _HeroState {
     required this.phase,
     required this.timeRemaining,
     this.pendingAttack = false,
+    this.attackFlipHorizontally = false,
     this.beamTarget,
   });
 
   _HeroPhase phase;
   double timeRemaining;
   bool pendingAttack;
+  bool attackFlipHorizontally;
   _Enemy? beamTarget;
 }
 
@@ -7497,7 +8157,7 @@ class HeroDef {
     this.name,
     this.color, {
     this.imageAsset = '',
-    this.maxHp = 20.0,
+    this.maxHp = 100.0,
     this.attackRange = _GameViewState.defaultHeroAttackRange,
     this.cooldownDuration = _GameViewState.spellCooldownDuration,
     this.damage = 5.0,
@@ -7517,10 +8177,7 @@ class HeroDef {
 }
 
 class _DamageText {
-  _DamageText({
-    required this.position,
-    required this.value,
-  });
+  _DamageText({required this.position, required this.value});
 
   Offset position;
   final double value;
@@ -7545,7 +8202,11 @@ class _ExplosionEffect {
 }
 
 class _LightningSegment {
-  _LightningSegment({required this.start, required this.end, required this.seed});
+  _LightningSegment({
+    required this.start,
+    required this.end,
+    required this.seed,
+  });
 
   final Offset start;
   final Offset end;
@@ -7647,10 +8308,7 @@ class _SpeedPanel extends StatelessWidget {
 }
 
 class _AutoModePanel extends StatelessWidget {
-  const _AutoModePanel({
-    required this.enabled,
-    required this.onToggle,
-  });
+  const _AutoModePanel({required this.enabled, required this.onToggle});
 
   final bool enabled;
   final ValueChanged<bool> onToggle;
@@ -7813,7 +8471,11 @@ class _VeyraModeMenu extends StatelessWidget {
       Offset(center.dx, endY),
       Offset(center.dx + spacing, endY),
     ];
-    final modes = [_VeyraMode.rapid, _VeyraMode.explosive, _VeyraMode.lightning];
+    final modes = [
+      _VeyraMode.rapid,
+      _VeyraMode.explosive,
+      _VeyraMode.lightning,
+    ];
     final icons = [Icons.flash_on, Icons.whatshot, Icons.bolt];
 
     return Opacity(
@@ -7979,11 +8641,7 @@ class _ModeCircleButton extends StatelessWidget {
             ),
           ],
         ),
-        child: Icon(
-          icon,
-          size: 18,
-          color: Colors.white,
-        ),
+        child: Icon(icon, size: 18, color: Colors.white),
       ),
     );
   }
@@ -8068,10 +8726,7 @@ class _HeroContextModeMenu extends StatelessWidget {
 }
 
 class HeroSelectScreen extends StatefulWidget {
-  const HeroSelectScreen({
-    super.key,
-    this.initialSelection = const [],
-  });
+  const HeroSelectScreen({super.key, this.initialSelection = const []});
 
   final List<HeroDef> initialSelection;
 
@@ -8083,16 +8738,60 @@ class _HeroSelectScreenState extends State<HeroSelectScreen> {
   static const int slotCount = 5;
 
   final List<HeroDef> _heroes = const [
-    HeroDef('Aerin', Color(0xFFE57373), imageAsset: 'assets/heroes/hero_aerin.png'),
-    HeroDef('Veyra', Color(0xFFBA68C8), imageAsset: 'assets/heroes/hero_veyra.png', cooldownDuration: 5, damage: 2.5),
-    HeroDef('Thalor', Color(0xFF64B5F6), imageAsset: 'assets/heroes/hero_thalor.png'),
-    HeroDef('Myris', Color(0xFF4DB6AC), imageAsset: 'assets/heroes/hero_myris.png'),
-    HeroDef('Kaelen', Color(0xFF81C784), imageAsset: 'assets/heroes/hero_kaelen.png'),
-    HeroDef('Solenne', Color(0xFFFFD54F), imageAsset: 'assets/heroes/hero_solenne.png', attackType: _AttackType.beam, beamDps: 2.0),
-    HeroDef('Ravik', Color(0xFFFF8A65), imageAsset: 'assets/heroes/hero_ravik.png'),
-    HeroDef('Brann', Color(0xFFA1887F), imageAsset: 'assets/heroes/hero_brann.png'),
-    HeroDef('Nyxra', Color(0xFF90A4AE), imageAsset: 'assets/heroes/hero_nyxra.png'),
-    HeroDef('Eldrin', Color(0xFF9575CD), imageAsset: 'assets/heroes/hero_eldrin.png'),
+    HeroDef(
+      'Aerin',
+      Color(0xFFE57373),
+      imageAsset: 'assets/heroes/hero_aerin.png',
+    ),
+    HeroDef(
+      'Veyra',
+      Color(0xFFBA68C8),
+      imageAsset: 'assets/heroes/hero_veyra.png',
+      cooldownDuration: 5,
+      damage: 2.5,
+    ),
+    HeroDef(
+      'Thalor',
+      Color(0xFF64B5F6),
+      imageAsset: 'assets/heroes/hero_thalor.png',
+    ),
+    HeroDef(
+      'Myris',
+      Color(0xFF4DB6AC),
+      imageAsset: 'assets/heroes/hero_myris.png',
+    ),
+    HeroDef(
+      'Kaelen',
+      Color(0xFF81C784),
+      imageAsset: 'assets/heroes/hero_kaelen.png',
+    ),
+    HeroDef(
+      'Solenne',
+      Color(0xFFFFD54F),
+      imageAsset: 'assets/heroes/hero_solenne.png',
+      attackType: _AttackType.beam,
+      beamDps: 2.0,
+    ),
+    HeroDef(
+      'Ravik',
+      Color(0xFFFF8A65),
+      imageAsset: 'assets/heroes/hero_ravik.png',
+    ),
+    HeroDef(
+      'Brann',
+      Color(0xFFA1887F),
+      imageAsset: 'assets/heroes/hero_brann.png',
+    ),
+    HeroDef(
+      'Nyxra',
+      Color(0xFF90A4AE),
+      imageAsset: 'assets/heroes/hero_nyxra.png',
+    ),
+    HeroDef(
+      'Eldrin',
+      Color(0xFF9575CD),
+      imageAsset: 'assets/heroes/hero_eldrin.png',
+    ),
   ];
 
   late final List<HeroDef?> _slots;
@@ -8161,18 +8860,14 @@ class _HeroSelectScreenState extends State<HeroSelectScreen> {
 
   void _goBackToSaveSlots() {
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(
-        builder: (_) => const VillageScreen(),
-      ),
+      MaterialPageRoute<void>(builder: (_) => const VillageScreen()),
     );
   }
 
   Future<void> _openHeroUpgrades() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => const HeroUpgradeScreen(),
-      ),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const HeroUpgradeScreen()));
     await _loadProgress();
   }
 
@@ -8191,177 +8886,211 @@ class _HeroSelectScreenState extends State<HeroSelectScreen> {
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-          SizedBox(
-            height: 140,
-            child: ListView.separated(
-              padding: const EdgeInsets.only(left: 16, top: 8, bottom: 8),
-              scrollDirection: Axis.horizontal,
-              itemCount: _heroes.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
-              itemBuilder: (context, index) {
-                final hero = _heroes[index];
-                final isSelected = _slots.contains(hero);
-                final isUnlocked = _isHeroUnlocked(hero.name);
-                return GestureDetector(
-                  onTap: !isUnlocked ? null : (isSelected ? null : () => _assignHero(hero)),
-                  child: Container(
-                    width: 144,
-                    height: 144,
-                    decoration: BoxDecoration(
-                      color: !isUnlocked
-                          ? Colors.grey.shade800
-                          : (isSelected ? Colors.grey : hero.color).withOpacity(0.85),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: isUnlocked ? Colors.white24 : Colors.grey.shade700),
+            Expanded(
+              child: Center(
+                child: SizedBox(
+                  height: 210,
+                  child: ListView.separated(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
                     ),
-                    child: Stack(
-                      children: [
-                        Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: hero.imageAsset.isNotEmpty
-                                    ? ClipRRect(
-                                        borderRadius: BorderRadius.circular(6),
-                                        child: Image.asset(
-                                          hero.imageAsset,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (context, error, stackTrace) {
-                                            return const Icon(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _heroes.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 14),
+                    itemBuilder: (context, index) {
+                      final hero = _heroes[index];
+                      final isSelected = _slots.contains(hero);
+                      final isUnlocked = _isHeroUnlocked(hero.name);
+                      return GestureDetector(
+                        onTap: !isUnlocked
+                            ? null
+                            : (isSelected ? null : () => _assignHero(hero)),
+                        child: Container(
+                          width: 216,
+                          height: 216,
+                          decoration: BoxDecoration(
+                            color: !isUnlocked
+                                ? Colors.grey.shade800
+                                : (isSelected ? Colors.grey : hero.color)
+                                      .withOpacity(0.85),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isUnlocked
+                                  ? Colors.white24
+                                  : Colors.grey.shade700,
+                            ),
+                          ),
+                          child: Stack(
+                            children: [
+                              Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(12),
+                                      child: hero.imageAsset.isNotEmpty
+                                          ? ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                              child: Image.asset(
+                                                hero.imageAsset,
+                                                fit: BoxFit.cover,
+                                                errorBuilder:
+                                                    (
+                                                      context,
+                                                      error,
+                                                      stackTrace,
+                                                    ) {
+                                                      return const Icon(
+                                                        Icons.person,
+                                                        color: Colors.white54,
+                                                        size: 56,
+                                                      );
+                                                    },
+                                              ),
+                                            )
+                                          : const Icon(
                                               Icons.person,
                                               color: Colors.white54,
-                                              size: 40,
-                                            );
-                                          },
-                                        ),
-                                      )
-                                    : const Icon(
-                                        Icons.person,
-                                        color: Colors.white54,
-                                        size: 40,
+                                              size: 56,
+                                            ),
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 8),
+                                    child: Text(
+                                      hero.name,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: !isUnlocked
+                                            ? Colors.grey.shade500
+                                            : Colors.white,
+                                        fontSize: 16,
+                                        height: 1.0,
+                                        fontWeight: FontWeight.w600,
                                       ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 4.0),
-                              child: Text(
-                                hero.name,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: !isUnlocked ? Colors.grey.shade500 : Colors.white,
-                                  fontSize: 12,
-                                  height: 1.0,
-                                  fontWeight: FontWeight.w500,
+                              if (!isUnlocked)
+                                Positioned.fill(
+                                  child: Container(
+                                    color: Colors.black.withOpacity(0.5),
+                                    child: const Icon(
+                                      Icons.lock,
+                                      color: Colors.white70,
+                                      size: 56,
+                                    ),
+                                  ),
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (!isUnlocked)
-                          Positioned.fill(
-                            child: Container(
-                              color: Colors.black.withOpacity(0.5),
-                              child: const Icon(
-                                Icons.lock,
-                                color: Colors.white70,
-                                size: 40,
-                              ),
-                            ),
+                            ],
                           ),
-                      ],
-                    ),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
-          ),
-          const Spacer(),
-          Align(
-            alignment: Alignment.bottomRight,
-            child: Container(
-              width: 520,
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-              margin: const EdgeInsets.only(right: 16, bottom: 16),
-              decoration: const BoxDecoration(
-                color: Color(0xFF101816),
-                border: Border(
-                  top: BorderSide(color: Color(0xFF1F2C29), width: 1),
                 ),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: List.generate(slotCount, (i) {
-                      final hero = _slots[i];
-                      return GestureDetector(
-                        onTap: hero == null ? null : () => _removeHero(i),
-                        child: Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: hero?.color ?? const Color(0xFF1F2C29),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: Colors.white24,
-                            ),
+            ),
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: Container(
+                width: 640,
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF101816),
+                  border: Border(
+                    top: BorderSide(color: Color(0xFF1F2C29), width: 1),
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(slotCount, (i) {
+                        final hero = _slots[i];
+                        return Padding(
+                          padding: EdgeInsets.only(
+                            right: i == slotCount - 1 ? 0 : 14,
                           ),
-                          child: hero == null
-                              ? const Icon(Icons.add, color: Colors.white38)
-                              : hero.imageAsset.isNotEmpty
+                          child: GestureDetector(
+                            onTap: hero == null ? null : () => _removeHero(i),
+                            child: Container(
+                              width: 72,
+                              height: 72,
+                              decoration: BoxDecoration(
+                                color: hero?.color ?? const Color(0xFF1F2C29),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: Colors.white24),
+                              ),
+                              child: hero == null
+                                  ? const Icon(
+                                      Icons.add,
+                                      color: Colors.white38,
+                                      size: 30,
+                                    )
+                                  : hero.imageAsset.isNotEmpty
                                   ? ClipRRect(
-                                      borderRadius: BorderRadius.circular(6),
+                                      borderRadius: BorderRadius.circular(10),
                                       child: Image.asset(
                                         hero.imageAsset,
                                         fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) {
-                                          return const Icon(
-                                            Icons.person,
-                                            color: Colors.white54,
-                                          );
-                                        },
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                              return const Icon(
+                                                Icons.person,
+                                                color: Colors.white54,
+                                                size: 30,
+                                              );
+                                            },
                                       ),
                                     )
-                                  : const Icon(Icons.person, color: Colors.white54),
+                                  : const Icon(
+                                      Icons.person,
+                                      color: Colors.white54,
+                                      size: 30,
+                                    ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: _goBackToSaveSlots,
+                            child: const Text('Zpět'),
+                          ),
                         ),
-                      );
-                    }),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: _goBackToSaveSlots,
-                          child: const Text('Zpět'),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: _openHeroUpgrades,
+                            child: const Text('Hrdinove'),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: _openHeroUpgrades,
-                          child: const Text('Hrdinove'),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: hasSelection ? _startGame : null,
+                            child: const Text('Boj'),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: FilledButton(
-                          onPressed: hasSelection ? _startGame : null,
-                          child: const Text('Boj'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
         ),
       ),
     );
@@ -8456,8 +9185,8 @@ class _KaelenModeMenu extends StatelessWidget {
       Offset(center.dx, endY),
       Offset(center.dx + spacing, endY),
     ];
-    final modes = [_KaelenMode.normal, _KaelenMode.vine, _KaelenMode.spore];
-    final icons = [Icons.auto_awesome, Icons.grass, Icons.cloud];
+    final modes = [_KaelenMode.normal, _KaelenMode.vine, _KaelenMode.healing];
+    final icons = [Icons.auto_awesome, Icons.grass, Icons.favorite];
 
     return Opacity(
       opacity: t.clamp(0.0, 1.0),
@@ -8512,7 +9241,11 @@ class _SolenneModeMenu extends StatelessWidget {
       Offset(center.dx, endY),
       Offset(center.dx + spacing, endY),
     ];
-    final modes = [_SolenneMode.normal, _SolenneMode.sunburst, _SolenneMode.radiant];
+    final modes = [
+      _SolenneMode.normal,
+      _SolenneMode.sunburst,
+      _SolenneMode.radiant,
+    ];
     final icons = [Icons.auto_awesome, Icons.wb_sunny, Icons.circle];
 
     return Opacity(
@@ -8624,7 +9357,11 @@ class _BrannModeMenu extends StatelessWidget {
       Offset(center.dx, endY),
       Offset(center.dx + spacing, endY),
     ];
-    final modes = [_BrannMode.normal, _BrannMode.earthquake, _BrannMode.boulder];
+    final modes = [
+      _BrannMode.normal,
+      _BrannMode.earthquake,
+      _BrannMode.boulder,
+    ];
     final icons = [Icons.auto_awesome, Icons.vibration, Icons.circle];
 
     return Opacity(
