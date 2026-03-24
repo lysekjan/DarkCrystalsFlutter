@@ -6478,6 +6478,7 @@ class _HeroUnitWidget extends StatelessWidget {
   static const String _aerinSpriteSheetAsset = 'assets/heroes/Aerin_sheet.png';
   static const String _aerinFallbackAsset = 'assets/heroes/Aerin_default.png';
   static const String _brannInGameSpriteAsset = 'assets/heroes/Brann/brann.png';
+  static const String _nyxraInGameSpriteAsset = 'assets/heroes/Nyxra/Nyxra.png';
   static const int _aerinFrameCount = 31;
   static const double _aerinFrameWidth = 479;
   static const double _aerinFrameHeight = 404;
@@ -6680,6 +6681,7 @@ class _HeroUnitWidget extends StatelessWidget {
     final pulse = sin(time * 6) * 0.5 + 0.5;
     final isAerinInGameSprite = hero.name == 'Aerin';
     final isBrannInGameSprite = hero.name == 'Brann';
+    final isNyxraInGameSprite = hero.name == 'Nyxra';
     final isVeyraInGameSprite = hero.name == 'Veyra';
     final usesTransparentInGameSprite =
         isAerinInGameSprite || isVeyraInGameSprite;
@@ -6764,6 +6766,12 @@ class _HeroUnitWidget extends StatelessWidget {
                         else if (isBrannInGameSprite)
                           _buildHeroImage(
                             imageAsset: _brannInGameSpriteAsset,
+                            isAerinInGameSprite: false,
+                            flipHorizontally: _effectiveFlipHorizontally,
+                          )
+                        else if (isNyxraInGameSprite)
+                          _buildHeroImage(
+                            imageAsset: _nyxraInGameSpriteAsset,
                             isAerinInGameSprite: false,
                             flipHorizontally: _effectiveFlipHorizontally,
                           )

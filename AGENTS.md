@@ -126,6 +126,7 @@ Detailed balance values are documented in `INFO.txt` and `project_info.txt`.
 - Clicking a gameplay hero card selects that hero exactly like clicking the hero unit on the map.
 - Dragging from a living gameplay hero card now also supports rectangle multi-select directly inside the bottom-right card strip; dead hero cards are ignored by that card-panel selection.
 - When a hero dies, that hero's gameplay card remains visible but becomes greyed out.
+- Nyxra now uses `assets/heroes/Nyxra/Nyxra.png` only for her in-game unit render; her gameplay/menu portrait remains `assets/heroes/hero_nyxra.png`.
 
 ## Enemy Targeting Behavior
 
@@ -327,6 +328,7 @@ Detailed balance values are documented in `INFO.txt` and `project_info.txt`.
 - 2026-03-22: All in-game hero renders now flip horizontally while the hero is moving or actively attacking to the left, and they automatically return to their default orientation when idle again; the direction logic now applies consistently to static PNG unit sprites as well as sprite-sheet based heroes like Aerin and Veyra.
 - 2026-03-24: Gameplay touch camera control was moved from two-finger panning to a permanently visible bottom-left joystick HUD; dragging the joystick now pans the camera continuously, two-finger touch no longer pans the map, and pinch zoom remains available without centroid-based touch panning.
 - 2026-03-24: The bottom-right gameplay hero-card strip now also supports drag-rectangle multi-select starting from a living card; the resulting multi-selection feeds the same shared hero selection state as map multi-select, while dead cards remain non-selectable.
+- 2026-03-24: Nyxra's in-game unit render now uses `assets/heroes/Nyxra/Nyxra.png`, while her card and menu portrait still use `assets/heroes/hero_nyxra.png`; `pubspec.yaml` was expanded with `assets/heroes/Nyxra/` so the new runtime sprite loads correctly.
 
 ## Legacy Historical Notes
 
