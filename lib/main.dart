@@ -5432,7 +5432,14 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       }
     }
 
-    _lightnings.add(_LightningEffect(segments: segments));
+    _lightnings.add(
+      _LightningEffect(
+        segments: segments,
+        glowColor: const Color(0xFF2A2A2A),
+        coreColor: const Color(0xFF000000),
+        impactColor: const Color(0xFF141414),
+      ),
+    );
   }
 
   void _swordHit(int heroIndex) {
@@ -5587,18 +5594,18 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
 
   void _castRavikSoulDrain(int heroIndex, {_Enemy? target}) {
     final heroPos = _heroPosition(_heroSlotIndices[heroIndex]);
-    final used = <_Enemy>{};
-
     final first = _nearestEnemyForHero(
       heroIndex,
       preferredTarget: target,
-      exclude: used,
+      exclude: const <_Enemy>{},
     );
     if (first == null) {
       return;
     }
-    used.add(first);
     _applyDamage(first, 5);
+    final unit = _heroUnits[heroIndex];
+    final healAmount = unit.maxHp * 0.02;
+    unit.hp = min(unit.maxHp, unit.hp + healAmount);
 
     final segments = <_LightningSegment>[
       _LightningSegment(
@@ -5608,35 +5615,14 @@ class _GameViewState extends State<GameView> with TickerProviderStateMixin {
       ),
     ];
 
-    final second = _nearestEnemy(first.position, used);
-    if (second != null) {
-      used.add(second);
-      _applyDamage(second, 4);
-      segments.add(
-        _LightningSegment(
-          start: first.position,
-          end: second.position,
-          seed: _rng.nextDouble() * 1000,
-        ),
-      );
-    }
-
-    if (second != null) {
-      final third = _nearestEnemy(second.position, used);
-      if (third != null) {
-        used.add(third);
-        _applyDamage(third, 3);
-        segments.add(
-          _LightningSegment(
-            start: second.position,
-            end: third.position,
-            seed: _rng.nextDouble() * 1000,
-          ),
-        );
-      }
-    }
-
-    _lightnings.add(_LightningEffect(segments: segments));
+    _lightnings.add(
+      _LightningEffect(
+        segments: segments,
+        glowColor: const Color(0xFF2A2A2A),
+        coreColor: const Color(0xFF000000),
+        impactColor: const Color(0xFF141414),
+      ),
+    );
   }
 
   void _castBrannEarthquake(int heroIndex) {
@@ -7694,13 +7680,13 @@ class _GamePainter extends CustomPainter {
   void _drawLightningEffect(Canvas canvas, _LightningEffect bolt, double time) {
     final alpha = (bolt.lifeRemaining / bolt.maxLife).clamp(0.0, 1.0);
     final glowPaint = Paint()
-      ..color = const Color(0xFFBFE8FF).withOpacity(0.6 * alpha)
+      ..color = bolt.glowColor.withOpacity(0.6 * alpha)
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
       ..strokeWidth = 8
       ..maskFilter = const ui.MaskFilter.blur(ui.BlurStyle.normal, 6);
     final corePaint = Paint()
-      ..color = const Color(0xFFEAF8FF).withOpacity(0.9 * alpha)
+      ..color = bolt.coreColor.withOpacity(0.9 * alpha)
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
       ..strokeWidth = 2.5;
@@ -7711,7 +7697,7 @@ class _GamePainter extends CustomPainter {
       canvas.drawPath(path, corePaint);
 
       final impact = Paint()
-        ..color = const Color(0xFFD9F4FF).withOpacity(0.8 * alpha);
+        ..color = bolt.impactColor.withOpacity(0.8 * alpha);
       canvas.drawCircle(seg.end, 4 + sin(time * 14 + seg.seed) * 1.5, impact);
     }
   }
@@ -8374,9 +8360,17 @@ class _LightningSegment {
 }
 
 class _LightningEffect {
-  _LightningEffect({required this.segments});
+  _LightningEffect({
+    required this.segments,
+    this.glowColor = const Color(0xFFBFE8FF),
+    this.coreColor = const Color(0xFFEAF8FF),
+    this.impactColor = const Color(0xFFD9F4FF),
+  });
 
   final List<_LightningSegment> segments;
+  final Color glowColor;
+  final Color coreColor;
+  final Color impactColor;
   final double maxLife = 0.28;
   double lifeRemaining = 0.28;
 }

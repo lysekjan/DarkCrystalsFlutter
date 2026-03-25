@@ -5,7 +5,7 @@ Hrdinové a jejich útoky (fáze casting zrušena; útoky mají jen sending + cooldown
 - Myris: blesk do 1 cile; sending 1s, cooldown 2s, damage 30 (prvni mod prevzat z puvodni Veyra lightning)
 - Kaelen: mody: projektil (sending 2s, cooldown 10s, damage 5), vine (sending 0.5s, cooldown 6s, damage 6 vsem nepritelum v radiusu 100), healing (sending 0.5s, pak kazde 2s celkem vysle heal puls v radiusu 100; leci 2 HP vsem zivym hrdinum v dosahu vcetne sebe a funguje i bez nepratel)
 - Solenne: paprsek bìhem "sending"; DPS 2; míøí na nejbližšího nepøítele; sending 2s, cooldown 10s
-- Ravik: projektil; sending 2s, cooldown 10s, damage 5
+- Ravik: mody: normal (sending 2s, cooldown 10s, damage 5), voidburst (sending 1s, cooldown 8s, damage 6 v AoE radiusu 80), soul (sending 1s, cooldown 2s, damage 5 na 1 cil, tmavy blesk, pri zasahu leci Ravika o 2 % max HP)
 - Brann: projektil; sending 2s, cooldown 10s, damage 5
 - Nyxra: blesk do 1 cile; sending 1s, cooldown 2s, damage 30 (prvni mod prevzat z puvodni Veyra lightning)
 - Eldrin: projektil; sending 2s, cooldown 10s, damage 5

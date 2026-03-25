@@ -5,6 +5,10 @@ PROJECT INFO: Dark Crystals (Flutter)
 - Spodni pravy panel karet hrdinu ted umi i multi-select tahem obdelniku primo pres karty. Drag musi zacit na zive karte, mrtve karty se ignoruji a vysledny vyber se chova stejne jako multi-select provedeny primo na mape.
 2026-03-24:
 - Nyxra ted pro svou postavu primo ve hre pouziva asset `assets/heroes/Nyxra/Nyxra.png`; portret na kartach a v menu zustava beze zmeny na `assets/heroes/hero_nyxra.png`.
+2026-03-24:
+- Treti utok hrdiny Ravik (`soul`) uz nepouziva modry blesk; stejny chain efekt se ted vykresluje v cerne/tmave palete.
+2026-03-24:
+- Ravikuv treti utok `soul` byl nasledne zmenen na single-target zasah; tmavy blesk ted jde jen do jednoho nepritele a pri uspesnem zasahu Ravikovi vrati 2 % jeho maximalniho HP.
 2026-03-22:
 - Vsechni hrdinove se ted ve hre automaticky nataceji podle horizontalni akce: pri pohybu doleva nebo pri utoku na cil nalevo se jejich in-game sprite/animace vykresli zrcadlove, a jakmile znovu jen stoji, vrati se do vychozi orientace.
 2026-03-19:

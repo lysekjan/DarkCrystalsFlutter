@@ -85,6 +85,7 @@
 - Kaelen: modes `normal`, `vine`, `healing`.
 - Solenne: beam during sending; modes `normal`, `sunburst`, `radiant`.
 - Ravik: modes `normal`, `voidburst`, `soul`.
+- Ravik `soul` now hits only a single enemy with dark lightning and heals Ravik for `2%` of his max HP on each successful hit.
 - Brann: modes `normal`, `earthquake`, `boulder`.
 - Nyxra: modes `normal`, `lightning`, `voidchain`.
 - Nyxra `normal` now also reuses Veyra's old third attack behavior: a single-target lightning strike with the same fast timing and high damage profile.
@@ -329,6 +330,7 @@ Detailed balance values are documented in `INFO.txt` and `project_info.txt`.
 - 2026-03-24: Gameplay touch camera control was moved from two-finger panning to a permanently visible bottom-left joystick HUD; dragging the joystick now pans the camera continuously, two-finger touch no longer pans the map, and pinch zoom remains available without centroid-based touch panning.
 - 2026-03-24: The bottom-right gameplay hero-card strip now also supports drag-rectangle multi-select starting from a living card; the resulting multi-selection feeds the same shared hero selection state as map multi-select, while dead cards remain non-selectable.
 - 2026-03-24: Nyxra's in-game unit render now uses `assets/heroes/Nyxra/Nyxra.png`, while her card and menu portrait still use `assets/heroes/hero_nyxra.png`; `pubspec.yaml` was expanded with `assets/heroes/Nyxra/` so the new runtime sprite loads correctly.
+- 2026-03-24: Ravik's third mode `soul` now uses a dark single-target lightning hit instead of the old chained bolt; each successful hit also restores `2%` of Ravik's max HP.
 
 ## Legacy Historical Notes
 
