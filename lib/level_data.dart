@@ -7,6 +7,10 @@ class EnemyTypeDef {
     required this.baseHp,
     required this.baseSpeed,
     required this.baseDamagePerSecond,
+    this.isRanged = false,
+    this.rangedAttackRange = 0,
+    this.rangedAttackCooldown = 1,
+    this.projectileDamage = 0,
   });
 
   final String id;
@@ -14,12 +18,37 @@ class EnemyTypeDef {
   final double baseHp;
   final double baseSpeed;
   final double baseDamagePerSecond;
+  final bool isRanged;
+  final double rangedAttackRange;
+  final double rangedAttackCooldown;
+  final double projectileDamage;
 }
 
 const Map<String, EnemyTypeDef> enemyTypeRegistry = <String, EnemyTypeDef>{
   'fat_zombie': EnemyTypeDef(
     id: 'fat_zombie',
     name: 'Fat Zombie',
+    baseHp: 20,
+    baseSpeed: 16,
+    baseDamagePerSecond: 5,
+  ),
+  'vampire': EnemyTypeDef(
+    id: 'vampire',
+    name: 'Vampire',
+    baseHp: 20,
+    baseSpeed: 16,
+    baseDamagePerSecond: 5,
+  ),
+  'devil': EnemyTypeDef(
+    id: 'devil',
+    name: 'Devil',
+    baseHp: 20,
+    baseSpeed: 16,
+    baseDamagePerSecond: 5,
+  ),
+  'orc': EnemyTypeDef(
+    id: 'orc',
+    name: 'Orc',
     baseHp: 20,
     baseSpeed: 16,
     baseDamagePerSecond: 5,
@@ -44,6 +73,17 @@ const Map<String, EnemyTypeDef> enemyTypeRegistry = <String, EnemyTypeDef>{
     baseHp: 20,
     baseSpeed: 16,
     baseDamagePerSecond: 5,
+  ),
+  'zombie_shooter': EnemyTypeDef(
+    id: 'zombie_shooter',
+    name: 'Zombie Shooter',
+    baseHp: 20,
+    baseSpeed: 16,
+    baseDamagePerSecond: 5,
+    isRanged: true,
+    rangedAttackRange: 180,
+    rangedAttackCooldown: 1,
+    projectileDamage: 1,
   ),
 };
 

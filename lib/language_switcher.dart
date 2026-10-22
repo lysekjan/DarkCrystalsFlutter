@@ -19,7 +19,7 @@ class LanguageSwitcher extends StatelessWidget {
           const Icon(Icons.arrow_drop_down, size: 20, color: Colors.white70),
         ],
       ),
-      color: const Color(0xFF1C3B34),
+      color: const Color(0xFF332A24),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       onSelected: (AppLanguage language) async {
         await LanguageManager.setLanguage(language);
@@ -54,7 +54,7 @@ class LanguageSwitcher extends StatelessWidget {
                   if (isSelected)
                     const Padding(
                       padding: EdgeInsets.only(left: 8),
-                      child: Icon(Icons.check, color: Color(0xFF4DB6AC), size: 20),
+                      child: Icon(Icons.check, color: Color(0xFFFFE38A), size: 20),
                     ),
                 ],
               ),

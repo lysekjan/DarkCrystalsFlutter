@@ -72,6 +72,7 @@ flutter:
     - assets/heroes/Veyra/attack/
     - assets/buildings/
     - assets/enemies/
+    - assets/workers/
     - assets/backgrounds/
     - assets/levels/
     - assets/levels/chapter_1/
@@ -99,6 +100,11 @@ flutter:
   #       - asset: fonts/TrajanPro_Bold.ttf
   #         weight: 700
   #
+  fonts:
+    - family: PixelifySans
+      fonts:
+        - asset: assets/fonts/PixelifySans.ttf
+
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
 

@@ -1,4 +1,200 @@
 PROJECT INFO: Dark Crystals (Flutter)
+
+2026-10-22 - Detekce a pronasledovani nepratel:
+- Bez cile nepritel postupuje k palisade po ulozene trase. Hrdinu nebo sberace vybere jen do 500 jednotek ve vsech smerech; ponecha si jej do smrti nebo opusteni dosahu 650. Pri kontaktu ma prednost palisada. Hledani cile probiha po 0.2-0.4 herni sekundy, obnova navigacniho cile za prekazkami po 0.4-0.6 s, rozlozene podle nepritele. Prima volna cesta sleduje cil okamzite. Dosahy utoku, rychlosti a poskozeni se nemeni; vykon vyzaduje overeni ve hre.
+
+2026-10-22 - Budovy podle obrazku a chuze za budovami:
+- Neprochozi je spodni polovina obrazku kazde budovy (veze, portal, zlaty dul) a nove i jezirek many; horni polovinou lze projit, takze jednotky chodi za budovami. U stromu je neprochozi spodni polovina jen v prostrednich 50 % sirky.
+- Jednotka stojici za budovou, stromem nebo jezirkem je prekryta obrazkem s 70% nepruhlednosti (videt je asi z 30 %); jednotky pred nimi zustavaji plne videt. Stromy a jezirka uz neprekryvaji nepratele stojici pred nimi.
+- Sberaci tezi drevo, zlato a manu z predni (spodni) strany zdroje.
+
+2026-10-22 - Dosah utoku hrdinu +300 %:
+- Vsechny utoky maji ctyrnasobny dosah: bezne 1066.67 misto 266.67, mec 560, freeze 800, vine 400, sunburst 160, radiant 360, earthquake 320, nova 400. Plati take pro AI, zasahy a zobrazeni dosahu. Leceni a velikost vybuchu pri dopadu projektilu zustavaji stejne.
+
+2026-10-22 - Prvni level Rumble s Aerin:
+- Kapitola 1 / level 1 spousti rovnou jedineho hrdinu Aerin bez vyberu. Neobsahuje sberace ani portal, jeho kolizi, nakup nebo kartu sberacu. Pocet a casovani nepratel zustava: 30 vln s 1, 3, 5... neprateli po 30 hernich sekundach. Druhy level se nemeni. Toto nahrazuje starsi poznamku o prvnim levelu beze zmeny.
+
+2026-10-22 - Animovana obranna vez:
+- Pevna vez vlevo i hracem postavene strazne veze maji animaci: na strese vlaje vlajka a na ochozu plapola pochoden s teplou zari a jiskrou. Kazda postavena vez ma posunutou fazi. Strelba, dosah ani poskozeni se nemeni.
+
+2026-10-22 - Tutorial v druhem levelu Rumble:
+- Pouze kapitola 1, level 2 v Rumble nema hrdiny a zacina s jednim sberacem u portalu. Ma 10 vln po ctyrech nepratelich, prvni ihned a dalsi po 30 hernich sekundach. Nakup jednotek a ostatni mechaniky vcetne statistik nepratel zustavaji stejne. Prvni level beze zmeny.
+- Rumble nyni otevre kapitolu a level pred vyberem hrdinu; druhy level vyber hrdinu preskoci. Ostatni levely vyber hrdinu nabidnou pred spustenim hry.
+
+2026-10-22 - Pixel-art menu kapitol a levelu:
+- Vyber kapitoly i levelu ma novy stredoveky pixel-art vzhled (zlate ramy, rubinova tlacitka, kamenna zed, pixelovy font Pixelify Sans). Levely jsou mrizka 19 stitu: klik vybere, dvojklik spusti; dokoncene jsou zelene s hvezdou. Vpravo je detail levelu se silou nepratel a stavem a tlacitko Hrát!. Kapitoly jsou karty s erbem, zamcena je seda se zamkem. Herni pravidla se nemeni.
+
+2026-10-22 - Optimalizace pri velkem poctu jednotek a budov:
+- Navigace znovu pouziva nezmenene trasy jednotek a seznam prekazek. Pro kratke kolizni dotazy prochazi jen okolni bunky prostorove mrizky misto vsech stromu/budov. Hledani volneho mista v davu nejdrive kontroluje jednotky a az potom budovy. Herni rychlosti, pocty a pravidla se nemeni; FPS je nutne zmerit profilovacim behem.
+
+2026-10-22 - Stromy 4x vetsi:
+- Vsechny tri typy zvetseny o 300 % na 416x440, 416x472 a 440x436. Rozestup 320, klikaci plochy a kmenove prekazky odpovidaji vetsim modelum. Na male mape se vejde mene stromu; animace a tezba zustavaji stejne.
+
+2026-10-22 - Dalsi zvetseni budov 2x:
+- Portal 640x640, zlaty dul 600x544, strazne veze 352x544 a bleskove veze 160x160. Pudy a klikaci plochy odpovidaji vetsim rozmerum, menu portalu zustava na mape. Jednotky, stromy a jezirka many se nemeni. V Gathering mohou vysoke budovy presahovat vysku mapy 400.
+
+2026-10-22 - Treti varianta stromu:
+- Pribyl treti animovany strom se zlutozelenou korunou (assets/buildings/tree3_sheet.png). Zdroje dreva nahodne vybiraji ze tri variant; pocet stromu, rozestupy, nepruchodnost i tezba se nemeni.
+
+2026-10-22 - Vice stromu a dve varianty:
+- Pribyla druha animovana varianta stromu (assets/buildings/tree2_sheet.png); kazdy zdroj dreva dostane nahodne jednu ze dvou variant. Stromu je 10x vic (50-100 misto 5-10) s rozestupem 80. Na velke mape Rumble se vejdou vsechny, na mensi mape Gathering jen tolik, kolik dovoli rozestupy. Stromy zustavaji nepruchozi a nezakryvaji pevne jezirko many u baze. Navigace jednotek byla zrychlena, aby obchazeni velkeho poctu stromu nezpomalovalo hru.
+
+2026-10-22 - Zdroje dreva jako magicke stromy:
+- Hnede boxy dreva v Gathering i Rumble jsou nahrazeny animovanymi stromy (assets/buildings/tree_sheet.png): strom se houpe ve vetru, listi se chveje, po modrych zilach v kmeni proudi svetlo a stoupaji jiskry. Na mape maji 104x110 a klikat lze na cely strom. Stromy se generuji dal od sebe (90), od dolu, portalu, kamenu (64) i jezirek many (100), takze se jich na mensi mapu muze vejit o neco mene. Tezba 3 s a 10 dreva se nemeni.
+- Stromy jsou neprochozi: hrdinove, nepratele i sberaci je obchazeji. Blokuje kmen s koreny ve spodni casti stromu, pod korunou se projit da. Sberac tezi stojici u kmene.
+
+2026-10-22 - Novy nepritel Ork (orc):
+- Zeleny dvouhlavy ork (assets/enemies/Orc.png, 33 snimku 90x90): chuze 8-15, utok drapem se zelenym obloukem 16-24, zasah 25-26, smrt 27-32. Statistiky: 20 HP, rychlost 16, melee 5 DPS (jako ostatni zakladni nepratele). Spawn eventy fat_zombie se nove michaji po skupinach sedmi typu (FatZombie, Vampire, Devil, Orc, ZombieFemale, SkullMage, ZombieShooter), kazdy jednou v nahodnem poradi; plati i v Rumble. V editoru levelu je ork dostupny jako samostatny typ.
+
+2026-10-22 - Novy nepritel Cert (devil):
+- Cerveny cert s rohy a ocasem (assets/enemies/Devil.png, 33 snimku 90x90): chuze 8-15, utok drapem s ohnivym obloukem 16-24, zasah 25-26, smrt 27-32. Statistiky: 20 HP, rychlost 16, melee 5 DPS (jako FatZombie a Vampire). Spawn eventy fat_zombie se nove michaji po skupinach sesti typu (FatZombie, Vampire, Devil, ZombieFemale, SkullMage, ZombieShooter), kazdy jednou v nahodnem poradi; plati i v Rumble. V editoru levelu je cert dostupny jako samostatny typ.
+
+2026-10-21 - Zdroje many jako magicka jezirka:
+- Fialove fragmenty v Gathering i Rumble vypadaji jako animovana jezirka (assets/buildings/manaPool_sheet.png): vir energie uprostred, proudici vodopady a potucky, kruhy na hladine a stoupajici jiskry. Na mape maji 96x81 a klikat lze na cele jezirko. Jezirka se generuji dal od sebe (100) i od stromu a kamenu (70) a nepokryvaji dul ani portal, takze se jich na mensi mapu muze vejit o neco mene. Pevne jezirko vedle baze zustava. Tezba 10 many a predani nejblizsimu hrdinovi se nemeni.
+
+2026-10-21 - Utok sberace drapy:
+- Sberac pri utoku na nepritele (rucni prikaz i obrana v necinnosti) pouziva novou animaci: napriahne drap, rychle mrskne dolu-dopredu a pred nim se objevi tri zarici stopy drapu. Zasah je sladeny s udery jednou za herni sekundu (3 poskozeni beze zmeny). Na nepritele vlevo se sberac otoci. Tezba a stavba maji puvodni animaci.
+
+2026-10-21 - Rozestupy jednotek:
+- Zivi hrdinove, sberaci a nepratele sdileji kontrolu prostoru, vcetne dvojic ruznych typu. Polomery 96/104/54 a mezera 6 odpovidaji zvetsenym modelum; prekryti se rozmistuje na nejblizsi volna mista bez pruchodu budovou. Mrtvoly neblokuji. Melee kontakt je upraven na 160 u hrdinu a 168 u sberacu, poskozeni a rychlosti se nemeni.
+
+2026-10-21 - Budovy jako prekazky a vrstvy vykresleni:
+- Portal, dul a veze vcetne objednanych staveb maji nepruchozi pudorys s odstupem. Hrdinove, nepratele a sberaci hledaji cestu kolem rohu budov; tezba a stavba probiha u okraje po dokonceni cesty. Jednotky zachycene novou stavbou se vysunou ven. Portal a dul se kresli pred postavami, takze jejich obrazky uz neprekryvaji animace jednotek.
+
+2026-10-21 - Dvojnasobne herni modely:
+- Hrdinove, sberaci a nepratele jsou vykresleni 2x vetsi. Take portal (320x320), zlaty dul (300x272), strazne veze (176x272) a bleskove veze (80x80) jsou 2x vetsi. Bojove dosahy, rychlosti, velikost mapy a portrety zustavaji stejne. Menu portalu je vedle budovy, aby zustalo uvnitr mapy.
+
+2026-10-21 - Aerin bezi:
+- Pohybova animace Aerina je nove beh (stejny soubor Aerin_walk_sheet.png, 12 snimku, 14 fps misto 12): postava je prikrcena o 8 px, vyrazne predklonena (hlava az o 13-15 px dopredu), pri kazdem kroku se zhoupne o 4 px, nohy maji stehno a holen ohybane v koleni, chodidlo se odrazi dozadu a zvedne az o 16 px, mec a kridla se pohybuji vyrazneji. Herni rychlost pohybu se nemeni.
+
+2026-10-20 - Zlaty dul jako jeskyne:
+- Zlatiste v Gathering i Rumble vypada jako animovana jeskyne s magickou fialovou zari (assets/buildings/goldMine_sheet.png, 24 snimku, 12 fps). Na mape zabira 150x136, kliknuti na dul funguje v cele jeho vetsi plose. Ostatni suroviny se generuji nejmene 90 jednotek od dulu a dul se nevygeneruje u portalu. Tezba (3 s, 10 zlata) se nemeni.
+
+2026-10-20 - Portal a nakup sberacu:
+- V Gathering i Rumble je pevny animovany portal napravo vedle zdi (240,120; 160x160). Sheet portal_sheet.png ma 24 snimku 569x555 v mrizce 6x4, prehrava se ve smycce 12 fps. Klik otevira menu s ikonou sberace a cenou 20 zlata; nakup je pri nedostatku zlata neaktivni. Horni lista uz nakup neobsahuje. Pocatecni, koupeni i restartovani sberaci se objevuji vedle portalu. Suroviny se negeneruji pres portal; odevzdavaci bod u zdi zustava.
+
+2026-10-20 - Dalsi oddaleni Rumble:
+- Pet novych urovni pod puvodnim zoomem: 85 %, 70 %, 55 %, 40 %, 25 %. Spolecne pro tlacitka a kolecko; pinch ma stejne minimum 25 %. Vychozi zoom pri startu/restartu zustava 100 %, maximalni 250 %. Ostatni rezimy se nemeni.
+
+2026-10-20 - Vetsi mapa Rumble:
+- Mapa zvetsena z 1600x800 na 6400x3200 (+300 % v obou osach). Kamera zachovava meritko 1600x800 a umoznuje posun po cele mape. Velikost jednotek, rychlosti a dosahy se nemeni. Nepratele prichazeji z noveho praveho okraje, nahodne suroviny jsou po cele mape; pocty zustavaji. Hrdinove, sberaci a odevzdavaci bod zacinaji v puvodni viditelne oblasti. Ostatni rezimy zustavaji 1600x400.
+
+2026-10-20 - Oprava problikavani Aerinova utoku:
+- Oddelene klice FutureBuilderu zabranuji prekresleni stare idle textury rozmery attack sheetu. Attack se prednacita spolu s idle. Animace bezi 13 snimku pri 12 fps (~1.08 s realneho casu), nezrychluje se s hrou; damage ani cooldown se nemeni. Attack 420x307 pouziva stejne meritko a ukotveni jako idle 316x307.
+
+2026-10-20 - Aerinova ohniva koule:
+- Treti utok (strong) ma plosne poskozeni v polomeru 52 od zasazeneho nepritele, shodne s ohnivym vybuchem. Kazdy cilitelny nepritel v oblasti dostane plne poskozeni utoku, vcetne aktualnich bonusu hrdiny.
+
+2026-10-19 - Velikost a smer sberacu:
+- Render sberacu zvetsen o 300 % na 104x104 (4x). HP, naklad a vyberovy ramecek odpovidaji vetsimu zobrazeni, herni dosahy a hitbox se nemeni. Pri vsech presunech doleva se sprite zrcadli; pri zastaveni ma vychozi orientaci.
+
+2026-10-19 - Sprite sberacu:
+- Gathering i Rumble pouzivaji assets/workers/Spirit.png (16 snimku v radku): idle/pohyb 0-7, tezba/utok/stavba na miste 8-15. Animace bezi v cyklu 8 snimku/s herniho casu. HP, oznaceni nakladu a bily ramecek vyberu zustavaji; zeleny ctverec je jen fallback.
+
+2026-10-19 - Odstraneny cervene debug krizky ze stredu hrdinu a nepratel vcetne vykreslovaciho overlaye.
+
+2026-10-19 - Vampire a nahodne slozeni vln:
+- Novy typ vampire pouziva assets/enemies/Vampire.png, 33 snimku 90x90: chuze 8-15, utok 16-24, zasah 25-26, smrt 27-32. Ma stejne zakladni statistiky jako FatZombie: 20 HP, rychlost 16, melee 5 DPS.
+- Spawn eventy fat_zombie se pri priprave kazde vlny promichaji po skupinach peti typu (FatZombie, Vampire, ZombieFemale, SkullMage, ZombieShooter), kazdy jednou v nahodnem poradi. Plati i v prvnim levelu a Rumble. Explicitni ostatni typy z JSON/editoru, pocty, casovani a nasobice zustavaji zachovane. Novy beh/restart poradi znovu zamicha.
+
+2026-10-13 - Vyber a XP karta hrdinu:
+- Klik na prave vybranou ikonu hrdiny na mape nebo karte vyber zrusi a skryje ukazatel dostrelu.
+- Na kartach v Rumble je pod ikonou tenky modry ukazatel postupu k dalsimu levelu, nad pruhem zivotu; mimo Rumble se nezobrazuje.
+
+2026-10-12 - Levelovani hrdinu v Rumble:
+- V aktualnim behu za kazdeho nepritele ziska 1 XP pouze hrdina, ktery zasadil posledni ranu. Prahy levelu jsou zaokrouhlene 10, 15, 23, 34, 51... XP; prebytek se prenasi. Level nasobi zakladni HP i vsechny typy utoku 1.2^(level-1) a pri postupu hrdinu plne vyleci. Level je viditelny na karte hrdiny; napoveda ukazuje XP a dalsi prah. Restart vraci level na 1 a XP na 0; mimo Rumble zustava puvodni persistentni RPG XP.
+
+Bleskova vez v Rumble:
+- Druha volba stavebniho menu za 300 zlata, prozatim fialovy ctverec 40x40. Strili existujicim efektem blesku hrdinu na jednoho nepritele za 20 poskozeni kazdych 5 hernich sekund ve stejnem dosahu jako strazna vez.
+- Sdili stavbu sberacem (60 s), upgrade za 100 a 60 s prace bez strelby (poskozeni 20/60/180/...), bourani za polovinu celkove investice a reset. Zakladni refundace je 150 zlata.
+
+2026-10-09 - Vylepseni a bourani vezi v Rumble:
+- Klik na hotovou vez otevre nabidku vylepseni za 100 zlata a zbourani za navraceni 50 % celkove zaplacene investice. Po zbourani lze na stejnem miste znovu stavet.
+- Upgrade vyzaduje sberace a 60 hernich sekund prace po prichodu. Volny sberac se priradi pri zaplaceni automaticky, jinak ceka na rucni prikaz. Preruseny postup zustava. Vez nestrili od zaplaceni upgradu az do dokonceni, ale zustava viditelna.
+- Zakladni uroven je 1 (10 poskozeni); kazdy dokonceny upgrade prida 1 uroven a nasobi poskozeni tremi (30, 90, ...). Cena kazdeho upgradu je 100, dosah a interval strelby se nemeni. Bourat lze i behem upgradu, vraci se polovina i tohoto zaplaceneho upgradu a sberac se uvolni. Restart maze urovne i investice bez refundace. Puvodni vez u palisady se nemeni.
+
+2026-10-07 - Zlato za nepratele v Rumble:
+- Kazdy zabity nepritel okamzite prida 1 zlato do zobrazene a utratitelne zasoby Rumble pro nakup sberacu, staveb a oziveni hrdinu. Stejna odmena se nadale uklada do aktivniho save slotu pouze jednou.
+
+2026-10-06 - Stavby v Rumble:
+- Dve oranzova mista 28x28 na mape (suroviny se generuji mimo jejich prostor), kazde s nabidkou 4 slotu. Dostupne jsou strazna vez za 200 a bleskova vez za 300 zlata/minci, dalsi 2 sloty jsou zamcene.
+- Po zaplaceni se automaticky priradi nejblizsi volny sberac. Pokud neni volny, stavba ceka, az hrac vybere sberace a klikne na staveniste. Na jednom miste stavi jeden sberac.
+- Stavba trva 60 hernich sekund az po prichodu sberace a respektuje rychlost hry. Pri odvolani nebo smrti sberace se postup zachova a dalsi vyslany sberac jej dokonci bez dalsi platby. U staveniste je pruh postupu a zbyvajici cas / cekani na sberace.
+- Dokoncena vez pouziva assets/backgrounds/tower.png, stejny dosah a projektily jako puvodni obranna vez: na urovni 1 ma 10 poskozeni jednou za 5 hernich sekund, dalsi urovne poskozeni nasobi tremi. Pri restartu se vsechny nove stavby, urovne a jejich postup zrusi, stavebni mista jsou opet prazdna; cena se nevraci.
+2026-10-02:
+- Skupiny nepratel maji rozptyleny spawn kolem linie a za pravym okrajem s hledanim volneho mista, prichody ve stejne linii po 0.15-0.35 s (delsi rozestupy z JSON zustavaji), mekke vzajemne rozestupovani za pohybu i v boji a individualni body na oblouku kolem cile. U palisady se rozestupuji podél zdi. Kazdy nepritel zacina animaci v jine fazi. Pocty, rychlosti a bojove statistiky zustavaji stejne; Rumble zachovava 30 s mezi zacatky vln i pri postupnem prichodu skupin. Rozestupy nejsou tvrde kolize, v hustom davu muze zustat castecne prekryti spritu.
+2026-10-02:
+- Sberaci dorucuji fragmenty pouze nejblizsimu zivemu hrdinovi s neuplnou magickou energii (mene nez 20). Prijemce se prehodnocuje i za pohybu. Pokud maji vsichni plnou energii nebo nejsou zivi hrdinove, sberac ceka na miste s nakladem a po vzniku vhodneho prijemce automaticky pokracuje.
+2026-10-02:
+- Rumble ma vlevo pred kartami hrdinu kartu Sberaci s poctem volnych / vsech zivych sberacu. V Gathering se zobrazuje samostatne. Klik vybere jednoho volneho sberace a zrusi predchozi vyber; pri nule volnych je karta seda a neaktivni. Volny je zivy sberac ve stavu idle bez pohybu a tezby, nikoli sberac s aktivnim pracovnim nebo utocnym prikazem.
+2026-09-21:
+- Budova `assets/buildings/atrium.png` ve `Vesnice` ted otevre rezim `Gathering`. Ten zobrazuje stejnou herni mapu (trava, palisada, obranna vez a ovladani kamery), ale bez hrdinu, nepratel a spoustenych vln.
+- Gathering ted obsahuje jedno trvale nahodne umistene zlatiste jako zluty box `20x20 px`, 5-10 nahodnych hnedych stromu, 5-10 sedych kamenu a 5-10 fialovych fragmentu jako boxy `20x20 px`. Vsichni syte zeleni sberaci zacinaji u zdi v klidu (v Gathering 1, v Rumble 2) a ovlada je hrac: kliknutim sberace vybere (bily okraj), klik na zlato, strom nebo kamen spusti opakovany prikaz 3 s tezby -> navrat do baze -> `10` jednotek dane suroviny -> zpet ke stejnemu zdroji; klik na fragment spusti tezbu po jedne jednotce -> doruceni nejblizsimu zivemu hrdinovi -> opakovani. Klik jinam sberace jen presune a klik vlevo od palisady mu zada cestu do baze. Po tezbe sberac nese zlato oznacene zlute teckou, drevo hnedou teckou, kamen sedou teckou nebo fragment fialovou teckou; jakykoli novy prikaz opakovani dosavadni cinnost prerusi.
+- PlayerProgress ted persistentne uklada mnozstvi dreva i kamene a Gathering je zobrazuje v horni liste vedle zlata.
+- Novy sberac v Gathering i Rumble stoji 20 zlata. V horni liste Gathering je zhruba 100 px od leve hrany tlacitko `+ 20`. Dokud ma hrac dost minci, muze je opakovane utracet za dalsi zelene sberace; kazdy novy sberac se objevi u zdi a ceka na rucni prikaz.
+- Sberace lze v Gathering vybrat i tahem obdelniku jako hromadny vyber; prikaz na zlato, drevo, kamen, bazi nebo volne misto se pak provede u vsech vybranych sberacu.
+- V Gathering a Rumble pribyla surovina `Fragments`: vedle 5-10 nahodnych fialovych boxu se vzdy objevi jeden dalsi nahore hned u baze, sberac tezi zasilku 10 fragmentu 3 sekundy a doruci ji nejblizsimu zivemu hrdinovi. Zasilka doplni hrdinovi 10 bodu z jeho magicke energie 0-20; globalni ukazatel fragmentu se nezobrazuje.
+- Sberaci maji `20 HP` a zivotni pruh nad jednotkou v Gathering i Rumble. Tecka nesene suroviny je nad pruhem, aby se neprekryvaly. V Rumble na ne nepratele mohou cilit stejne jako na hrdiny, vcetne dalkovych projektilu `ZombieShooteru`. Po vycerpani HP sberac zmizi z mapy.
+- 2026-09-30: Sberac napadeny pri necinosti se brani utokem zblizka na nejblizsiho ziveho nepritele za `3` zraneni jednou za herni sekundu. Hrac muze klikem na nepritele zadat sberacum cileny utok i ve spolecnem vyberu s hrdiny; vyber se pak zrusi. Sberac dojde do melee dosahu a pronasleduje dany cil do jeho smrti, pak zustane stat. Novy prikaz utok prerusi; napadeni pri tezbe, dorucovani ci presunu jejich cinnost nemeni.
+- Mrtvy hrdina zustava jako zesedly ukazatel v pravem dolnim panelu; karta obsahuje ikonu a popisek `Ozivit 200` a kliknutim lze za 200 persistentnich minci hrdinu vratit s plnym HP a energii na start.
+- Pocty nepratel ve standardnich levelovych spawn eventech jsou nyni desetinásobne; typ, lane a casove rozestupy eventu zustavaji stejne. Rumble tuto upravu nepouziva: ma vlastni pevny plan 30 vln, prvni s 1 nepritelem a dalsi vzdy o 2 nepratele silnejsi, se zacatky vln po 30 sekundach.
+- Budova `assets/buildings/shamanTent.png` nyní otevírá režim `Rumble`: po výběru hrdinů, kapitoly a levelu běží současně běžné nepřátelské vlny a obrana palisády i Gathering suroviny, nákup sběračů a jejich práce. Obdélníkový multiselect v Rumble umí vybrat hrdiny i sběrače společně.
+2026-04-04:
+- Spodni pravy panel karet hrdinu vedle nastaveni rychlosti dostal o neco vyssi fixni karty, takze uz nevznika layout warning `bottom overflowed by 2.0 pixels`.
+2026-04-03:
+- Pocet minci na obrazovce `Vesnice` uz neni soucasti posouvane a zoomovane mapy; ted se vykresluje jako fixni overlay v pravem hornim rohu viewportu, takze zustava vzdy na stejnem miste na obrazovce.
+2026-04-02:
+- Kazdy nepritel zabity hrdinou ted okamzite prideli `1` minci do aktivniho save slotu; soucasne se nad mrtvym nepritelem zobrazi plovouci odmena `+1` s ikonou mince, ktera stoupa nahoru a plynule zmizi.
+2026-04-02:
+- Obrazovka `Vesnice` ted v pravem hornim rohu zobrazuje aktualni pocet minci ulozenych v aktivnim save slotu.
+2026-03-25:
+- Byl pridan novy typ nepritele `ZombieShooter`. Na hrdiny utoci na dalku ze stredniho dostrelu `180`, kazdou `1 s` vystreli projektil za `1 damage`, ale po dosazeni zdi stale prechazi na bezny melee utok do palisady.
+2026-03-25:
+- `ZombieShooter` pouziva sprite sheet `assets/enemies/ZombieShooter.png`; pro pohyb se prehravaji framy `7..15`, pro utok `16..21`, pri zasahu `22..26` a smrt pouziva poslednich `5` framu sheetu.
+2026-03-25:
+- `ZombieShooter` byl rovnou primichan i do `assets/levels/chapter_1/level_02.json`, takze se da hned normalne potkat ve hre bez nutnosti delat lokalni editor override.
+2026-03-25:
+- Projektil `ZombieShooteru` uz nepouziva jen kresleny kruh; ted bere sprite sheet `assets/enemies/Projectile_zombie_shooter.png`, za letu loopuje prvni `4` framy a po zasahu hrdiny jednou dohraje posledni `4` impact framy.
+2026-03-25:
+- Brann ted pro svou postavu primo ve hre pouziva asset `assets/heroes/Brann/BrannIdle.png`; jeho portret na kartach a v menu se tim nemeni.
+2026-03-25:
+- Jakmile Brann ve hre zacne utocit, jeho postava se docasne prepne na `assets/heroes/Brann/BrannAttack.png`; mimo utok se vraci na `assets/heroes/Brann/BrannIdle.png`.
+2026-03-25:
+- Prepinani Brannova attack sprite bylo nasledne opraveno i v runtime triggeru; Brann ted pri skutecnem utoku opravdu dostane kratke attack okno, takze uz nezustava vizualne jen na idle sprite.
+2026-03-25:
+- Delka Brannova attack okna byla nasledne prodlouzena na celou delku jeho APNG animace `3.7 s` (37 framu po 100 ms), aby se `assets/heroes/Brann/BrannAttack.png` vzdy prehral az do konce.
+2026-03-25:
+- Brannuv in-game render byl nasledne presunut na transparentni sprite cestu, takze uz pod jeho postavou neni sedy obdelnik a na mape je videt jen samotna idle/attack animace.
+2026-03-25:
+- Pri presunu Branna po mape se jeho postava ted prepina na `assets/heroes/Brann/BrannWalk.png`; po zastaveni se vraci na dosavadni attack/idle logiku.
+2026-03-25:
+- Byla opravena i compile chyba po prejmenovani parametru v `_buildHeroImage(...)`; zbyvajici fallback volani pro Veyru uz nepouziva stare `isAerinInGameSprite`.
+2026-03-25:
+- Vsechny Brannovy in-game varianty `idle`, `walk` i `attack` se ted vykresluji 2x vetsi oproti puvodnimu zakladu; transparentni sprite cesta navic pro takove jednotky vypina clipping, aby se zvetseny Brann neořezaval o puvodni box.
+2026-03-25:
+- Zvetseny Brannuv sprite byl nasledne posunut o kus vys v ramci hero widgetu, aby jeho spodni cast uz nepusobila useknute.
+2026-03-25:
+- Brann dostal i sirsi vyhrazeny render box v mape, aby jeho zvetseny `walk` sprite pri presunu uz nebyl useknuty po stranach.
+2026-03-26:
+- Samotny Brannuv in-game sprite byl nasledne zmenseny o tretinu (`2.0 -> 1.333...`), ale sirsi obalovaci render box zustal beze zmeny, aby se zmirnilo horni/spodni oriznuti bez ztraty bocni rezervy.
+2026-03-26:
+- Brannuv render blok byl nasledne zvysen i na vysku, aby mel vyssi `BrannAttack` sprite pri utoku vic svisleho prostoru a nebyl oriznuty nahoře.
+2026-03-26:
+- Samotny Brannuv in-game sprite byl nasledne zmenseny jeste o dalsi tretinu (`1.333... -> 0.888...`), ale rozsireny a zvyseny obalovaci blok zustal beze zmeny.
+2026-03-26:
+- Byl zvysen i vnejsi mapovy wrapper pro Branna, aby se do nej vesel cely `_HeroUnitWidget` vcetne vyssi render plochy a spodnich HP/cooldown baru bez `bottom overflow`.
+2026-03-26:
+- Rychlost pohybu hrdiny Brann byla snizena na polovinu oproti ostatnim hrdinum; ostatni jednotky dal pouzivaji sdilenou rychlost pohybu beze zmeny.
+2026-03-27:
+- Rucni horizontalni i vertikalni offset Brannova sprite byl vracen na nulu, takze se jeho vizual znovu centruje primo doprostred zvetsene render oblasti.
+2026-03-27:
+- Bylo opraveno i samotne ukotveni Brannova zvetseneho wrapperu na mape; jeho `Positioned` se ted centruje podle skutecne sirky a vysky Brannova boxu misto puvodnich sdilenych rozmeru, takze debug kriz, HP bar i render sdili stejny stred.
+2026-03-27:
+- Sirka Brannova zemniho stinu byla nasledne zmensena zhruba na tretinu predchozi vizualni sirky, aby stin uz nebyl sirsi nez samotna postava.
+2026-03-27:
+- Brannuv zakladni `maxHp` byl zvysen na `500`, takze je ted vyrazne odolnejsi nez ostatni hrdinove se sdilenym zakladem `100 HP`.
+2026-03-26:
+- Byl pridan docasny debug overlay s cervenym krizem do presneho stredu kazdeho ziveho hrdiny i kazdeho aktivniho nepritele, aby slo vizualne overit skutecny logicky stred proti sprite renderu.
 2026-03-24:
 - Dotykovy posun herni mapy uz neni na dvouprstem panu. V levem dolnim rohu je ted trvale viditelny ctvercovy joystick priblizne o tretine vysky obrazovky; tah v joysticku posouva kameru prislusnym smerem a pinch zoom zustava zachovany bez soucasneho touch panu podle centroidu prstu.
 2026-03-24:
@@ -210,7 +406,7 @@ Obrazovky a UI
   - Kazda karta hrdiny zobrazuje stejny portret jako ve vyberu hrdinu a maly HP ukazatel.
   - Klik na kartu hrdiny vybere daneho hrdinu stejne jako klik primo na jednotku na mape.
   - Po smrti hrdiny jeho karta zustava viditelna, ale zesedne.
-- Aerin ma ve hre vlastni animovany vzhled jednotky ze sprite sheetu `assets/heroes/Aerin_sheet.png`; v menu a vyberovych ikonach zustava puvodni portret.
+- Aerin ma ve hre vlastni animovany idle vzhled jednotky ze sprite sheetu `assets/heroes/Aerin/Aerin_idle_sheet.png` (12 snimku 316x307, 12 fps); v menu a vyberovych ikonach zustava puvodni portret.
 - Aerinuv in-game sprite se vykresluje bez barevneho podkladu a bez ramecku, aby byl videt jen samotny PNG obrazek s pruhlednym pozadim.
 - Aerinuv animovany sprite se kresli bez vyhlazovani (`FilterQuality.none`, bez antialiasingu), aby se kolem transparentnich okraju pixel-artu netvorily tmave artefakty.
 - Pri pohybu se na Aerinuv sprite neaplikuje standardni tmavy moving overlay s ikonou behu.
@@ -656,3 +852,4 @@ Spusteni
 - Byla opravena syntakticka chyba v `LevelSelectScreen`, ktera vznikla pri obaleni obrazovky do `PopScope`; struktura `SafeArea -> LayoutBuilder` je znovu spravne uzavrena a obrazovka se ma znovu normalne kompilovat.
 2026-03-19:
 - Horni vodorovny vyber hrdinu na obrazovce prirazovani do slotu byl zvetsen zhruba o polovinu a nově sedi ve vertikalne centrovane oblasti misto u horni hrany obrazovky.
+- V rezimu Rumble je herni mapa dvakrat vyssi (`1600 x 800`); teren i palisada jsou roztazene na celou vysku a pri maximalnim oddaleni je videt cela vyska mapy najednou. Nepratelske linie, spawny hrdinu a nahodne suroviny se rozkladaji po cele nove vysce.

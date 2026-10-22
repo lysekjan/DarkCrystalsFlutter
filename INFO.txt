@@ -1,3 +1,4 @@
+2026-10-22: Dosah vsech utoku hrdinu +300 % (4x): standard 1066.67, Thalor mec 560, Myris freeze 800, Kaelen vine 400, Solenne sunburst 160 / radiant 360, Brann earthquake 320, Eldrin nova 400. Tyto hodnoty nahrazuji starsi dosahy nize. Leceni a polomery vybuchu projektilu beze zmeny.
 Hrdinové a jejich útoky (fáze casting zrušena; útoky mají jen sending + cooldown):
 - Aerin: projektil; módy: normal (sending 2s, cooldown 10s, damage 5, velikost projektilu 1x), rychlý (sending 2s, cooldown 3s, damage 1, projektil 0.5x), silný (sending 2s, cooldown 20s, damage 20, projektil 4x)
 - Veyra: projektil; módy: rychlá støelba (sending 1s, cooldown 2s, damage 1), tøaskavá støela (sending 1s, cooldown 10s, AoE radius 60, damage 3, vizuální výbuch), blesk (sending 1s, cooldown 2s, damage 30 na 1 cíl)

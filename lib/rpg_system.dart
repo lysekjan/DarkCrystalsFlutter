@@ -203,11 +203,17 @@ class HeroData {
 // Global player progress
 class PlayerProgress {
   int coins;
+  int wood;
+  int stone;
+  int fragments;
   Map<String, HeroData> heroes; // heroName -> HeroData
   Set<String> completedLevels;
 
   PlayerProgress({
     this.coins = 0,
+    this.wood = 0,
+    this.stone = 0,
+    this.fragments = 0,
     Map<String, HeroData>? heroes,
     Set<String>? completedLevels,
   })  : heroes = heroes ?? {},
@@ -218,6 +224,21 @@ class PlayerProgress {
   void addCoins(int amount) {
     coins += amount;
     if (coins < 0) coins = 0;
+  }
+
+  void addWood(int amount) {
+    wood += amount;
+    if (wood < 0) wood = 0;
+  }
+
+  void addStone(int amount) {
+    stone += amount;
+    if (stone < 0) stone = 0;
+  }
+
+  void addFragments(int amount) {
+    fragments += amount;
+    if (fragments < 0) fragments = 0;
   }
 
   bool canSpendCoins(int amount) => coins >= amount;
@@ -241,12 +262,18 @@ class PlayerProgress {
 
   Map<String, dynamic> toJson() => {
     'coins': coins,
+    'wood': wood,
+    'stone': stone,
+    'fragments': fragments,
     'heroes': heroes.map((k, v) => MapEntry(k, v.toJson())),
     'completedLevels': completedLevels.toList()..sort(),
   };
 
   factory PlayerProgress.fromJson(Map<String, dynamic> json) => PlayerProgress(
     coins: json['coins'] ?? 0,
+    wood: json['wood'] ?? 0,
+    stone: json['stone'] ?? 0,
+    fragments: json['fragments'] ?? 0,
     heroes: (json['heroes'] as Map<String, dynamic>?)?.map(
           (k, v) => MapEntry(k, HeroData.fromJson(v as Map<String, dynamic>)),
         ) ??
@@ -362,6 +389,54 @@ class RpgSystem {
     );
     await saveProgress();
     return _cachedProgress!;
+  }
+
+  static Future<void> addCoins(int amount) async {
+    if (amount == 0) {
+      return;
+    }
+    if (_cachedProgress != null) {
+      _cachedProgress!.addCoins(amount);
+      return;
+    }
+    final progress = await getProgress();
+    progress.addCoins(amount);
+  }
+
+  static Future<void> addWood(int amount) async {
+    if (amount == 0) {
+      return;
+    }
+    if (_cachedProgress != null) {
+      _cachedProgress!.addWood(amount);
+      return;
+    }
+    final progress = await getProgress();
+    progress.addWood(amount);
+  }
+
+  static Future<void> addStone(int amount) async {
+    if (amount == 0) {
+      return;
+    }
+    if (_cachedProgress != null) {
+      _cachedProgress!.addStone(amount);
+      return;
+    }
+    final progress = await getProgress();
+    progress.addStone(amount);
+  }
+
+  static Future<void> addFragments(int amount) async {
+    if (amount == 0) {
+      return;
+    }
+    if (_cachedProgress != null) {
+      _cachedProgress!.addFragments(amount);
+      return;
+    }
+    final progress = await getProgress();
+    progress.addFragments(amount);
   }
 
   // Save progress to storage
